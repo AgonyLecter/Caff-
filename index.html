@@ -90,6 +90,15 @@ input{font:inherit;font-size:16px;color:var(--ink);background:#120a20;border:2px
 #rotate .ph{width:46px;height:78px;border:3px solid var(--pink);border-radius:9px;box-shadow:0 0 14px #ff4fa3;animation:rot 2s ease-in-out infinite}
 @keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
 @media (orientation:portrait){#rotate{display:flex}}
+#serve{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:calc(max(6px,env(safe-area-inset-bottom)) + 70px);width:96px;height:96px;border-radius:50%;padding:0;border:3px solid var(--line);background:radial-gradient(circle at 50% 40%,#3a2160,#1b1030);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:14px;z-index:4;touch-action:none;box-shadow:0 4px 0 #06030c;transition:border-color .2s,opacity .2s}
+#serve svg{width:44px;height:44px;pointer-events:none}
+#serve span{pointer-events:none;color:var(--dim)}
+#serve.on{border-color:var(--pink);box-shadow:0 4px 0 #06030c,0 0 18px #ff4fa3aa}
+#serve.on span{color:var(--ink)}
+#serve.idle{opacity:.55}
+#serve .ring{position:absolute;inset:-3px;border-radius:50%;pointer-events:none;background:conic-gradient(var(--gold) var(--p,0%),transparent 0);-webkit-mask:radial-gradient(circle,transparent 44px,#000 45px);mask:radial-gradient(circle,transparent 44px,#000 45px)}
+#serve.pop{transform:scale(.92)}
+@media (max-height:360px){#serve{width:80px;height:80px;bottom:calc(max(6px,env(safe-area-inset-bottom)) + 56px)}#serve svg{width:36px;height:36px}#serve .ring{-webkit-mask:radial-gradient(circle,transparent 36px,#000 37px);mask:radial-gradient(circle,transparent 36px,#000 37px)}}
 @media (max-height:360px){.stat{font-size:15px}#hud button{min-height:36px;padding:0 10px}#clock{display:none}}
 @media (max-width:940px){#hud .opt{display:none}}
 @media (prefers-reduced-motion:reduce){#go,#hud button.hot,#rotate .ph{animation:none}}
@@ -110,6 +119,8 @@ input{font:inherit;font-size:16px;color:var(--ink);background:#120a20;border:2px
   <button data-p="day" id="bDay">Giorno</button>
   <button data-p="set" aria-label="Impostazioni">≡</button>
 </div>
+
+<button id="serve" hidden aria-label="Servi al bancone"><i class="ring"></i><svg viewBox="0 0 12 12" shape-rendering="crispEdges"><rect x="4" y="0" width="1" height="2" fill="#ff4fa3"/><rect x="6" y="1" width="1" height="2" fill="#ff4fa3"/><rect x="1" y="4" width="8" height="5" fill="#f4f1de"/><rect x="2" y="4" width="6" height="1" fill="#5a3020"/><rect x="9" y="5" width="2" height="1" fill="#f4f1de"/><rect x="10" y="5" width="1" height="3" fill="#f4f1de"/><rect x="9" y="7" width="1" height="1" fill="#f4f1de"/><rect x="2" y="9" width="6" height="1" fill="#f4f1de"/><rect x="0" y="10" width="10" height="1" fill="#b9a3cf"/></svg><span>Servi</span></button>
 
 <aside id="panel">
   <header><h2 id="ptitle">Migliora</h2><button id="pclose" aria-label="Chiudi">✕</button></header>
@@ -1102,9 +1113,9 @@ setInterval(()=>{if(started)hud()},300);
 
 /* ================= INPUT ================= */
 let ptr=null;
-cv.addEventListener('pointerdown',e=>{if(!started)return;ptr={x:e.clientX,y:e.clientY,cx:camX,drag:false};try{cv.setPointerCapture(e.pointerId)}catch(err){}});
+cv.addEventListener('pointerdown',e=>{if(!started)return;const hit=!paused&&inCounter(e);ptr={x:e.clientX,y:e.clientY,cx:camX,drag:false,done:hit};if(hit)tapCounter();try{cv.setPointerCapture(e.pointerId)}catch(err){}});
 cv.addEventListener('pointermove',e=>{if(!ptr)return;const dx=e.clientX-ptr.x;if(Math.abs(dx)>10)ptr.drag=true;if(ptr.drag)camX=clamp(ptr.cx-dx*DPR/S,0,W-VW)});
-cv.addEventListener('pointerup',e=>{if(!ptr)return;const p=ptr;ptr=null;if(!p.drag)tap(e)});
+cv.addEventListener('pointerup',e=>{if(!ptr)return;const p=ptr;ptr=null;if(!p.drag&&!p.done)tap(e)});
 cv.addEventListener('pointercancel',()=>ptr=null);
 function tap(e){
  initAudio();const r=cv.getBoundingClientRect();const x=(e.clientX-r.left)*DPR/S+camX,y=(e.clientY-r.top)*DPR/S;
@@ -1114,19 +1125,25 @@ function tap(e){
   if(sl.seats.some(s=>s.dirty)){sl.seats.forEach(s=>{if(s.dirty)cleanSeat(s,1)});sfx('tap');return}
   const c=sl.seats.map(s=>s.occ).filter(c=>c&&c.state==='sit'&&!c.scene&&!c.bub).sort((a,b)=>Math.abs(a.x-x)-Math.abs(b.x-x))[0];
   if(c){const info=c.reg?`${TYPES[c.type]?TYPES[c.type].n:''} · habitué ♥${c.reg.f}`:(TYPES[c.type]||{}).n||'';say(c,pick(TAPL),2.6,`${c.name}${info?' · '+info:''}`);if(c.sleep){c.sleep=0;say(c,'Eh?! Non dormivo!',2,c.name)}return}}}
- if(x>counterX-50&&y>60&&y<150){const q=queue[0];if(q&&q.state==='order'){if(q.special){openMini(q);return}q.prog+=tapPow();st.tapServe++;sfx('tap');for(let i=0;i<3;i++)parts.push({x:W-20+rnd(-3,3),y:86,vx:rnd(-10,10),vy:rnd(-16,-6),t:.6,max:.6,k:'spark'});if(q.prog>=q.order.t)serve(q,0)}}
+ if(x>counterX-50)tapCounter();
 }
+function inCounter(e){const r=cv.getBoundingClientRect();const x=(e.clientX-r.left)*DPR/S+camX,y=(e.clientY-r.top)*DPR/S;return x>counterX-50&&!(st.cat&&Math.abs(x-(counterX+37))<7&&y>86&&y<99)}
+function tapCounter(){initAudio();const q=queue[0];if(!q||q.state!=='order')return false;if(q.special){openMini(q);return true}q.prog+=tapPow();st.tapServe++;sfx('tap');for(let i=0;i<3;i++)parts.push({x:W-20+rnd(-3,3),y:86,vx:rnd(-10,10),vy:rnd(-16,-6),t:.6,max:.6,k:'spark'});if(q.prog>=q.order.t)serve(q,0);return true}
+const sBtn=$('#serve');
+sBtn.addEventListener('pointerdown',e=>{e.preventDefault();if(!started||paused)return;if(tapCounter()){sBtn.classList.add('pop');setTimeout(()=>sBtn.classList.remove('pop'),70)}});
+sBtn.addEventListener('contextmenu',e=>e.preventDefault());
+let lastSrv='';function serveUI(){const q=queue[0];const on=!!(q&&q.state==='order');const p=on?Math.min(100,Math.round(q.prog/q.order.t*100)):0;const k=on+'|'+p+'|'+(on&&q.special);if(k===lastSrv)return;lastSrv=k;sBtn.classList.toggle('on',on);sBtn.classList.toggle('idle',!on);sBtn.style.setProperty('--p',p+'%');sBtn.querySelector('span').textContent=on&&q.special?'Latte art':'Servi'}
 
 /* ================= AVVIO ================= */
 function goFS(){const d=document.documentElement,rq=d.requestFullscreen||d.webkitRequestFullscreen;if(rq&&!document.fullscreenElement&&!document.webkitFullscreenElement){try{const p=rq.call(d,{navigationUI:'hide'});if(p&&p.then)p.then(lockO).catch(()=>{})}catch(e){}}else lockO()}
 function lockO(){try{if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('landscape').catch(()=>{})}catch(e){}}
 function offline(){if(!st.last)return;const el=Math.min(8*3600,(Date.now()-st.last)/1000);if(el<60)return;const f=baristaLv()>0?(st.waiter>0?.45:.25):.05;const v=Math.round((st.ips||0)*el*f*(st.manager?1.2:1));if(v>0){st.coins+=v;st.earned+=v;st.runEarned+=v;setTimeout(()=>toast(`Mentre eri via: +${fmt(v)} monete`),900)}}
 function begin(){
- $('#start').hidden=true;$('#hud').hidden=false;started=true;layout();
+ $('#start').hidden=true;$('#hud').hidden=false;$('#serve').hidden=false;started=true;layout();
  if(!st.ds)startDay();else toast(`Bentornato · Giorno ${st.day}`);
  if(st.migrated){st.migrated=0;setTimeout(()=>toast('Ho portato qui la tua partita precedente'),1500)}
  offline();save();hud();
- if(st.served===0)setTimeout(()=>toast('Tocca il bancone per servire. Trascina per guardarti intorno.'),4200);
+ if(st.served===0)setTimeout(()=>toast('Tocca il pulsante ☕ (o il bancone) per servire. Trascina per guardarti intorno.'),4200);
 }
 function showNaming(){$('#intro').hidden=true;$('#naming').hidden=false;$('#chips').innerHTML='';SUGG.forEach(n=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>{$('#nameIn').value=n};$('#chips').appendChild(b)})}
 $('#start').addEventListener('click',()=>{if(!$('#intro').hidden){goFS();initAudio();if(st.name)begin();else showNaming()}});
@@ -1139,7 +1156,7 @@ addEventListener('pagehide',save);addEventListener('resize',layout);
 layout();
 window.__cafe={get st(){return st},speed:1};
 let last=performance.now();
-function frame(now){let dt=Math.min(.05,(now-last)/1000);last=now;const sp=window.__cafe.speed||1;for(let i=0;i<sp;i++){T+=dt;if(started)update(dt);else ambient(dt)}render();requestAnimationFrame(frame)}
+function frame(now){let dt=Math.min(.05,(now-last)/1000);last=now;const sp=window.__cafe.speed||1;for(let i=0;i<sp;i++){T+=dt;if(started)update(dt);else ambient(dt)}render();if(started)serveUI();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 }
 </script>
