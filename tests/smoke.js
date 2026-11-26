@@ -7,17 +7,44 @@ const { chromium } = require('playwright');
 const FILE = 'file://' + path.resolve(__dirname, '..', 'index.html');
 const KEY = 'cafe_pioggia_v2';
 let fails = 0;
-const ok = (cond, msg) => { console.log((cond ? '  ✓ ' : '  ✗ ') + msg); if (!cond) fails++; };
+const ok = (cond, msg) => {
+  console.log((cond ? '  ✓ ' : '  ✗ ') + msg);
+  if (!cond) fails++;
+};
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const SAVE = {
-  v: 2, name: 'Test Bar', coins: 5e6, hearts: 20, space: 3, tables: 6, chairs: 4, decor: 6, music: 3, cat: 1,
-  barista: 1, waiter: 1, cook: 1, machine: 3, menu: 14, wifi: 2,
-  story: {}, perks: {}, flags: {}
+  v: 2,
+  name: 'Test Bar',
+  coins: 5e6,
+  hearts: 20,
+  space: 3,
+  tables: 6,
+  chairs: 4,
+  decor: 6,
+  music: 3,
+  cat: 1,
+  barista: 1,
+  waiter: 1,
+  cook: 1,
+  machine: 3,
+  menu: 14,
+  wifi: 2,
+  story: {},
+  perks: {},
+  flags: {}
 };
 
 async function startGame(page, save) {
-  await page.addInitScript(([k, s]) => { if (!localStorage.getItem('__test_seeded')) { localStorage.setItem(k, JSON.stringify(s)); localStorage.setItem('__test_seeded', '1'); } }, [KEY, save]);
+  await page.addInitScript(
+    ([k, s]) => {
+      if (!localStorage.getItem('__test_seeded')) {
+        localStorage.setItem(k, JSON.stringify(s));
+        localStorage.setItem('__test_seeded', '1');
+      }
+    },
+    [KEY, save]
+  );
   await page.goto(FILE);
   await page.waitForTimeout(400);
   await page.click('#go');
@@ -28,7 +55,13 @@ function validateData(D) {
   console.log('Dati delle storie');
   const { ARCS, CH } = D;
   const produced = new Set();
-  ARCS.forEach(a => a.ch.forEach(c => c.l.forEach(l => { if (l && l.c) l.c.o.forEach(o => produced.add(o.f)); })));
+  ARCS.forEach(a =>
+    a.ch.forEach(c =>
+      c.l.forEach(l => {
+        if (l && l.c) l.c.o.forEach(o => produced.add(o.f));
+      })
+    )
+  );
   const ids = new Set(ARCS.map(a => a.id));
   let problems = [];
   const chkLine = (l, who, where) => {
@@ -38,66 +71,120 @@ function validateData(D) {
       if (l[2] && !produced.has(l[2])) problems.push(`${where}: condizione ${l[2]} mai scelta da nessuna parte`);
     } else if (l && l.c) {
       if (!l.c.q || l.c.o.length < 2) problems.push(`${where}: scelta incompleta`);
-      l.c.o.forEach(o => { if (!/^\w+=\w+$/.test(o.f)) problems.push(`${where}: flag ${o.f} malformato`); o.r.forEach(x => chkLine(x, who, where + ' (risposta)')); });
+      l.c.o.forEach(o => {
+        if (!/^\w+=\w+$/.test(o.f)) problems.push(`${where}: flag ${o.f} malformato`);
+        o.r.forEach(x => chkLine(x, who, where + ' (risposta)'));
+      });
     } else problems.push(`${where}: riga sconosciuta`);
   };
   for (const a of ARCS) {
-    a.who.forEach(w => { if (!CH[w]) problems.push(`${a.id}: personaggio ${w} mancante`); });
+    a.who.forEach(w => {
+      if (!CH[w]) problems.push(`${a.id}: personaggio ${w} mancante`);
+    });
     a.ch.forEach((c, i) => {
       const who = c.who || a.who;
-      who.forEach(w => { if (!CH[w]) problems.push(`${a.id}/${i}: personaggio ${w} mancante`); });
+      who.forEach(w => {
+        if (!CH[w]) problems.push(`${a.id}/${i}: personaggio ${w} mancante`);
+      });
       if (who.length > 2) problems.push(`${a.id}/${i}: più di 2 personaggi a un tavolo`);
       if (i && c.r < a.ch[i - 1].r) problems.push(`${a.id}/${i}: soglia di atmosfera più bassa del capitolo prima`);
       c.l.forEach((l, j) => chkLine(l, who, `${a.id}/${i}/${j}`));
       // le condizioni nello stesso capitolo della scelta non funzionerebbero (sono filtrate a inizio scena)
-      const here = new Set(); c.l.forEach(l => { if (l && l.c) l.c.o.forEach(o => here.add(o.f)); });
-      c.l.forEach(l => { if (Array.isArray(l) && l[2] && here.has(l[2])) problems.push(`${a.id}/${i}: condizione ${l[2]} nello stesso capitolo della scelta`); });
+      const here = new Set();
+      c.l.forEach(l => {
+        if (l && l.c) l.c.o.forEach(o => here.add(o.f));
+      });
+      c.l.forEach(l => {
+        if (Array.isArray(l) && l[2] && here.has(l[2]))
+          problems.push(`${a.id}/${i}: condizione ${l[2]} nello stesso capitolo della scelta`);
+      });
     });
     const lastWho = a.ch[a.ch.length - 1].who || a.who;
     (a.rt || []).forEach((r, i) => r.forEach((l, j) => chkLine(l, lastWho, `${a.id}/rt${i}/${j}`)));
-    [].concat(a.req || []).forEach(rr => rr.split('|').forEach(r => { const [id] = r.split('='); if (!ids.has(id)) problems.push(`${a.id}: requisito ${id} inesistente`); if (r.includes('=') && !produced.has(r)) problems.push(`${a.id}: requisito ${r} mai scelto`); }));
-    if (a.end) Object.keys(a.end).forEach(f => { if (!produced.has(f)) problems.push(`${a.id}: finale ${f} irraggiungibile`); });
+    [].concat(a.req || []).forEach(rr =>
+      rr.split('|').forEach(r => {
+        const [id] = r.split('=');
+        if (!ids.has(id)) problems.push(`${a.id}: requisito ${id} inesistente`);
+        if (r.includes('=') && !produced.has(r)) problems.push(`${a.id}: requisito ${r} mai scelto`);
+      })
+    );
+    if (a.end)
+      Object.keys(a.end).forEach(f => {
+        if (!produced.has(f)) problems.push(`${a.id}: finale ${f} irraggiungibile`);
+      });
     // ogni finale deve avere almeno una battuta dedicata nel capitolo finale o nelle risposte
-    if (a.end) Object.keys(a.end).forEach(f => {
-      const last = a.ch[a.ch.length - 1];
-      const has = last.l.some(l => (Array.isArray(l) && l[2] === f) || (l && l.c && l.c.o.some(o => o.f === f)));
-      if (!has) problems.push(`${a.id}: il finale ${f} non ha battute proprie nell'ultimo capitolo`);
-    });
+    if (a.end)
+      Object.keys(a.end).forEach(f => {
+        const last = a.ch[a.ch.length - 1];
+        const has = last.l.some(l => (Array.isArray(l) && l[2] === f) || (l && l.c && l.c.o.some(o => o.f === f)));
+        if (!has) problems.push(`${a.id}: il finale ${f} non ha battute proprie nell'ultimo capitolo`);
+      });
   }
   problems.forEach(p => console.log('    - ' + p));
   ok(!problems.length, `${ARCS.length} storie, ${Object.keys(CH).length} personaggi, ${produced.size} scelte: nessuna incoerenza`);
 }
 
-
 async function tapWorld(page, wx, wy) {
-  const pt = await page.evaluate(([wx, wy]) => { const C = window.__cafe, cv = document.querySelector('#c'), r = cv.getBoundingClientRect();
-    if ((wx - C.camX) * C.S / C.DPR < 10 || (wx - C.camX) * C.S / C.DPR > innerWidth - 10) C.camX = Math.max(0, Math.min(C.W - Math.ceil(cv.width / C.S), wx - Math.ceil(cv.width / C.S) / 2));
-    return { x: (wx - C.camX) * C.S / C.DPR + r.left, y: wy * C.S / C.DPR + r.top }; }, [wx, wy]);
+  const pt = await page.evaluate(
+    ([wx, wy]) => {
+      const C = window.__cafe,
+        cv = document.querySelector('#c'),
+        r = cv.getBoundingClientRect();
+      if (((wx - C.camX) * C.S) / C.DPR < 10 || ((wx - C.camX) * C.S) / C.DPR > innerWidth - 10)
+        C.camX = Math.max(0, Math.min(C.W - Math.ceil(cv.width / C.S), wx - Math.ceil(cv.width / C.S) / 2));
+      return { x: ((wx - C.camX) * C.S) / C.DPR + r.left, y: (wy * C.S) / C.DPR + r.top };
+    },
+    [wx, wy]
+  );
   await page.mouse.click(pt.x, pt.y);
 }
 
 async function playMini(page, kind, itemId) {
-  await page.evaluate(([kind, itemId]) => {
-    const C = window.__cafe; const it = C.MENU.find(m => m.id === itemId);
-    C.openMini({ order: it, type: 'normale', req: { mg: kind, t: 'Test' }, x: 0, y: 0 });
-  }, [kind, itemId]);
-  const mini = () => page.evaluate(() => { const m = window.__cafe.mini; return m && { pos: m.pos, zone: m.zone, done: m.done, q: m.q, lock: m.lock, arm: m.arm, phase: m.phase, seq: m.seq, hold: m.hold, k: m.k }; });
+  await page.evaluate(
+    ([kind, itemId]) => {
+      const C = window.__cafe;
+      const it = C.MENU.find(m => m.id === itemId);
+      C.openMini({ order: it, type: 'normale', req: { mg: kind, t: 'Test' }, x: 0, y: 0 });
+    },
+    [kind, itemId]
+  );
+  const mini = () =>
+    page.evaluate(() => {
+      const m = window.__cafe.mini;
+      return (
+        m && { pos: m.pos, zone: m.zone, done: m.done, q: m.q, lock: m.lock, arm: m.arm, phase: m.phase, seq: m.seq, hold: m.hold, k: m.k }
+      );
+    });
   const t0 = Date.now();
   let holding = false;
   while (Date.now() - t0 < 15000) {
     const m = await mini();
     if (!m || m.done) break;
-    if (m.lock || !m.arm) { await sleep(30); continue; }
-    const mid = (m.zone[0] + m.zone[1]) / 2, inZ = m.pos >= m.zone[0] + .01 && m.pos <= m.zone[1] - .01;
-    if (kind === 'latte' || kind === 'padella') { if (Math.abs(m.pos - mid) < .03) await page.evaluate(() => window.__cafe.miniDown({ target: document.body })); }
-    else if (kind === 'monta') {
-      if (!m.hold && !holding) { await page.evaluate(() => window.__cafe.miniDown({ target: document.body })); holding = true; }
-      else if (m.hold && m.pos >= mid - .02) { await page.evaluate(() => window.__cafe.miniUp()); holding = false; }
-      else if (!m.hold) holding = false;
+    if (m.lock || !m.arm) {
+      await sleep(30);
+      continue;
     }
-    else if (kind === 'shaker') { if (m.pos < mid) await page.evaluate(() => window.__cafe.miniDown({ target: document.body })); }
-    else if (kind === 'vetrina') {
-      if (m.phase === 'pick') { for (const i of m.seq) { await page.click(`#mopts button[data-i="${i}"]`); await sleep(60); } }
+    const mid = (m.zone[0] + m.zone[1]) / 2,
+      inZ = m.pos >= m.zone[0] + 0.01 && m.pos <= m.zone[1] - 0.01;
+    if (kind === 'latte' || kind === 'padella') {
+      if (Math.abs(m.pos - mid) < 0.03) await page.evaluate(() => window.__cafe.miniDown({ target: document.body }));
+    } else if (kind === 'monta') {
+      if (!m.hold && !holding) {
+        await page.evaluate(() => window.__cafe.miniDown({ target: document.body }));
+        holding = true;
+      } else if (m.hold && m.pos >= mid - 0.02) {
+        await page.evaluate(() => window.__cafe.miniUp());
+        holding = false;
+      } else if (!m.hold) holding = false;
+    } else if (kind === 'shaker') {
+      if (m.pos < mid) await page.evaluate(() => window.__cafe.miniDown({ target: document.body }));
+    } else if (kind === 'vetrina') {
+      if (m.phase === 'pick') {
+        for (const i of m.seq) {
+          await page.click(`#mopts button[data-i="${i}"]`);
+          await sleep(60);
+        }
+      }
     }
     await sleep(8);
   }
@@ -119,146 +206,446 @@ async function playMini(page, kind, itemId) {
   validateData(await page.evaluate(() => ({ ARCS: window.__cafe.ARCS, CH: window.__cafe.CH })));
 
   {
-    const bad = await page.evaluate(() => { const C = window.__cafe, out = [];
-      C.FILI.forEach(F => { if (F.b.length !== 3) out.push(F.id + ': servono 3 visite');
-        const ch = F.b[1].find(l => l && l.c); if (!ch || ch.c.o.length !== 2) out.push(F.id + ': manca la scelta a metà');
-        const fl = ch ? ch.c.o.map(o => o.f) : []; ['@a', '@b'].forEach(f => { if (!fl.includes(f)) out.push(F.id + ': scelta ' + f + ' mancante'); if (!F.b[2].some(l => Array.isArray(l) && l[2] === f)) out.push(F.id + ': il finale ' + f + ' non ha battute'); if (!F.e[f.slice(1)]) out.push(F.id + ': testo del finale ' + f + ' mancante'); });
-        F.b.forEach((b, i) => b.forEach(l => { if (Array.isArray(l) && (l[0] !== 0 || !l[1])) out.push(F.id + '/' + i + ': battuta non valida'); })); });
-      return out; });
+    const bad = await page.evaluate(() => {
+      const C = window.__cafe,
+        out = [];
+      C.FILI.forEach(F => {
+        if (F.b.length !== 3) out.push(F.id + ': servono 3 visite');
+        const ch = F.b[1].find(l => l && l.c);
+        if (!ch || ch.c.o.length !== 2) out.push(F.id + ': manca la scelta a metà');
+        const fl = ch ? ch.c.o.map(o => o.f) : [];
+        ['@a', '@b'].forEach(f => {
+          if (!fl.includes(f)) out.push(F.id + ': scelta ' + f + ' mancante');
+          if (!F.b[2].some(l => Array.isArray(l) && l[2] === f)) out.push(F.id + ': il finale ' + f + ' non ha battute');
+          if (!F.e[f.slice(1)]) out.push(F.id + ': testo del finale ' + f + ' mancante');
+        });
+        F.b.forEach((b, i) =>
+          b.forEach(l => {
+            if (Array.isArray(l) && (l[0] !== 0 || !l[1])) out.push(F.id + '/' + i + ': battuta non valida');
+          })
+        );
+      });
+      return out;
+    });
     bad.forEach(b => console.log('    - ' + b));
     ok(!bad.length, `vite degli habitué: ${await page.evaluate(() => window.__cafe.FILI.length)} storie coerenti`);
-    const bad2 = await page.evaluate(() => { const C = window.__cafe, out = [], produced = new Set();
-      C.ARCS.forEach(a => a.ch.forEach(c => c.l.forEach(l => { if (l && l.c) l.c.o.forEach(o => produced.add(o.f)); })));
+    const bad2 = await page.evaluate(() => {
+      const C = window.__cafe,
+        out = [],
+        produced = new Set();
+      C.ARCS.forEach(a =>
+        a.ch.forEach(c =>
+          c.l.forEach(l => {
+            if (l && l.c) l.c.o.forEach(o => produced.add(o.f));
+          })
+        )
+      );
       const ids = new Set();
-      C.XS.concat(C.XEPI).forEach(x => { if (ids.has(x.id)) out.push(x.id + ': id doppio'); ids.add(x.id);
-        x.w.forEach(k => { if (!C.CH[k]) out.push(x.id + ': personaggio ' + k + ' mancante'); if (!C.KEYS[k]) out.push(x.id + ': ' + k + ' non diventa mai habitué'); });
-        x.l.forEach((l, i) => { if (!(l[0] >= 0 && l[0] < x.w.length) || !l[1]) out.push(x.id + '/' + i + ': battuta non valida'); if (l[2] && !produced.has(l[2])) out.push(x.id + '/' + i + ': condizione ' + l[2] + ' mai scelta'); }); });
-      C.FILI2.forEach(F => { if (F.b.length !== 3) out.push(F.id + ': servono 3 visite'); const ch = F.b[1].find(l => l && l.c);
-        if (!ch || ch.c.o.length !== 2) out.push(F.id + ': manca la scelta'); ['@a', '@b'].forEach(f => { if (!F.b[2].some(l => Array.isArray(l) && l[2] === f)) out.push(F.id + ': finale ' + f + ' senza battute'); if (!F.e[f.slice(1)]) out.push(F.id + ': testo finale ' + f); });
-        F.b.forEach((b, i) => b.forEach(l => { if (Array.isArray(l) && (!(l[0] === 0 || l[0] === 1) || !l[1])) out.push(F.id + '/' + i + ': battuta non valida'); })); });
-      Object.entries(C.KEYS).forEach(([k, K]) => { if (!C.CH[k]) out.push('KEYS ' + k + ' senza personaggio'); if (!C.MENU.find(m => m.id === K.fav)) out.push('KEYS ' + k + ': ordine ' + K.fav); K.l.forEach(x => { if (Array.isArray(x) && !produced.has(x[1])) out.push('KEYS ' + k + ': condizione ' + x[1]); }); });
-      return out; });
+      C.XS.concat(C.XEPI).forEach(x => {
+        if (ids.has(x.id)) out.push(x.id + ': id doppio');
+        ids.add(x.id);
+        x.w.forEach(k => {
+          if (!C.CH[k]) out.push(x.id + ': personaggio ' + k + ' mancante');
+          if (!C.KEYS[k]) out.push(x.id + ': ' + k + ' non diventa mai habitué');
+        });
+        x.l.forEach((l, i) => {
+          if (!(l[0] >= 0 && l[0] < x.w.length) || !l[1]) out.push(x.id + '/' + i + ': battuta non valida');
+          if (l[2] && !produced.has(l[2])) out.push(x.id + '/' + i + ': condizione ' + l[2] + ' mai scelta');
+        });
+      });
+      C.FILI2.forEach(F => {
+        if (F.b.length !== 3) out.push(F.id + ': servono 3 visite');
+        const ch = F.b[1].find(l => l && l.c);
+        if (!ch || ch.c.o.length !== 2) out.push(F.id + ': manca la scelta');
+        ['@a', '@b'].forEach(f => {
+          if (!F.b[2].some(l => Array.isArray(l) && l[2] === f)) out.push(F.id + ': finale ' + f + ' senza battute');
+          if (!F.e[f.slice(1)]) out.push(F.id + ': testo finale ' + f);
+        });
+        F.b.forEach((b, i) =>
+          b.forEach(l => {
+            if (Array.isArray(l) && (!(l[0] === 0 || l[0] === 1) || !l[1])) out.push(F.id + '/' + i + ': battuta non valida');
+          })
+        );
+      });
+      Object.entries(C.KEYS).forEach(([k, K]) => {
+        if (!C.CH[k]) out.push('KEYS ' + k + ' senza personaggio');
+        if (!C.MENU.find(m => m.id === K.fav)) out.push('KEYS ' + k + ': ordine ' + K.fav);
+        K.l.forEach(x => {
+          if (Array.isArray(x) && !produced.has(x[1])) out.push('KEYS ' + k + ': condizione ' + x[1]);
+        });
+      });
+      return out;
+    });
     bad2.forEach(b => console.log('    - ' + b));
-    ok(!bad2.length, `intrecci: ${await page.evaluate(() => window.__cafe.XS.length + ' incontri, ' + window.__cafe.XEPI.length + ' epiloghi, ' + window.__cafe.FILI2.length + ' vite a due')} coerenti`);
+    ok(
+      !bad2.length,
+      `intrecci: ${await page.evaluate(() => window.__cafe.XS.length + ' incontri, ' + window.__cafe.XEPI.length + ' epiloghi, ' + window.__cafe.FILI2.length + ' vite a due')} coerenti`
+    );
   }
   {
     // i tocchi sullo schermo fuori dal pulsante, e quelli durante il «Pronto…», non contano
-    await page.evaluate(() => { const C = window.__cafe; C.openMini({ order: C.MENU.find(m => m.id === 'capp'), type: 'normale', req: { mg: 'latte', t: 'Test' }, x: 0, y: 0 }); });
+    await page.evaluate(() => {
+      const C = window.__cafe;
+      C.openMini({ order: C.MENU.find(m => m.id === 'capp'), type: 'normale', req: { mg: 'latte', t: 'Test' }, x: 0, y: 0 });
+    });
     await sleep(100);
-    for (let i = 0; i < 6; i++) { await page.mouse.click(30, 30 + i * 10); await page.locator('#mbtn').dispatchEvent('pointerdown'); await sleep(40); }
+    for (let i = 0; i < 6; i++) {
+      await page.mouse.click(30, 30 + i * 10);
+      await page.locator('#mbtn').dispatchEvent('pointerdown');
+      await sleep(40);
+    }
     const early = await page.evaluate(() => window.__cafe.mini.score.length);
     await sleep(1000);
-    for (let i = 0; i < 5; i++) { await page.mouse.click(20, 20); await sleep(30); }
+    for (let i = 0; i < 5; i++) {
+      await page.mouse.click(20, 20);
+      await sleep(30);
+    }
     const outside = await page.evaluate(() => window.__cafe.mini.score.length);
-    await page.locator('#mbtn').dispatchEvent('pointerdown'); await sleep(50);
+    await page.locator('#mbtn').dispatchEvent('pointerdown');
+    await sleep(50);
     const onBtn = await page.evaluate(() => window.__cafe.mini.score.length);
-    ok(early === 0 && outside === 0 && onBtn === 1, `minigioco: ignorati i tocchi durante «Pronto» (${early}) e fuori dal pulsante (${outside}), il pulsante conta (${onBtn})`);
-    await page.evaluate(() => { const C = window.__cafe, m = C.mini; m.done = true; C.finishMini(); });
+    ok(
+      early === 0 && outside === 0 && onBtn === 1,
+      `minigioco: ignorati i tocchi durante «Pronto» (${early}) e fuori dal pulsante (${outside}), il pulsante conta (${onBtn})`
+    );
+    await page.evaluate(() => {
+      const C = window.__cafe,
+        m = C.mini;
+      m.done = true;
+      C.finishMini();
+    });
   }
-  for (const [k, id] of [['latte', 'capp'], ['monta', 'capp'], ['monta', 'caffe'], ['padella', 'toast'], ['shaker', 'smooth'], ['vetrina', 'cake']]) await playMini(page, k, id);
+  for (const [k, id] of [
+    ['latte', 'capp'],
+    ['monta', 'capp'],
+    ['monta', 'caffe'],
+    ['padella', 'toast'],
+    ['shaker', 'smooth'],
+    ['vetrina', 'cake']
+  ])
+    await playMini(page, k, id);
 
   console.log('Bancone e tavoli');
-  await page.evaluate(() => window.__cafe.speed = 1);
+  await page.evaluate(() => (window.__cafe.speed = 1));
   const coins0 = await page.evaluate(() => window.__cafe.st.coins);
   // aspetta un cliente al bancone e servilo col pulsante
-  for (let i = 0; i < 200; i++) { const q = await page.evaluate(() => { const q = window.__cafe.queue[0]; return q && q.state === 'order' && !q.special; }); if (q) break; await sleep(100); }
-  const noSpecial = () => page.evaluate(() => { const C = window.__cafe; C.queue.forEach(q => { q.special = false; q.req = null; }); if (C.mini) { C.mini.done = true; C.finishMini(); } });
-  for (let i = 0; i < 30; i++) { await noSpecial(); await page.locator('#serve').dispatchEvent('pointerdown'); await sleep(40); }
+  for (let i = 0; i < 200; i++) {
+    const q = await page.evaluate(() => {
+      const q = window.__cafe.queue[0];
+      return q && q.state === 'order' && !q.special;
+    });
+    if (q) break;
+    await sleep(100);
+  }
+  const noSpecial = () =>
+    page.evaluate(() => {
+      const C = window.__cafe;
+      C.queue.forEach(q => {
+        q.special = false;
+        q.req = null;
+      });
+      if (C.mini) {
+        C.mini.done = true;
+        C.finishMini();
+      }
+    });
+  for (let i = 0; i < 30; i++) {
+    await noSpecial();
+    await page.locator('#serve').dispatchEvent('pointerdown');
+    await sleep(40);
+  }
   await noSpecial();
   ok(await page.evaluate(c => window.__cafe.st.coins > c, coins0), 'il pulsante Servi serve i clienti');
   const pts = await page.evaluate(() => {
-    const C = window.__cafe, cv = document.querySelector('#c'), r = cv.getBoundingClientRect();
+    const C = window.__cafe,
+      cv = document.querySelector('#c'),
+      r = cv.getBoundingClientRect();
     C.camX = Math.max(0, C.counterX + 86 - Math.ceil(cv.width / C.S));
     const out = [];
-    C.slots.forEach(sl => { if (sl.k < C.cols && sl.k < C.st.space) { sl.seats.forEach(s => { if (!s.occ) { s.dirty = true; s._t = 1; } }); out.push({ x: (sl.x - C.camX) * C.S / C.DPR + r.left, y: (sl.y - 8) * C.S / C.DPR + r.top }); } });
+    C.slots.forEach(sl => {
+      if (sl.k < C.cols && sl.k < C.st.space) {
+        sl.seats.forEach(s => {
+          if (!s.occ) {
+            s.dirty = true;
+            s._t = 1;
+          }
+        });
+        out.push({ x: ((sl.x - C.camX) * C.S) / C.DPR + r.left, y: ((sl.y - 8) * C.S) / C.DPR + r.top });
+      }
+    });
     return out.filter(p => p.x > 0 && p.x < innerWidth);
   });
-  for (const p of pts) { await page.mouse.click(p.x, p.y); await sleep(60); }
-  const dirty = await page.evaluate(() => window.__cafe.slots.some(sl => sl.seats.some(s => { const d = s._t && s.dirty; delete s._t; return d; })));
+  for (const p of pts) {
+    await page.mouse.click(p.x, p.y);
+    await sleep(60);
+  }
+  const dirty = await page.evaluate(() =>
+    window.__cafe.slots.some(sl =>
+      sl.seats.some(s => {
+        const d = s._t && s.dirty;
+        delete s._t;
+        return d;
+      })
+    )
+  );
   ok(pts.length > 0 && !dirty, `toccando i tavoli (${pts.length}) si puliscono, anche vicino al bancone`);
 
   console.log('Pannelli');
   for (const p of ['up', 'cli', 'day', 'set']) {
-    await page.click(`#hud button[data-p="${p}"]`); await sleep(150);
+    await page.click(`#hud button[data-p="${p}"]`);
+    await sleep(150);
     const tabs = await page.$$eval('#tabs button', b => b.map(x => x.textContent));
-    for (const t of tabs) { await page.click(`#tabs button:has-text("${t}")`); await sleep(60); }
+    for (const t of tabs) {
+      await page.click(`#tabs button:has-text("${t}")`);
+      await sleep(60);
+    }
     ok(true, `pannello ${p} (${tabs.join(', ') || 'senza schede'})`);
-    await page.click('#pclose'); await sleep(250);
+    await page.click('#pclose');
+    await sleep(250);
   }
-  await page.click('#hud button[data-p="up"]'); await sleep(150);
-  await page.click('#tabs button:has-text("Staff")'); await sleep(100);
+  await page.click('#hud button[data-p="up"]');
+  await sleep(150);
+  await page.click('#tabs button:has-text("Staff")');
+  await sleep(100);
   const g0 = await page.evaluate(() => window.__cafe.st.grinder);
-  await page.click('button[data-u="grinder"]'); await sleep(100);
+  await page.click('button[data-u="grinder"]');
+  await sleep(100);
   ok(await page.evaluate(g => window.__cafe.st.grinder === g + 1, g0), 'si può comprare un miglioramento (macinino)');
-  await page.click('#pclose'); await sleep(250);
-
+  await page.click('#pclose');
+  await sleep(250);
 
   console.log('Vite degli habitué');
   {
-    await page.evaluate(() => { const C = window.__cafe; C.speed = 8; C.st.regs.push({ id: 'rtest', n: 'Tester', look: C.CH.mia.l, type: 'studente', fav: 'caffe', v: 5, f: 5, tr: ['nerd'] }); });
+    await page.evaluate(() => {
+      const C = window.__cafe;
+      C.speed = 8;
+      C.st.regs.push({ id: 'rtest', n: 'Tester', look: C.CH.mia.l, type: 'studente', fav: 'caffe', v: 5, f: 5, tr: ['nerd'] });
+    });
     let ok3 = true;
     for (let step = 0; step < 3; step++) {
-      await page.evaluate(step => { const C = window.__cafe, r = C.st.regs.find(x => x.id === 'rtest'); if (r.fl) r.fl.day = -5;
-        const seat = C.slots.slice(0, C.st.tables).flatMap(sl => sl.seats).find(q => !q.occ && !q.res) || C.slots[0].seats[0];
-        const c = { id: 9e6 + step, look: r.look, name: r.n, reg: r, type: 'studente', x: seat.x, y: seat.y, state: 'sit', face: 1, order: C.MENU[0], seat, mood: 80, sitT: 999, thinkT: 999, sipT: 9, act: '' }; seat.occ = c; seat.dirty = false; C.people.push(c); C.startFilo(c); }, step);
+      await page.evaluate(step => {
+        const C = window.__cafe,
+          r = C.st.regs.find(x => x.id === 'rtest');
+        if (r.fl) r.fl.day = -5;
+        const seat =
+          C.slots
+            .slice(0, C.st.tables)
+            .flatMap(sl => sl.seats)
+            .find(q => !q.occ && !q.res) || C.slots[0].seats[0];
+        const c = {
+          id: 9e6 + step,
+          look: r.look,
+          name: r.n,
+          reg: r,
+          type: 'studente',
+          x: seat.x,
+          y: seat.y,
+          state: 'sit',
+          face: 1,
+          order: C.MENU[0],
+          seat,
+          mood: 80,
+          sitT: 999,
+          thinkT: 999,
+          sipT: 9,
+          act: ''
+        };
+        seat.occ = c;
+        seat.dirty = false;
+        C.people.push(c);
+        C.startFilo(c);
+      }, step);
       for (let i = 0; i < 150; i++) {
         if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=1');
         const left = await page.evaluate(() => window.__cafe.scenes.some(s => s.story === 'filo'));
-        if (!left) break; await sleep(100);
+        if (!left) break;
+        await sleep(100);
       }
-      await page.evaluate(() => { const C = window.__cafe; C.people.filter(p => p.id >= 9e6).forEach(p => { p.dead = true; if (p.seat) p.seat.occ = null; }); });
+      await page.evaluate(() => {
+        const C = window.__cafe;
+        C.people
+          .filter(p => p.id >= 9e6)
+          .forEach(p => {
+            p.dead = true;
+            if (p.seat) p.seat.occ = null;
+          });
+      });
     }
-    const res = await page.evaluate(() => { const C = window.__cafe, r = C.st.regs.find(x => x.id === 'rtest'); return { fl: r.fl, done: (C.st.fdone || [])[0] }; });
-    ok(!res.fl && res.done && res.done.n === 'Tester' && res.done.log.length === 3 && res.done.log[1].ch, `una vita completa in 3 visite con una scelta: «${res.done && res.done.t}» → ${res.done && res.done.e}`);
-    await page.evaluate(() => window.__cafe.speed = 1);
-    await page.click('#hud button[data-p="cli"]'); await sleep(150);
-    await page.click('#tabs button:has-text("Vite")'); await sleep(100);
-    await page.click('button[data-fd="0"]'); await sleep(150);
+    const res = await page.evaluate(() => {
+      const C = window.__cafe,
+        r = C.st.regs.find(x => x.id === 'rtest');
+      return { fl: r.fl, done: (C.st.fdone || [])[0] };
+    });
+    ok(
+      !res.fl && res.done && res.done.n === 'Tester' && res.done.log.length === 3 && res.done.log[1].ch,
+      `una vita completa in 3 visite con una scelta: «${res.done && res.done.t}» → ${res.done && res.done.e}`
+    );
+    await page.evaluate(() => (window.__cafe.speed = 1));
+    await page.click('#hud button[data-p="cli"]');
+    await sleep(150);
+    await page.click('#tabs button:has-text("Vite")');
+    await sleep(100);
+    await page.click('button[data-fd="0"]');
+    await sleep(150);
     const rtxt = await page.textContent('#rtext');
-    await page.click('#rnext'); await sleep(80); await page.click('#rnext'); await sleep(80);
+    await page.click('#rnext');
+    await sleep(80);
+    await page.click('#rnext');
+    await sleep(80);
     const endTxt = await page.textContent('#rtext .end').catch(() => '');
-    ok(rtxt.length > 40 && endTxt.length > 10 && await page.isVisible('#rport img'), 'il Diario si legge come un libro, con ritratti e finale');
-    await page.click('#rclose'); await sleep(100);
-    await page.click('#tabs button:has-text("Storie")'); await sleep(100);
+    ok(
+      rtxt.length > 40 && endTxt.length > 10 && (await page.isVisible('#rport img')),
+      'il Diario si legge come un libro, con ritratti e finale'
+    );
+    await page.click('#rclose');
+    await sleep(100);
+    await page.click('#tabs button:has-text("Storie")');
+    await sleep(100);
     const chap = await page.$('button[data-rd]');
-    if (chap) { await chap.click(); await sleep(120); ok((await page.textContent('#rtext')).length > 20, 'si rilegge un capitolo delle storie principali'); await page.click('#rclose'); await sleep(80); }
-    await page.click('#pclose'); await sleep(250);
+    if (chap) {
+      await chap.click();
+      await sleep(120);
+      ok((await page.textContent('#rtext')).length > 20, 'si rilegge un capitolo delle storie principali');
+      await page.click('#rclose');
+      await sleep(80);
+    }
+    await page.click('#pclose');
+    await sleep(250);
   }
 
   console.log('Animali da compagnia');
   {
-    const r = await page.evaluate(async () => { const C = window.__cafe; C.st.petted = {}; delete C.st.found.cuccioli;
-      const kinds = ['cane', 'gatto', 'coniglio', 'uccellino', 'cane'], out = { follow: true, hearts: 0 };
-      for (let i = 0; i < 5; i++) { const reg = { id: 'rp' + i, n: 'Pet' + i, look: C.CH.mia.l, type: 'normale', fav: 'caffe', v: 3, f: 2, tr: [], petR: 1, pet: Object.assign(C.randPet('normale'), { k: kinds[i], n: 'Bestiolina' + i }) };
-        C.st.regs.push(reg); const c = C.newCust({ look: reg.look, name: reg.n, reg, type: 'normale' });
-        if (!c.pet || c.pet.n !== 'Bestiolina' + i) out.follow = false; }
+    const r = await page.evaluate(async () => {
+      const C = window.__cafe;
+      C.st.petted = {};
+      delete C.st.found.cuccioli;
+      const kinds = ['cane', 'gatto', 'coniglio', 'uccellino', 'cane'],
+        out = { follow: true, hearts: 0 };
+      for (let i = 0; i < 5; i++) {
+        const reg = {
+          id: 'rp' + i,
+          n: 'Pet' + i,
+          look: C.CH.mia.l,
+          type: 'normale',
+          fav: 'caffe',
+          v: 3,
+          f: 2,
+          tr: [],
+          petR: 1,
+          pet: Object.assign(C.randPet('normale'), { k: kinds[i], n: 'Bestiolina' + i })
+        };
+        C.st.regs.push(reg);
+        const c = C.newCust({ look: reg.look, name: reg.n, reg, type: 'normale' });
+        if (!c.pet || c.pet.n !== 'Bestiolina' + i) out.follow = false;
+      }
       await new Promise(r => setTimeout(r, 1500));
       const mine = C.people.filter(p => p.pet && /^Bestiolina/.test(p.pet.n));
-      mine.forEach(c => { if (c.pet.k !== 'uccellino' && Math.hypot(c.pet.x - c.x, c.pet.y - c.y) > 14) out.follow = false; });
-      mine.forEach((c, i) => { c.pet.x = 500 + i * 40; c.pet.y = 170; });
-      mine.forEach(c => { if (C.tapPet(c.pet.x, c.pet.y - 2)) out.hearts++; });
-      out.egg = !!C.st.found.cuccioli; return out; });
+      mine.forEach(c => {
+        if (c.pet.k !== 'uccellino' && Math.hypot(c.pet.x - c.x, c.pet.y - c.y) > 14) out.follow = false;
+      });
+      mine.forEach((c, i) => {
+        c.pet.x = 500 + i * 40;
+        c.pet.y = 170;
+      });
+      mine.forEach(c => {
+        if (C.tapPet(c.pet.x, c.pet.y - 2)) out.hearts++;
+      });
+      out.egg = !!C.st.found.cuccioli;
+      return out;
+    });
     ok(r.follow, 'gli animali entrano col padrone e lo seguono');
     ok(r.hearts === 5 && r.egg, `si accarezzano (${r.hearts}/5) e cinque animali diversi svelano un segreto`);
   }
 
   {
     // due cani con i padroni seduti vicini: si incontrano, diventano amici e fanno conoscere i padroni
-    await page.evaluate(() => { const C = window.__cafe; C.speed = 1; C.people.forEach(p => { p.dead = true; if (p.seat) p.seat.occ = null; }); C.queue.length = 0; C.st.petf = {};
+    await page.evaluate(() => {
+      const C = window.__cafe;
+      C.speed = 1;
+      C.people.forEach(p => {
+        p.dead = true;
+        if (p.seat) p.seat.occ = null;
+      });
+      C.queue.length = 0;
+      C.st.petf = {};
       const seats = C.slots[0].seats.concat(C.slots[2].seats);
-      [['rd1', 'Uno', 'Rex'], ['rd2', 'Due', 'Fido']].forEach(([id, n, pn], i) => { const reg = { id, n, look: C.CH.luca.l, type: 'normale', fav: 'caffe', v: 3, f: 2, tr: [], petR: 1, pet: { k: 'cane', n: pn, c: '#c98a4a', c2: '#8a5a3a', s: '' } };
-        C.st.regs.push(reg); const seat = seats[i]; seat.dirty = false; seat.res = null; const c = C.newCust({ look: reg.look, name: n, reg, type: 'normale' });
-        C.queue.splice(C.queue.indexOf(c), 1); Object.assign(c, { state: 'sit', seat, x: seat.x, y: seat.y, sitT: 999, thinkT: 999, order: C.MENU[0], mood: 80 }); seat.occ = c; c.pet.x = seat.x + seat.side * 8; c.pet.y = seat.y + 2; }); });
+      [
+        ['rd1', 'Uno', 'Rex'],
+        ['rd2', 'Due', 'Fido']
+      ].forEach(([id, n, pn], i) => {
+        const reg = {
+          id,
+          n,
+          look: C.CH.luca.l,
+          type: 'normale',
+          fav: 'caffe',
+          v: 3,
+          f: 2,
+          tr: [],
+          petR: 1,
+          pet: { k: 'cane', n: pn, c: '#c98a4a', c2: '#8a5a3a', s: '' }
+        };
+        C.st.regs.push(reg);
+        const seat = seats[i];
+        seat.dirty = false;
+        seat.res = null;
+        const c = C.newCust({ look: reg.look, name: n, reg, type: 'normale' });
+        C.queue.splice(C.queue.indexOf(c), 1);
+        Object.assign(c, { state: 'sit', seat, x: seat.x, y: seat.y, sitT: 999, thinkT: 999, order: C.MENU[0], mood: 80 });
+        seat.occ = c;
+        c.pet.x = seat.x + seat.side * 8;
+        c.pet.y = seat.y + 2;
+      });
+    });
     for (let round = 0; round < 2; round++) {
       await page.evaluate(() => window.__cafe.petSocial(30));
-      for (let i = 0; i < 120; i++) { const busy = await page.evaluate(() => window.__cafe.people.some(p => p.pet && (p.pet.visit || p.pet.moving))); if (!busy && i > 3) break; await sleep(100); }
+      for (let i = 0; i < 120; i++) {
+        const busy = await page.evaluate(() => window.__cafe.people.some(p => p.pet && (p.pet.visit || p.pet.moving)));
+        if (!busy && i > 3) break;
+        await sleep(100);
+      }
     }
-    const r = await page.evaluate(() => { const C = window.__cafe; return { f: (C.st.petf || {})['caneFido|caneRex'], rel: !!C.st.rel['rd1|rd2'], egg: !!C.st.found.zampe }; });
+    const r = await page.evaluate(() => {
+      const C = window.__cafe;
+      return { f: (C.st.petf || {})['caneFido|caneRex'], rel: !!C.st.rel['rd1|rd2'], egg: !!C.st.found.zampe };
+    });
     ok(r.f >= 2 && r.rel && r.egg, `due cani si incontrano ${r.f || 0} volte, diventano amici e i padroni si conoscono`);
-    const hiss = await page.evaluate(() => { const C = window.__cafe; C.st.cat = 1; const c = C.people.find(p => p.pet && p.pet.n === 'Rex'); c.pet.visit = null; c.pet.x = C.counterX - 5; for (let i = 0; i < 80 && !C.catHissT; i++) C.petSocial(.5); return C.catHissT > 0 && !!C.st.found.soffio; });
+    const hiss = await page.evaluate(() => {
+      const C = window.__cafe;
+      C.st.cat = 1;
+      const c = C.people.find(p => p.pet && p.pet.n === 'Rex');
+      c.pet.visit = null;
+      c.pet.x = C.counterX - 5;
+      for (let i = 0; i < 80 && !C.catHissT; i++) C.petSocial(0.5);
+      return C.catHissT > 0 && !!C.st.found.soffio;
+    });
     ok(hiss, 'il gatto del locale soffia al cane vicino al bancone');
-    if (!hiss) console.log(await page.evaluate(() => { const C = window.__cafe; const c = C.people.find(p => p.pet && p.pet.n === 'Rex'); return JSON.stringify({ c: !!c, dead: c && c.dead, x: c && c.pet.x, cx: C.counterX, visit: c && !!c.pet.visit, cat: C.st.cat, t: C.catHissT, found: C.st.found.soffio }); }));
-    await page.evaluate(() => { const C = window.__cafe; C.people.forEach(p => { if (p.reg && /^rd/.test(p.reg.id)) { p.dead = true; if (p.seat) p.seat.occ = null; } }); });
+    if (!hiss)
+      console.log(
+        await page.evaluate(() => {
+          const C = window.__cafe;
+          const c = C.people.find(p => p.pet && p.pet.n === 'Rex');
+          return JSON.stringify({
+            c: !!c,
+            dead: c && c.dead,
+            x: c && c.pet.x,
+            cx: C.counterX,
+            visit: c && !!c.pet.visit,
+            cat: C.st.cat,
+            t: C.catHissT,
+            found: C.st.found.soffio
+          });
+        })
+      );
+    await page.evaluate(() => {
+      const C = window.__cafe;
+      C.people.forEach(p => {
+        if (p.reg && /^rd/.test(p.reg.id)) {
+          p.dead = true;
+          if (p.seat) p.seat.occ = null;
+        }
+      });
+    });
   }
 
   console.log('Personaggi chiave, intrecci e vita autonoma');
@@ -266,114 +653,319 @@ async function playMini(page, kind, itemId) {
     const seatPair = `(C, a, b, si) => { const sl = C.slots[si]; sl.seats.forEach(q => { q.occ = null; q.dirty = false; q.res = null; });
       return [a, b].map((r, i) => { const seat = sl.seats[i]; const c = C.newCust({ look: r.look, name: r.n, reg: r, type: r.type }); C.queue.splice(C.queue.indexOf(c), 1);
         Object.assign(c, { state: 'sit', seat, x: seat.x, y: seat.y, sitT: 999, thinkT: 999, order: C.MENU[0], mood: 80, face: -seat.side }); seat.occ = c; if (c.pet) { c.pet.x = seat.x; c.pet.y = seat.y + 2; } return c; }); }`;
-    const clear = () => page.evaluate(() => { const C = window.__cafe; C.people.forEach(p => { p.dead = true; if (p.seat) p.seat.occ = null; }); C.queue.length = 0; C.scenes.length = 0; });
+    const clear = () =>
+      page.evaluate(() => {
+        const C = window.__cafe;
+        C.people.forEach(p => {
+          p.dead = true;
+          if (p.seat) p.seat.occ = null;
+        });
+        C.queue.length = 0;
+        C.scenes.length = 0;
+      });
     await clear();
-    const k1 = await page.evaluate(() => { const C = window.__cafe, st = C.st; st.story.pioggia = 4; st.story.consegne = 3; st.flags.pioggia = 'adesso'; st.flags.consegne = 'qui'; C.ensureKeyRegs();
-      const m = C.keyReg('mia'), l = C.keyReg('luca'), r = C.keyReg('rosa'); return { ok: !!(m && l && r && C.keyReg('kenji')), rel: m && l && st.rel[[m.id, l.id].sort().join('|')], bianca: !!C.keyReg('bianca') }; });
-    ok(k1.ok && k1.rel && k1.rel.k === 'coppia' && !k1.bianca, `finita la storia, i personaggi chiave diventano habitué con i loro legami (Mia e Luca: ${k1.rel && k1.rel.k})`);
+    const k1 = await page.evaluate(() => {
+      const C = window.__cafe,
+        st = C.st;
+      st.story.pioggia = 4;
+      st.story.consegne = 3;
+      st.flags.pioggia = 'adesso';
+      st.flags.consegne = 'qui';
+      C.ensureKeyRegs();
+      const m = C.keyReg('mia'),
+        l = C.keyReg('luca'),
+        r = C.keyReg('rosa');
+      return {
+        ok: !!(m && l && r && C.keyReg('kenji')),
+        rel: m && l && st.rel[[m.id, l.id].sort().join('|')],
+        bianca: !!C.keyReg('bianca')
+      };
+    });
+    ok(
+      k1.ok && k1.rel && k1.rel.k === 'coppia' && !k1.bianca,
+      `finita la storia, i personaggi chiave diventano habitué con i loro legami (Mia e Luca: ${k1.rel && k1.rel.k})`
+    );
     // incontro tra storie diverse: Nonna Rosa e Mia allo stesso tavolo
-    await page.evaluate(`(() => { const C = window.__cafe; const [a, b] = (${seatPair})(C, C.keyReg('rosa'), C.keyReg('mia'), 4); C.relScene(a, b); })()`);
-    for (let i = 0; i < 200; i++) { const busy = await page.evaluate(() => window.__cafe.scenes.length > 0); if (!busy) break; await sleep(100); }
-    ok(await page.evaluate(() => !!(window.__cafe.st.xs || {}).x_rosa_mia), 'incontro tra storie: Nonna Rosa e Mia si conoscono, una volta sola');
+    await page.evaluate(
+      `(() => { const C = window.__cafe; const [a, b] = (${seatPair})(C, C.keyReg('rosa'), C.keyReg('mia'), 4); C.relScene(a, b); })()`
+    );
+    for (let i = 0; i < 200; i++) {
+      const busy = await page.evaluate(() => window.__cafe.scenes.length > 0);
+      if (!busy) break;
+      await sleep(100);
+    }
+    ok(
+      await page.evaluate(() => !!(window.__cafe.st.xs || {}).x_rosa_mia),
+      'incontro tra storie: Nonna Rosa e Mia si conoscono, una volta sola'
+    );
     await clear();
     // vita a due completa: tre incontri, una scelta, finale nel Diario
-    await page.evaluate(() => { const C = window.__cafe, st = C.st; st.regs.push({ id: 'ra', n: 'Ada', look: C.CH.irene.l, type: 'normale', fav: 'caffe', v: 5, f: 5, tr: [], petR: 1 }, { id: 'rb', n: 'Bruno', look: C.CH.gio.l, type: 'normale', fav: 'caffe', v: 5, f: 5, tr: [], petR: 1 }); st.rel['ra|rb'] = { k: 'coppia', lv: 1, d: 1 }; C.speed = 6; });
+    await page.evaluate(() => {
+      const C = window.__cafe,
+        st = C.st;
+      st.regs.push(
+        { id: 'ra', n: 'Ada', look: C.CH.irene.l, type: 'normale', fav: 'caffe', v: 5, f: 5, tr: [], petR: 1 },
+        { id: 'rb', n: 'Bruno', look: C.CH.gio.l, type: 'normale', fav: 'caffe', v: 5, f: 5, tr: [], petR: 1 }
+      );
+      st.rel['ra|rb'] = { k: 'coppia', lv: 1, d: 1 };
+      C.speed = 6;
+    });
     for (let step = 0; step < 3; step++) {
-      await page.evaluate(`(() => { const C = window.__cafe, R = C.st.rel['ra|rb']; if (R.fl) R.fl.day = -9; R.fn = 0; const [a, b] = (${seatPair})(C, C.st.regs.find(r => r.id === 'ra'), C.st.regs.find(r => r.id === 'rb'), 4); C.startDuo(a, b); })()`);
-      for (let i = 0; i < 200; i++) { if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0'); if (!(await page.evaluate(() => window.__cafe.scenes.length))) break; await sleep(80); }
+      await page.evaluate(
+        `(() => { const C = window.__cafe, R = C.st.rel['ra|rb']; if (R.fl) R.fl.day = -9; R.fn = 0; const [a, b] = (${seatPair})(C, C.st.regs.find(r => r.id === 'ra'), C.st.regs.find(r => r.id === 'rb'), 4); C.startDuo(a, b); })()`
+      );
+      for (let i = 0; i < 200; i++) {
+        if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
+        if (!(await page.evaluate(() => window.__cafe.scenes.length))) break;
+        await sleep(80);
+      }
       await clear();
     }
-    const duo = await page.evaluate(() => { const C = window.__cafe, R = C.st.rel['ra|rb'], e = (C.st.fdone || []).find(x => x.duo); return { fl: R.fl, e: e && e.e, n: e && e.n, log: e && e.log.length }; });
+    const duo = await page.evaluate(() => {
+      const C = window.__cafe,
+        R = C.st.rel['ra|rb'],
+        e = (C.st.fdone || []).find(x => x.duo);
+      return { fl: R.fl, e: e && e.e, n: e && e.n, log: e && e.log.length };
+    });
     ok(!duo.fl && duo.e && duo.log === 3, `vita a due completa: ${duo.n} ${duo.e}`);
-    await page.evaluate(() => window.__cafe.speed = 1);
+    await page.evaluate(() => (window.__cafe.speed = 1));
     // vita autonoma: chi è seduto da solo va a sedersi vicino a un amico
-    const moved = await page.evaluate(`(() => { const C = window.__cafe; const ra = C.st.regs.find(r => r.id === 'ra'), rb = C.st.regs.find(r => r.id === 'rb');
+    const moved =
+      await page.evaluate(`(() => { const C = window.__cafe; const ra = C.st.regs.find(r => r.id === 'ra'), rb = C.st.regs.find(r => r.id === 'rb');
       const [a] = (${seatPair})(C, ra, ra, 0); C.people.filter(p => p.reg === ra && p !== a).forEach(p => { p.dead = true; p.seat.occ = null; });
       const [b] = (${seatPair})(C, rb, rb, 4); C.people.filter(p => p.reg === rb && p !== b).forEach(p => { p.dead = true; p.seat.occ = null; });
       a.sitT = b.sitT = 60; let n = 0; for (let i = 0; i < 60 && !n; i++) { C.socialAI(10); n = C.people.filter(p => !p.dead && p.join).length; } return n; })()`);
     ok(moved > 0, 'vita autonoma: un habitué si alza e va a sedersi vicino al suo amore');
     await clear();
     // rituale settimanale: il loro giorno arrivano insieme
-    const rit = await page.evaluate(() => { const C = window.__cafe, st = C.st; st.tod = .4; const R = st.rel['ra|rb']; R.rit = (st.day - 1) % 7; R.ritD = 0; let ok = false; for (let i = 0; i < 30 && !ok; i++) { R.ritD = 0; ok = C.ritual(); } return ok && C.people.some(p => !p.dead && p.reg && p.reg.id === 'ra'); });
+    const rit = await page.evaluate(() => {
+      const C = window.__cafe,
+        st = C.st;
+      st.tod = 0.4;
+      const R = st.rel['ra|rb'];
+      R.rit = (st.day - 1) % 7;
+      R.ritD = 0;
+      let ok = false;
+      for (let i = 0; i < 30 && !ok; i++) {
+        R.ritD = 0;
+        ok = C.ritual();
+      }
+      return ok && C.people.some(p => !p.dead && p.reg && p.reg.id === 'ra');
+    });
     ok(rit, 'rituali: nel loro giorno della settimana due habitué arrivano insieme');
-    if (!rit) console.log(await page.evaluate(() => { const C = window.__cafe, st = C.st, R = st.rel['ra|rb']; return JSON.stringify({ R: { k: R.k, rit: R.rit, ritD: R.ritD, prop: R.prop }, day: st.day, tod: st.tod, pres: C.people.filter(p => p.reg && ['ra', 'rb'].includes(p.reg.id)).map(p => p.dead), free: C.slots.slice(0, st.tables).filter(sl => sl.seats.every(s => !s.occ && !s.dirty && !s.res)).length, w: [C.st.regs.find(r=>r.id==='ra')].map(r=>r.hn) }); }));
+    if (!rit)
+      console.log(
+        await page.evaluate(() => {
+          const C = window.__cafe,
+            st = C.st,
+            R = st.rel['ra|rb'];
+          return JSON.stringify({
+            R: { k: R.k, rit: R.rit, ritD: R.ritD, prop: R.prop },
+            day: st.day,
+            tod: st.tod,
+            pres: C.people.filter(p => p.reg && ['ra', 'rb'].includes(p.reg.id)).map(p => p.dead),
+            free: C.slots.slice(0, st.tables).filter(sl => sl.seats.every(s => !s.occ && !s.dirty && !s.res)).length,
+            w: [C.st.regs.find(r => r.id === 'ra')].map(r => r.hn)
+          });
+        })
+      );
     await clear();
   }
 
   console.log('Segreti e interazioni');
-  await page.evaluate(() => { window.__cafe.speed = 1; const st = window.__cafe.st; st.found = {}; });
-  for (let i = 0; i < 6; i++) { await tapWorld(page, 18, 70); await sleep(60); }
+  await page.evaluate(() => {
+    window.__cafe.speed = 1;
+    const st = window.__cafe.st;
+    st.found = {};
+  });
+  for (let i = 0; i < 6; i++) {
+    await tapWorld(page, 18, 70);
+    await sleep(60);
+  }
   ok(await page.evaluate(() => !!window.__cafe.st.found.campanello), 'campanello della porta (6 tocchi) → segreto');
-  await page.evaluate(() => { window.__cafe.queue.length = 0; });
+  await page.evaluate(() => {
+    window.__cafe.queue.length = 0;
+  });
   const W = await page.evaluate(() => window.__cafe.W);
-  await tapWorld(page, W - 20, 90); await sleep(80);
-  ok(await page.evaluate(() => !!window.__cafe.st.found.pausa && window.__cafe.boostT > 0), 'macchina del caffè senza clienti → pausa caffè e tocchi doppi');
+  await tapWorld(page, W - 20, 90);
+  await sleep(80);
+  ok(
+    await page.evaluate(() => !!window.__cafe.st.found.pausa && window.__cafe.boostT > 0),
+    'macchina del caffè senza clienti → pausa caffè e tocchi doppi'
+  );
   const sb = await page.evaluate(() => window.__cafe.signBox);
-  for (let i = 0; i < 8; i++) { await tapWorld(page, sb.x + sb.w / 2, sb.y + 7); await sleep(50); }
+  for (let i = 0; i < 8; i++) {
+    await tapWorld(page, sb.x + sb.w / 2, sb.y + 7);
+    await sleep(50);
+  }
   ok(await page.evaluate(() => !!window.__cafe.st.found.insegna), 'insegna toccata 8 volte → neon arcobaleno');
   const cb = await page.evaluate(() => window.__cafe.CB);
   if (cb.chalk) {
-    await tapWorld(page, cb.chalk.x + 10, cb.chalk.y + 10); await sleep(150);
-    await page.fill('#chIn', 'Oggi piove, resta qui'); await page.click('#mbox .btns .big'); await sleep(100);
-    ok(await page.evaluate(() => window.__cafe.st.chalk === 'Oggi piove, resta qui' && !!window.__cafe.st.found.lavagna), 'si scrive sulla lavagna');
+    await tapWorld(page, cb.chalk.x + 10, cb.chalk.y + 10);
+    await sleep(150);
+    await page.fill('#chIn', 'Oggi piove, resta qui');
+    await page.click('#mbox .btns .big');
+    await sleep(100);
+    ok(
+      await page.evaluate(() => window.__cafe.st.chalk === 'Oggi piove, resta qui' && !!window.__cafe.st.found.lavagna),
+      'si scrive sulla lavagna'
+    );
   }
-  if (cb.rec) { for (let i = 0; i < 3; i++) { await tapWorld(page, cb.rec.x + 6, cb.rec.y + 9); await sleep(80); } ok(await page.evaluate(() => !!window.__cafe.st.found.radio), 'giradischi: tutte le stazioni → segreto'); }
-  if (cb.plant) { for (let i = 0; i < 3; i++) { await tapWorld(page, cb.plant.x + 4, cb.plant.y + 10); await sleep(80); } ok(await page.evaluate(() => !!window.__cafe.st.flower), 'annaffiando la pianta sboccia un fiore'); }
+  if (cb.rec) {
+    for (let i = 0; i < 3; i++) {
+      await tapWorld(page, cb.rec.x + 6, cb.rec.y + 9);
+      await sleep(80);
+    }
+    ok(await page.evaluate(() => !!window.__cafe.st.found.radio), 'giradischi: tutte le stazioni → segreto');
+  }
+  if (cb.plant) {
+    for (let i = 0; i < 3; i++) {
+      await tapWorld(page, cb.plant.x + 4, cb.plant.y + 10);
+      await sleep(80);
+    }
+    ok(await page.evaluate(() => !!window.__cafe.st.flower), 'annaffiando la pianta sboccia un fiore');
+  }
   const pane = await page.evaluate(() => window.__cafe.panes().find(p => !p.locked));
-  await page.evaluate(() => { window.__cafe.st.wx = 'pioggia'; window.__cafe.st.wx2 = null; });
-  await tapWorld(page, pane.x + 20, 78); await sleep(80);
+  await page.evaluate(() => {
+    window.__cafe.st.wx = 'pioggia';
+    window.__cafe.st.wx2 = null;
+  });
+  await tapWorld(page, pane.x + 20, 78);
+  await sleep(80);
   ok(await page.evaluate(() => !!window.__cafe.st.found.disegno), 'disegno sul vetro appannato quando piove');
-  await page.evaluate(() => { const C = window.__cafe; C.st.wx = 'pioggia'; C.st.tod = .9; C.st.rareDay = 0; for (let i = 0; i < 40 && !C.queue.some(p => p.rare); i++) C.tryRare(); });
-  const rare = await page.evaluate(() => { const p = window.__cafe.queue.find(p => p.rare); return p && p.rare; });
+  await page.evaluate(() => {
+    const C = window.__cafe;
+    C.st.wx = 'pioggia';
+    C.st.tod = 0.9;
+    C.st.rareDay = 0;
+    for (let i = 0; i < 40 && !C.queue.some(p => p.rare); i++) C.tryRare();
+  });
+  const rare = await page.evaluate(() => {
+    const p = window.__cafe.queue.find(p => p.rare);
+    return p && p.rare;
+  });
   ok(!!rare, `arriva un visitatore raro (${rare})`);
-  await page.evaluate(() => { window.__cafe.st.tod = .3; });
+  await page.evaluate(() => {
+    window.__cafe.st.tod = 0.3;
+  });
 
   console.log('Gioco accelerato (storie, richieste speciali, scelte)');
-  await page.evaluate(() => { const st = window.__cafe.st; st.decor = 8; st.chairs = 6; st.music = 4; window.__cafe.speed = 6; });
-  const t0 = Date.now(); let choices = 0, minis = 0;
+  await page.evaluate(() => {
+    const st = window.__cafe.st;
+    st.decor = 8;
+    st.chairs = 6;
+    st.music = 4;
+    window.__cafe.speed = 6;
+  });
+  const t0 = Date.now();
+  let choices = 0,
+    minis = 0;
   while (Date.now() - t0 < 45000) {
-    if (await page.isVisible('.choice button')) { await page.click('.choice button >> nth=0'); choices++; }
-    if (await page.isVisible('#mini')) { await page.evaluate(() => { const C = window.__cafe; const m = C.mini; if (m && !m.done) { m.done = true; m.q = 1; m.endT = 0; } C.finishMini(); }); minis++; }
-    if (await page.isVisible('#modal') && !(await page.isVisible('.choice button'))) { const b = page.locator('#modal .btns button').last(); if (await b.count()) await b.click(); }
+    if (await page.isVisible('.choice button')) {
+      await page.click('.choice button >> nth=0');
+      choices++;
+    }
+    if (await page.isVisible('#mini')) {
+      await page.evaluate(() => {
+        const C = window.__cafe;
+        const m = C.mini;
+        if (m && !m.done) {
+          m.done = true;
+          m.q = 1;
+          m.endT = 0;
+        }
+        C.finishMini();
+      });
+      minis++;
+    }
+    if ((await page.isVisible('#modal')) && !(await page.isVisible('.choice button'))) {
+      const b = page.locator('#modal .btns button').last();
+      if (await b.count()) await b.click();
+    }
     await page.locator('#serve').dispatchEvent('pointerdown');
     await sleep(120);
   }
-  const st = await page.evaluate(() => { const s = window.__cafe.st; return { served: s.served, story: Object.values(s.story).reduce((a, b) => a + b, 0) }; });
+  const st = await page.evaluate(() => {
+    const s = window.__cafe.st;
+    return { served: s.served, story: Object.values(s.story).reduce((a, b) => a + b, 0) };
+  });
   ok(st.served > 20, `gioco accelerato: ${st.served} clienti serviti, ${st.story} capitoli, ${choices} scelte, ${minis} speciali`);
-  await page.evaluate(() => window.__cafe.speed = 1);
+  await page.evaluate(() => (window.__cafe.speed = 1));
 
   console.log('Salvataggio');
-  await page.click('#hud button[data-p="set"]'); await sleep(150);
-  await page.click('#exp'); await sleep(150);
+  await page.click('#hud button[data-p="set"]');
+  await sleep(150);
+  await page.click('#exp');
+  await sleep(150);
   const code = await page.inputValue('#savecode');
   const name = await page.evaluate(() => window.__cafe.st.name);
   ok(code.length > 100, 'esporta produce un codice');
-  await page.click('#modal .btns button >> nth=0'); await sleep(100);
-  await page.evaluate(k => { const s = JSON.parse(localStorage.getItem(k)); s.name = 'Altro'; localStorage.setItem(k, JSON.stringify(s)); }, KEY);
-  await page.click('#imp'); await sleep(150);
+  await page.click('#modal .btns button >> nth=0');
+  await sleep(100);
+  await page.evaluate(k => {
+    const s = JSON.parse(localStorage.getItem(k));
+    s.name = 'Altro';
+    localStorage.setItem(k, JSON.stringify(s));
+  }, KEY);
+  await page.click('#imp');
+  await sleep(150);
   await page.fill('#savein', code);
   await Promise.all([page.waitForEvent('load'), page.click('#modal .btns button >> nth=1')]);
   await page.waitForTimeout(300);
   ok(await page.evaluate(([k, n]) => JSON.parse(localStorage.getItem(k)).name === n, [KEY, name]), 'importa ripristina la partita');
   await page.evaluate(k => localStorage.setItem(k, '{rotto'), KEY);
-  await page.reload(); await page.waitForTimeout(300);
+  await page.reload();
+  await page.waitForTimeout(300);
   ok(await page.evaluate(() => !!window.__cafe.st.name), 'con il salvataggio rovinato riparte dalla copia di riserva');
 
-
   console.log('Ricomincia e filmato');
-  await page.click('#go'); await sleep(700);
-  await page.click('#hud button[data-p="set"]'); await sleep(150);
-  await page.click('#rst'); await sleep(100);
+  await page.click('#go');
+  await sleep(700);
+  // a metà giornata e senza finestre aperte: la fine del giorno non deve coprire il pannello durante il test
+  await page.evaluate(() => {
+    const C = window.__cafe;
+    C.st.tod = 0.3;
+  });
+  if (await page.isVisible('#modal')) {
+    const b = page.locator('#modal .btns button').last();
+    if (await b.count()) await b.click();
+    await sleep(200);
+  }
+  await page.click('#hud button[data-p="set"]');
+  await sleep(150);
+  await page.click('#rst');
+  await sleep(100);
   await Promise.all([page.waitForEvent('load'), page.click('#rst')]);
   await page.waitForTimeout(400);
-  const after = await page.evaluate(k => ({ ls: localStorage.getItem(k), bak: localStorage.getItem(k + '_bak'), name: window.__cafe.st.name, day: window.__cafe.st.day, tables: window.__cafe.st.tables }), KEY);
-  ok(!after.ls && !after.bak && !after.name && after.day === 1 && after.tables === 1, `Ricomincia azzera tutto (giorno ${after.day}, tavoli ${after.tables})`);
-  await page.click('#go'); await sleep(1500);
+  const after = await page.evaluate(
+    k => ({
+      ls: localStorage.getItem(k),
+      bak: localStorage.getItem(k + '_bak'),
+      name: window.__cafe.st.name,
+      day: window.__cafe.st.day,
+      tables: window.__cafe.st.tables
+    }),
+    KEY
+  );
+  if (after.ls || after.bak || after.tables !== 1)
+    console.log('    diagnosi:', JSON.stringify({ salvataggio: !!after.ls, riserva: !!after.bak, nome: after.name, tavoli: after.tables }));
+  ok(
+    !after.ls && !after.bak && !after.name && after.day === 1 && after.tables === 1,
+    `Ricomincia azzera tutto (giorno ${after.day}, tavoli ${after.tables})`
+  );
+  await page.click('#go');
+  await sleep(1500);
   ok(await page.evaluate(() => !!window.__cafe.cine), 'nuova partita: parte il filmato iniziale');
-  await page.click('#skip'); await sleep(300);
+  await page.click('#skip');
+  await sleep(300);
   ok(await page.isVisible('#naming'), 'il filmato si può saltare e poi si sceglie il nome');
-  await page.fill('#nameIn', 'Bar Luna'); await page.click('#openBtn'); await sleep(600);
-  ok(await page.evaluate(() => window.__cafe.st.name === 'Bar Luna' && !!window.__cafe.st.found.nome && window.__cafe.st.day === 1), 'si apre il nuovo locale (e il nome «Luna» è un segreto)');
+  await page.fill('#nameIn', 'Bar Luna');
+  await page.click('#openBtn');
+  await sleep(600);
+  ok(
+    await page.evaluate(() => window.__cafe.st.name === 'Bar Luna' && !!window.__cafe.st.found.nome && window.__cafe.st.day === 1),
+    'si apre il nuovo locale (e il nome «Luna» è un segreto)'
+  );
 
   ok(!errors.length, 'nessun errore JavaScript' + (errors.length ? ': ' + [...new Set(errors)].join(' | ') : ''));
   await browser.close();
