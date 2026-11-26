@@ -212,6 +212,23 @@ async function playMini(page, kind, itemId) {
     await page.click('#pclose'); await sleep(250);
   }
 
+  console.log('Animali da compagnia');
+  {
+    const r = await page.evaluate(async () => { const C = window.__cafe; C.st.petted = {}; delete C.st.found.cuccioli;
+      const kinds = ['cane', 'gatto', 'coniglio', 'uccellino', 'cane'], out = { follow: true, hearts: 0 };
+      for (let i = 0; i < 5; i++) { const reg = { id: 'rp' + i, n: 'Pet' + i, look: C.CH.mia.l, type: 'normale', fav: 'caffe', v: 3, f: 2, tr: [], petR: 1, pet: Object.assign(C.randPet('normale'), { k: kinds[i], n: 'Bestiolina' + i }) };
+        C.st.regs.push(reg); const c = C.newCust({ look: reg.look, name: reg.n, reg, type: 'normale' });
+        if (!c.pet || c.pet.n !== 'Bestiolina' + i) out.follow = false; }
+      await new Promise(r => setTimeout(r, 1500));
+      const mine = C.people.filter(p => p.pet && /^Bestiolina/.test(p.pet.n));
+      mine.forEach(c => { if (c.pet.k !== 'uccellino' && Math.hypot(c.pet.x - c.x, c.pet.y - c.y) > 14) out.follow = false; });
+      mine.forEach((c, i) => { c.pet.x = 500 + i * 40; c.pet.y = 170; });
+      mine.forEach(c => { if (C.tapPet(c.pet.x, c.pet.y - 2)) out.hearts++; });
+      out.egg = !!C.st.found.cuccioli; return out; });
+    ok(r.follow, 'gli animali entrano col padrone e lo seguono');
+    ok(r.hearts === 5 && r.egg, `si accarezzano (${r.hearts}/5) e cinque animali diversi svelano un segreto`);
+  }
+
   console.log('Segreti e interazioni');
   await page.evaluate(() => { window.__cafe.speed = 1; const st = window.__cafe.st; st.found = {}; });
   for (let i = 0; i < 6; i++) { await tapWorld(page, 18, 70); await sleep(60); }
