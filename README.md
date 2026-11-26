@@ -1,0 +1,35 @@
+# Caffè sotto la pioggia
+
+Un cozy game incrementale in pixel art: un piccolo caffè in una città dove piove sempre,
+clienti che tornano, si conoscono, si innamorano e vivono le loro storie.
+
+**Si gioca aprendo `index.html` nel browser** (in orizzontale sul telefono). Non serve compilare niente:
+è un sito statico che funziona anche su GitHub Pages.
+
+## Struttura
+
+```
+index.html          la pagina (solo HTML)
+css/stile.css       lo stile dell'interfaccia
+js/motore/          il gioco: simulazione, disegno, audio, interfaccia
+js/dati/            i contenuti: personaggi, storie, vite, incontri, frasi
+tests/dati.js       controllo veloce dei contenuti (senza browser)
+tests/smoke.js      prova completa nel browser
+docs/               guida per aggiungere contenuti
+```
+
+I file si caricano nell'ordine scritto in fondo a `index.html`: prima `js/motore/base.js`,
+poi i contenuti, poi il resto del motore. Sono script normali (non moduli), così il gioco funziona
+anche aprendo il file direttamente.
+
+## Aggiungere personaggi e storie
+
+Vedi [docs/come-aggiungere-contenuti.md](docs/come-aggiungere-contenuti.md).
+
+## Controlli
+
+```bash
+node tests/dati.js     # contenuti coerenti (un secondo)
+node tests/smoke.js    # partita automatica nel browser (serve Playwright con Chromium)
+prettier --write "js/**/*.js" css tests   # impaginazione uniforme
+```
