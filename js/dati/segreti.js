@@ -1,6 +1,7 @@
 // Segreti da scoprire (EGGS) e visitatori rari (RARE).
 
 const EGGS = [
+  { id: 'neon', n: 'Città al neon', h: 'Colleziona tutte le insegne al neon del negozio.' },
   { id: 'macchina', n: 'Una macchina da sogno', h: "Personalizza la macchina del caffè con tutto quello che c'è nel negozio." },
   { id: 'punta', n: "Mani d'oro", h: "Nell'ora di punta, servi tu venti clienti di fila senza farne scappare nessuno." },
   { id: 'premura', n: 'Sempre presente', h: 'Accorgiti di quello che serve ai tuoi clienti. Cinquanta volte.' },

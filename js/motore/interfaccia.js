@@ -803,6 +803,32 @@ function machHTML() {
     MACH.acc.map(f => row(f.id, f.n, f.d, (st.macc || []).includes(f.id), !(st.maccOff || []).includes(f.id), f.c, 'ma')).join('')
   );
 }
+// scheda Stili: insegne al neon da comprare e installare sui muri
+function neonHTML() {
+  const slots = wallSlots(),
+    at = st.neonAt || {},
+    where = id => Object.keys(at).find(k => at[k] === id && slots.some(s => s.id === k));
+  return (
+    `<p class="note">Insegne al neon da parete. Comprale e scegli dove installarle: +1 Atmosfera ognuna, +1 in più quando è accesa sul muro. Toccale per farle ronzare.</p>` +
+    NEONS.map(N => {
+      const own = (st.neonOwn || []).includes(N.id),
+        sz = neonSize(N),
+        w = where(N.id);
+      const opts = slots
+        .filter(S => neonFit(N, S))
+        .map(S => {
+          const busy = at[S.id] && at[S.id] !== N.id ? NEONS.find(x => x.id === at[S.id]) : null;
+          return `<option value="${S.id}" ${w === S.id ? 'selected' : ''}>${S.n}${busy ? ' (al posto di: ' + busy.n + ')' : ''}</option>`;
+        })
+        .join('');
+      return `<div class="row neon"><b><img alt="" src="${neonImg(N)}" style="filter:drop-shadow(0 0 4px ${N.col})">${N.n}</b><span>${own ? (w ? 'Accesa sul muro' : 'In magazzino') : 'Insegna al neon'}</span>${
+        own
+          ? `<select data-ns="${N.id}" aria-label="Dove installare ${N.n}"><option value="">In magazzino</option>${opts}</select>`
+          : `<button data-nb="${N.id}" ${st.coins < N.c ? 'disabled' : ''}>${coinB(N.c)}</button>`
+      }</div>`;
+    }).join('')
+  );
+}
 function tabHTML() {
   if (tab === 'Stili')
     return (
@@ -814,7 +840,8 @@ function tabHTML() {
           return `<div class="row"><b>${t.n}</b><span>${on ? 'In uso' : own ? 'Comprato' : 'Nuovo stile'}</span><button data-th="${k}" ${on || (!own && st.coins < t.c) ? 'disabled' : ''}>${on ? 'In uso' : own ? 'Usa' : coinB(t.c)}</button></div>`;
         })
         .join('') +
-      machHTML()
+      machHTML() +
+      neonHTML()
     );
   if (tab === 'Franchising') {
     const ok = st.space >= 7 && st.runEarned >= 500000,
@@ -1190,6 +1217,24 @@ $('#pbody').addEventListener('click', e => {
     }
     return;
   }
+  if (bt.dataset.nb) {
+    const N = NEONS.find(x => x.id === bt.dataset.nb);
+    if (!N || st.coins < N.c || st.neonOwn.includes(N.id)) return;
+    st.coins -= N.c;
+    st.neonOwn.push(N.id);
+    // si accende subito nel primo punto libero dove ci sta
+    const sz = neonSize(N),
+      free = wallSlots().find(S => !st.neonAt[S.id] && neonFit(N, S));
+    if (free) {
+      st.neonAt[free.id] = N.id;
+      toast(`${N.n} acceso: ${free.n.toLowerCase()}`);
+    }
+    sfx('buzz');
+    if (st.neonOwn.length >= NEONS.length) egg('neon');
+    renderPanel();
+    save();
+    return;
+  }
   if (bt.dataset.mf !== undefined || bt.dataset.md !== undefined || bt.dataset.ma !== undefined) {
     const buy = c => {
       if (st.coins < c) return false;
@@ -1489,3 +1534,19 @@ function hud() {
 setInterval(() => {
   if (started) hud();
 }, 300);
+
+// dove installare un'insegna al neon: il menu a tendina nella scheda Stili
+$('#pbody').addEventListener('change', e => {
+  const sel = e.target.closest && e.target.closest('select[data-ns]');
+  if (!sel) return;
+  const id = sel.dataset.ns,
+    to = sel.value;
+  for (const k of Object.keys(st.neonAt)) if (st.neonAt[k] === id) delete st.neonAt[k];
+  if (to) {
+    st.neonAt[to] = id; // se il posto era occupato, l'altra insegna torna in magazzino
+    neonZap[to] = T + 0.6;
+    sfx('buzz');
+  }
+  renderPanel();
+  save();
+});

@@ -1293,6 +1293,141 @@ function drawMachine(mx, my, cfg) {
     R(mx + 18, my + 3, 1, 1, '#5cc07a');
   }
 }
+/* ----- insegne al neon da parete ----- */
+const NEONROWS = {};
+function neonRows(N) {
+  if (NEONROWS[N.id]) return NEONROWS[N.id];
+  if (!N.word) return (NEONROWS[N.id] = N.r);
+  const rows = ['', '', '', '', ''];
+  [...N.word].forEach((ch, i) => {
+    const G = NEONFONT[ch] || NEONFONT.O;
+    for (let j = 0; j < 5; j++) rows[j] += (i ? '.' : '') + G[j];
+  });
+  return (NEONROWS[N.id] = rows);
+}
+// grandezza con cui un'insegna sta in un punto del muro: doppia se c'è spazio, normale, oppure 0 se non ci sta
+function neonFit(N, S) {
+  const z = neonSize(N);
+  return z.w * 2 <= S.w && z.h * 2 <= S.h ? 2 : z.w <= S.w && z.h <= S.h ? 1 : 0;
+}
+const neonSize = N => {
+  const r = neonRows(N);
+  return { w: Math.max(...r.map(x => x.length)), h: r.length };
+};
+// punti dei muri dove si può installare un'insegna (dipendono dalla grandezza del locale)
+function wallSlots() {
+  const out = [{ id: 'porta', n: 'Sopra la porta', x: 5, y: 7, w: 26, h: 14 }];
+  if (angW >= 22) out.push({ id: 'angolo', n: "Nell'angolo, in alto", x: angX + 2, y: 6, w: Math.min(angW - 4, 26), h: 12 });
+  if (angW >= 22) out.push({ id: 'angoloB', n: "Nell'angolo, sotto la lavagna", x: angX + 2, y: 57, w: Math.min(angW - 4, 30), h: 18 });
+  if (angW > 40) {
+    const bx = angX + Math.round(angW / 2) - 12;
+    if (bx - angX >= 11) out.push({ id: 'lavagna', n: 'Accanto alla lavagna', x: angX + 1, y: 34, w: bx - angX - 3, h: 18 });
+  }
+  if (signBox) {
+    const l0 = colX[cols - 1] - 22,
+      r1 = colX[0] + 22;
+    if (signBox.x - l0 >= 26)
+      out.push({ id: 'finS', n: "Sopra le finestre, a sinistra dell'insegna", x: l0, y: 5, w: signBox.x - l0 - 3, h: 13 });
+    if (r1 - (signBox.x + signBox.w) >= 26)
+      out.push({
+        id: 'finD',
+        n: "Sopra le finestre, a destra dell'insegna",
+        x: signBox.x + signBox.w + 3,
+        y: 5,
+        w: r1 - signBox.x - signBox.w - 3,
+        h: 13
+      });
+  }
+  out.push({ id: 'bancone', n: 'Dietro il bancone', x: counterX + 6, y: 5, w: W - 34 - counterX - 8, h: 16 });
+  return out;
+}
+let neonZap = {};
+function drawNeons() {
+  const at = st.neonAt || {};
+  if (!Object.keys(at).length) return;
+  const n = nightF(),
+    bo = blackout();
+  for (const S of wallSlots()) {
+    const N = NEONS.find(x => x.id === at[S.id]);
+    if (!N) continue;
+    const rows = neonRows(N),
+      k = neonFit(N, S);
+    if (!k) continue;
+    const sz = { w: neonSize(N).w * k, h: neonSize(N).h * k },
+      x0 = Math.round(S.x + (S.w - sz.w) / 2),
+      y0 = Math.round(S.y + (S.h - sz.h) / 2),
+      zap = (neonZap[S.id] || 0) > T,
+      flick = zap ? Math.random() < 0.5 : Math.sin(T * 7 + x0) < -0.97 && Math.random() < 0.6,
+      on = !bo && !flick,
+      a = on ? 1 : 0.25;
+    if (on) {
+      g.globalCompositeOperation = 'lighter';
+      glowAt(x0 + sz.w / 2, y0 + sz.h / 2, Math.max(sz.w, sz.h) * 0.9 + 4, rgb(N.col).join(','), 0.16 + 0.22 * n);
+      g.globalCompositeOperation = 'source-over';
+    }
+    const px = (col, al, ox, oy) => {
+      g.globalAlpha = al;
+      rows.forEach((row, j) =>
+        [...row].forEach((ch, i) => {
+          if (ch === '#' || ch === '+') {
+            g.fillStyle = ch === '+' ? N.col2 || N.col : col || N.col;
+            g.fillRect(x0 + i * k + ox, y0 + j * k + oy, k, k);
+          }
+        })
+      );
+    };
+    if (on)
+      [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1]
+      ].forEach(([ox, oy]) => px(null, 0.18, ox, oy));
+    px(null, a, 0, 0);
+    if (on) {
+      // anima più chiara: il tubo acceso
+      g.globalAlpha = 0.45;
+      rows.forEach((row, j) =>
+        [...row].forEach(
+          (ch, i) => ch === '#' && (i + j) % 3 === 0 && ((g.fillStyle = '#ffffff'), g.fillRect(x0 + i * k, y0 + j * k, 1, 1))
+        )
+      );
+    }
+    g.globalAlpha = 1;
+  }
+}
+function neonAtm() {
+  const valid = new Set(wallSlots().map(s => s.id));
+  return (st.neonOwn || []).length + Object.keys(st.neonAt || {}).filter(k => valid.has(k)).length;
+}
+function tapNeon(x, y) {
+  const at = st.neonAt || {};
+  for (const S of wallSlots()) {
+    if (!at[S.id] || x < S.x || x > S.x + S.w || y < S.y || y > S.y + S.h) continue;
+    neonZap[S.id] = T + 0.8;
+    sfx('buzz');
+    return true;
+  }
+  return false;
+}
+// anteprima di un'insegna (immagine) per la scheda Stili
+const NEONIMG = {};
+function neonImg(N) {
+  if (NEONIMG[N.id]) return NEONIMG[N.id];
+  const sz = neonSize(N),
+    c = document.createElement('canvas');
+  c.width = sz.w + 4;
+  c.height = sz.h + 4;
+  const x = c.getContext('2d');
+  neonRows(N).forEach((row, j) =>
+    [...row].forEach((ch, i) => {
+      if (ch !== '#' && ch !== '+') return;
+      x.fillStyle = ch === '+' ? N.col2 || N.col : N.col;
+      x.fillRect(2 + i, 2 + j, 1, 1);
+    })
+  );
+  return (NEONIMG[N.id] = c.toDataURL());
+}
 // anteprima della macchina per la scheda Stili (immagine ingrandita)
 function machPreview(cfg) {
   const c = document.createElement('canvas');
@@ -1767,6 +1902,7 @@ function render() {
   items.sort((a, b) => a.y - b.y).forEach(o => o.f());
   drawParts();
   lighting();
+  drawNeons(); // dopo le luci: di notte le insegne brillano davvero
   g.setTransform(1, 0, 0, 1, 0, 0);
   grade();
   const v = g.createRadialGradient(VW / 2, 90, VH * 0.35, VW / 2, 90, VW * 0.7);
