@@ -410,7 +410,7 @@ let rd = null;
 function arcPages(arc) {
   const k = st.story[arc.id] || 0;
   return arc.ch.slice(0, k).map((ch, i) => {
-    const who = ch.who || arc.who;
+    const who = chapterWho(arc, ch);
     const out = [];
     ch.l.forEach(l => {
       if (Array.isArray(l)) {
@@ -879,13 +879,13 @@ function cliHTML() {
         }
         const who = [...new Set(arc.ch.slice(0, Math.max(1, k)).flatMap(c => c.who || arc.who))].slice(0, 3);
         return (
-          `<div class="card2"><h3><span class="who">${k ? who.map(w => `<img alt="" src="${portrait(CH[w].l)}">`).join('') : ''}${arc.t}</span><small>${k}/${arc.ch.length}</small></h3><p class="ad">${arc.d}</p><div class="bar"><i style="width:${(k / arc.ch.length) * 100}%"></i></div>` +
+          `<div class="card2"><h3><span class="who">${k ? who.map(w => `<img alt="" src="${portrait(CH[w].l)}">`).join('') : ''}${arc.t}</span><small>${k}/${arc.ch.length}</small></h3><p class="ad">${arc.d}</p>${arc.nota && k ? `<p class="ad" style="color:var(--cyan)">${esc(arc.nota)}</p>` : ''}<div class="bar"><i style="width:${(k / arc.ch.length) * 100}%"></i></div>` +
           arc.ch
             .map((ch, i) => {
               if (i < k)
                 return `<button class="chap" data-rd="${arc.id}" data-i="${i}"><span>${i + 1}. ${ch.t}</span><small>Leggi ›</small></button>`;
               if (i === k)
-                return `<div class="lock"><span>${i + 1}. ???</span><small>${a >= ch.r ? 'Succederà presto…' : 'Atmosfera ' + a + '/' + ch.r}</small></div>`;
+                return `<div class="lock"><span>${i + 1}. ???</span><small>${arc.rand && i === 0 ? "Un giorno qualunque, all'improvviso" : arc.rand || arc.gap ? 'Tra qualche giorno…' : a >= ch.r ? 'Succederà presto…' : 'Atmosfera ' + a + '/' + ch.r}</small></div>`;
               return `<div class="lock"><span>${i + 1}. ???</span></div>`;
             })
             .join('') +

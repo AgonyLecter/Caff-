@@ -96,6 +96,15 @@ const NAMES = [
   'Elia'
 ];
 const CH = {
+  davide: {
+    n: 'Davide',
+    l: { s: '#eab88f', h: '#6a5a50', hs: 0, o: 2, c1: '#5a6070', c2: '#3a3a48', a: 'barba', act: 'sip', sh: '#2a2430' }
+  },
+  elena: { n: 'Elena', l: { s: '#eab88f', h: '#6a4a3a', hs: 6, o: 1, c1: '#ef476f', c2: '#2b2d42', a: 'orecchino', act: 'phone' } },
+  yusuf: {
+    n: 'Yusuf',
+    l: { s: '#6b4129', h: '#1b1420', hs: 4, o: 1, c1: '#e8e0d0', c2: '#2b2d42', a: 'orecchino', ac: '#ffd166', sh: '#ffd166', act: 'phone' }
+  },
   mia: {
     n: 'Mia',
     l: {

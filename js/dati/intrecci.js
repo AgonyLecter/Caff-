@@ -4,6 +4,39 @@
 // hanno abitudini, frasi proprie, animali, legami già nati nelle storie, vite nuove e incontri tra storie diverse.
 const fl = f => checkFlag(f);
 const KEYS = {
+  davide: {
+    type: 'normale',
+    fav: 'caffe',
+    tr: ['timido', 'brontolone'],
+    // nel finale più duro torna anche lui, ma qualche giorno dopo: è stato in reparto
+    ok: () => arcDone('davide') && (!fl('davide=crisi') || st.day >= ((st.arcDay || {}).davide || 0) + 4),
+    l: [
+      'Il caffè semplice. Ma oggi lo bevo caldo.',
+      '*guarda la pioggia, stavolta con calma*',
+      'Mia moglie dice che ho ricominciato a fischiettare. Non me ne ero accorto.',
+      'Elena mi ha chiesto di insegnarle a impaginare. Dice che è per la tesi. Secondo me è una scusa per vedermi.',
+      ['Giovedì dalla dottoressa. Ho imparato che ci si può arrabbiare anche con la tristezza.', 'davide=salvo'],
+      ['I ragazzi del corso mi chiamano «maestro». Io faccio finta che mi dia fastidio.', 'davide=salvo'],
+      ['Oggi è una giornata media. Le giornate medie sono una conquista.', 'davide=fragile'],
+      ['Uno alla volta. I giorni, dico. Uno alla volta.', 'davide=fragile'],
+      ['In reparto ho imparato una cosa: chiedere aiuto non è perdere.', 'davide=crisi'],
+      ['Mi hanno detto che mi avete tenuto il tavolo. Non sapete cosa vuol dire.', 'davide=crisi']
+    ]
+  },
+  yusuf: {
+    type: 'nottambulo',
+    fav: 'corn',
+    tr: ['sognatore', 'chiacchierone'],
+    ok: () => arcDone('yusuf'),
+    l: [
+      '*analizza il cornetto controluce* Ventotto strati. Migliorate.',
+      'Stanotte ho inventato un dolce col baobab e la ricotta. Il capo ha urlato. Poi ne ha mangiati tre.',
+      'Mia madre ha visto la foto con voi. Ora chiede di Nonna Rosa ogni mattina.',
+      'Studio per la patente. Le precedenze italiane sono un mistero più grande del mare.',
+      ['Quando qualcuno mi guarda storto, penso a quel giorno al bancone. E sto dritto.', 'yusuf=difendi'],
+      ['Ho smesso di lasciar perdere. Ora rispondo. Con educazione, ma rispondo.', 'yusuf=lascia']
+    ]
+  },
   mia: {
     type: 'artista',
     fav: 'capp',
@@ -272,6 +305,7 @@ const KEYS = {
 };
 // legami che esistono già dalle storie
 const KSEED = [
+  ['yusuf', 'rosa', () => arcDone('yusuf'), () => 'famiglia'],
   ['mia', 'luca', () => arcDone('pioggia'), () => (arcDone('nozze') ? 'sposati' : 'coppia')],
   ['marta', 'gio', () => arcDone('valigie'), () => 'coppia'],
   ['luca', 'tommy', () => arcDone('band'), () => 'migliori'],
@@ -293,6 +327,69 @@ const KSEED = [
 ];
 /* ----- incroci tra storie diverse (una volta sola) e epiloghi ----- */
 const XS = [
+  {
+    id: 'x_yusuf_kenji',
+    w: ['yusuf', 'kenji'],
+    req: () => arcDone('yusuf') && arcDone('consegne'),
+    l: [
+      [1, 'Tu sei quello dei cornetti di notte? Li sento profumare quando chiudo la cucina.'],
+      [0, 'E tu quello del ramen. Nonna Rosa parla di te come di un nipote.'],
+      [1, 'Anche di te. Ci ha adottati tutti e due, a quanto pare.'],
+      [0, 'Tu sei nato qui?'],
+      [1, 'Sì. Mia madre è arrivata da Osaka con una valigia e una ricetta. Il ramen è la valigia che si è portata dietro.'],
+      [0, 'Io ho portato la ricetta del pane di mia nonna. Nella testa. La valigia era nel mare.'],
+      [1, 'Allora facciamo un piatto insieme. Ramen e pane gambiano.'],
+      [0, 'Nonna Rosa dirà che è troppo salato.'],
+      [1, 'Lo dice sempre. È il suo modo di dire «ti voglio bene».']
+    ]
+  },
+  {
+    id: 'x_davide_yusuf',
+    w: ['davide', 'yusuf'],
+    req: () => arcDone('davide') && arcDone('yusuf'),
+    l: [
+      [1, 'Signore, lei è sempre qui la mattina. Assaggi, cornetto appena sfornato.'],
+      [0, '...È ancora caldo. Grazie, ragazzo.'],
+      [1, "Mi hanno detto che lei stampava libri. Io non so leggere bene l'italiano. Ancora."],
+      [0, "Io non sapevo più chi ero, senza lavoro. Ancora un po' non lo so."],
+      [1, 'Sulla barca pensavo di non valere niente. Una cosa da buttare in mare per alleggerire.'],
+      [1, 'Poi qualcuno mi ha dato un cornetto secco. E ho pensato: allora valgo un cornetto. Si comincia da lì.'],
+      [0, '*ride, per la prima volta da tanto*'],
+      [0, 'Ti insegno a leggere i caratteri. Tu mi insegni i cornetti. Affare?'],
+      [1, 'Affare. Ma il burro lo porto io.']
+    ]
+  },
+  {
+    id: 'x_davide_dario',
+    w: ['davide', 'dario'],
+    req: () => arcDone('davide') && arcDone('scacchi'),
+    l: [
+      [1, 'Lei. Sì, lei. Sa giocare a scacchi?'],
+      [0, "Da ragazzo. In tipografia, nelle pause. Non ci gioco da trent'anni."],
+      [1, 'Elio è dal dottore e io ho bisogno di battere qualcuno.'],
+      [0, '*sposta un pedone, piano*'],
+      [1, 'Hm. Lei pensa prima di muovere. Mi piace.'],
+      [0, 'Ultimamente penso troppo. Sto imparando a farlo meglio.'],
+      [1, 'Allora il martedì venga qui. Gli scacchi sono la medicina dei vecchi testardi.'],
+      [0, 'Non sono vecchio.'],
+      [1, 'Ma testardo sì. Si vede da come tiene la torre.']
+    ]
+  },
+  {
+    id: 'x_davide_ugo',
+    w: ['davide', 'ugo'],
+    req: () => arcDone('davide') && (arcDone('lettere') || arcDone('tokyo')),
+    l: [
+      [1, "Lei è quello della tipografia Ferrari? Vi portavo la posta. Trent'anni."],
+      [0, 'Ugo! Il postino che fischiava La Traviata!'],
+      [1, 'Quando avete chiuso, la mia borsa è diventata più leggera. E più triste.'],
+      [0, "Anch'io. Più leggero e più triste."],
+      [1, 'Io sono andato in pensione e per un mese non sapevo cosa fare delle mani.'],
+      [1, 'Poi ho capito: le persone. Non la posta. Mi mancavano le persone.'],
+      [0, 'Le persone. Sì. Credo sia lo stesso per me.'],
+      [1, 'Allora domani facciamo il mio vecchio giro. Passiamo davanti alla tipografia. Ci fermiamo e la salutiamo.']
+    ]
+  },
   {
     id: 'x_rosa_mia',
     w: ['rosa', 'mia'],
@@ -574,6 +671,36 @@ const XS = [
   }
 ];
 const XEPI = [
+  {
+    id: 'e_davide',
+    w: ['davide'],
+    req: () => arcDone('davide'),
+    l: [
+      [0, 'Volevo dirle una cosa, adesso che riesco a dirla.', 'davide=salvo'],
+      [0, 'Quella sera, se lei non me lo avesse chiesto, non so dove sarei.', 'davide=salvo'],
+      [0, 'Ci sono ancora giorni pesanti. Ma ho imparato a dirlo, quando arrivano.', 'davide=fragile'],
+      [0, 'E lei mi ha tenuto il tavolo. Sembra niente. Non è niente.', 'davide=fragile'],
+      [0, 'Sono tornato. Mia figlia mi ha detto che mi avete tenuto il tavolo.', 'davide=crisi'],
+      [
+        0,
+        "In reparto c'era un ragazzo di vent'anni. Gli ho detto: c'è un bar dove non devi fingere. Gli ho dato l'indirizzo.",
+        'davide=crisi'
+      ],
+      [0, 'Un caffè semplice, per favore. Ma oggi lo bevo caldo.']
+    ]
+  },
+  {
+    id: 'e_yusuf',
+    w: ['yusuf'],
+    req: () => arcDone('yusuf'),
+    l: [
+      [0, "Ho una notizia: mia sorella si sposa a dicembre. E io ci vado. Col passaporto, sull'aereo."],
+      [0, 'Ho portato i miei dolci per la vetrina. Quelli col cocco sono per Nonna Rosa: li conta.'],
+      [0, 'Quel giorno al bancone mi hai fatto sentire a casa. Non lo dimentico.', 'yusuf=difendi'],
+      [0, "Ho smesso di lasciar perdere. Me l'ha insegnato quel giorno, e Nonna Rosa.", 'yusuf=lascia'],
+      [0, "Tre anni fa non sapevo cos'era un cornetto. Adesso li faccio per mezza città."]
+    ]
+  },
   // epiloghi da soli: dipendono dal finale scelto
   {
     id: 'e_bruni',

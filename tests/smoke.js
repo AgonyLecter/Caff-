@@ -62,6 +62,7 @@ function validateData(D) {
       })
     )
   );
+  ARCS.forEach(a => a.ch.forEach(c => c.calc && c.calc.values.forEach(v => produced.add(c.calc.flag + '=' + v))));
   const ids = new Set(ARCS.map(a => a.id));
   let problems = [];
   const chkLine = (l, who, where) => {
@@ -240,6 +241,7 @@ async function playMini(page, kind, itemId) {
           })
         )
       );
+      C.ARCS.forEach(a => a.ch.forEach(c => c.calc && c.calc.values.forEach(v => produced.add(c.calc.flag + '=' + v))));
       const ids = new Set();
       C.XS.concat(C.XEPI).forEach(x => {
         if (ids.has(x.id)) out.push(x.id + ': id doppio');
@@ -772,6 +774,124 @@ async function playMini(page, kind, itemId) {
     await clear();
   }
 
+  console.log('Davide e Yusuf');
+  {
+    // il finale di Davide dipende da tutte le scelte: soprattutto dal chiedergli apertamente se pensa di togliersi la vita
+    const calc = await page.evaluate(() => {
+      const C = window.__cafe,
+        ch = C.ARCS.find(a => a.id === 'davide').ch[3],
+        out = {};
+      for (const [k, a, b, c] of [
+        ['salvo', 'caldo', 'lavagna', 'chiedi'],
+        ['fragile1', 'nulla', 'coraggio', 'chiedi'],
+        ['fragile2', 'domanda', 'parla', 'rassicura'],
+        ['crisi1', 'caldo', 'coraggio', 'rassicura'],
+        ['crisi2', 'caldo', 'lavagna', 'evita']
+      ]) {
+        Object.assign(C.st.flags, { davide1: a, davide2: b, davide3: c });
+        out[k] = ch.calc.fn();
+      }
+      C.st.flags.davide = 'crisi';
+      out.who = C.chapterWho(
+        C.ARCS.find(a => a.id === 'davide'),
+        ch
+      ).join(',');
+      return out;
+    });
+    ok(
+      calc.salvo === 'salvo' &&
+        calc.fragile1 === 'fragile' &&
+        calc.fragile2 === 'fragile' &&
+        calc.crisi1 === 'crisi' &&
+        calc.crisi2 === 'crisi' &&
+        calc.who === 'elena',
+      `finale di Davide calcolato dalle scelte (${Object.values(calc).join(' · ')})`
+    );
+    // una partita vera: quattro incontri in giorni diversi, scegliendo la prima risposta ogni volta
+    await page.evaluate(() => {
+      const C = window.__cafe,
+        st = C.st;
+      C.people.forEach(p => {
+        p.dead = true;
+        if (p.seat) p.seat.occ = null;
+      });
+      C.queue.length = 0;
+      ['davide1', 'davide2', 'davide3', 'davide'].forEach(k => delete st.flags[k]);
+      delete st.story.davide;
+      st.arcDay = {};
+      st.rolls = {};
+      C.ARCS.forEach(a => {
+        if (a.id !== 'davide') {
+          st.rt[a.id] = Date.now() + 1e9;
+        }
+      });
+      st.day = Math.max(st.day, 4);
+      st.tod = 0.3;
+      C.speed = 6;
+    });
+    const seen = [];
+    for (let k = 0; k < 4; k++) {
+      await page.evaluate(k => {
+        const C = window.__cafe,
+          st = C.st;
+        C.people.forEach(p => (p.dead = true));
+        C.queue.length = 0;
+        C.slots.forEach(sl => sl.seats.forEach(q => Object.assign(q, { occ: null, dirty: false, res: null })));
+        st.rolls.davide = { d: st.day, v: true };
+        if (k) st.arcDay.davide = st.day - 5;
+        // solo la storia di Davide è disponibile in questo momento
+        C.ARCS.forEach(a => {
+          if (a.id !== 'davide') ((a._r = a.ch.map(c => c.r)), a.ch.forEach(c => (c.r = 1e9)));
+        });
+      }, k);
+      let got = false;
+      for (let i = 0; i < 120 && !got; i++) {
+        await page.evaluate(() => window.__cafe.tryStory());
+        got = await page.evaluate(() => window.__cafe.people.some(p => !p.dead && p.story === 'davide'));
+        if (!got) await sleep(50);
+      }
+      for (let i = 0; i < 400; i++) {
+        if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
+        const done = await page.evaluate(k => (window.__cafe.st.story.davide || 0) > k, k);
+        if (done) break;
+        await sleep(80);
+      }
+      seen.push(await page.evaluate(() => window.__cafe.st.story.davide || 0));
+      await page.evaluate(() => {
+        const C = window.__cafe;
+        C.people.forEach(p => {
+          if (p.story === 'davide') {
+            p.dead = true;
+            if (p.seat) p.seat.occ = null;
+          }
+        });
+        C.ARCS.forEach(a => {
+          if (a._r) {
+            a.ch.forEach((c, i) => (c.r = a._r[i]));
+            delete a._r;
+          }
+        });
+      });
+    }
+    await sleep(5200);
+    const end = await page.evaluate(() => ({
+      flag: window.__cafe.st.flags.davide,
+      note: document.querySelector('#mbox') && !document.querySelector('#modal').hidden ? document.querySelector('#mbox').textContent : ''
+    }));
+    ok(
+      seen.join(',') === '1,2,3,4' && end.flag === 'salvo' && /Telefono Amico/.test(end.note),
+      `Davide: quattro incontri in giorni diversi (${seen.join(',')}), finale «${end.flag}» e nota con i numeri di aiuto`
+    );
+    if (await page.isVisible('#modal')) await page.click('#modal .btns button >> nth=0');
+    await page.evaluate(() => {
+      const C = window.__cafe;
+      C.speed = 1;
+      C.ARCS.forEach(a => {
+        delete C.st.rt[a.id];
+      });
+    });
+  }
+
   console.log('Segreti e interazioni');
   await page.evaluate(() => {
     window.__cafe.speed = 1;
@@ -890,6 +1010,20 @@ async function playMini(page, kind, itemId) {
     return { served: s.served, story: Object.values(s.story).reduce((a, b) => a + b, 0) };
   });
   ok(st.served > 20, `gioco accelerato: ${st.served} clienti serviti, ${st.story} capitoli, ${choices} scelte, ${minis} speciali`);
+  // l'ultimo «Servi» può aver aperto un minigioco: chiudiamolo prima di andare avanti
+  await page.evaluate(() => {
+    const C = window.__cafe;
+    C.queue.forEach(q => (q.special = false));
+    if (C.mini) {
+      C.mini.done = true;
+      C.finishMini();
+    }
+  });
+  await sleep(200);
+  if (await page.isVisible('#modal')) {
+    const b = page.locator('#modal .btns button').last();
+    if (await b.count()) await b.click();
+  }
   await page.evaluate(() => (window.__cafe.speed = 1));
 
   console.log('Salvataggio');

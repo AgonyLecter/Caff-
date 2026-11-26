@@ -31,6 +31,8 @@ D.ARCS.forEach(a =>
     })
   )
 );
+// finali calcolati da più scelte (calc): i valori possibili contano come «scelti»
+D.ARCS.forEach(a => a.ch.forEach(c => c.calc && c.calc.values.forEach(v => produced.add(c.calc.flag + '=' + v))));
 const arcIds = new Set(D.ARCS.map(a => a.id));
 
 // --- personaggi
@@ -69,6 +71,16 @@ for (const a of D.ARCS) {
       if (!D.CH[w]) bad(`${a.id}/${i}: personaggio ${w} mancante`);
     });
     if (who.length > 2) bad(`${a.id}/${i}: più di 2 personaggi a un tavolo`);
+    if (c.whoBy)
+      Object.entries(c.whoBy).forEach(([f, w]) => {
+        if (!produced.has(f)) bad(`${a.id}/${i}: whoBy usa ${f}, mai scelto`);
+        w.forEach(x => !D.CH[x] && bad(`${a.id}/${i}: personaggio ${x} mancante`));
+        c.l.forEach(
+          (l, j) =>
+            Array.isArray(l) && l[2] === f && !(l[0] < w.length) && bad(`${a.id}/${i}/${j}: con ${f} al tavolo c'è solo ${w.join(', ')}`)
+        );
+      });
+    if (c.calc && (typeof c.calc.fn !== 'function' || !c.calc.flag || !c.calc.values.length)) bad(`${a.id}/${i}: calc incompleto`);
     if (i && c.r < a.ch[i - 1].r) bad(`${a.id}/${i}: soglia di atmosfera più bassa del capitolo prima`);
     c.l.forEach((l, j) => line(l, who, `${a.id}/${i}/${j}`));
     const here = new Set();

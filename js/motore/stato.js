@@ -175,6 +175,8 @@ function perkAtm() {
   if (st.perks.club) a += 3;
   if (st.perks.postino) a += 4;
   if (st.perks.seguito) a += 4;
+  if (st.perks.davide && !checkFlag('davide=crisi')) a += 3;
+  if (st.perks.yusuf) a += 4;
   return a;
 }
 function atm() {

@@ -1703,6 +1703,322 @@ const ARCS = [
         [0, 'Con il camice e il caffè. Come sempre.']
       ]
     ]
+  },
+  {
+    id: 'davide',
+    t: 'Il caffè più semplice',
+    d: 'Un uomo entra senza ombrello e ordina il caffè più semplice. Non lo beve.',
+    nota: "Questa storia parla di depressione e di pensieri suicidi. Se ti riconosci in quello che prova Davide, o sei preoccupato per qualcuno, parlane: non serve avere le parole giuste. In Italia puoi chiamare Telefono Amico (02 2327 2327) o Samaritans (06 77208977); se c'è un pericolo immediato, il 112.",
+    who: ['davide'],
+    rand: { from: 3, p: 0.4 },
+    gap: 1,
+    perk: 'davide',
+    pt: 'Il tavolo di Davide, vicino alla finestra',
+    end: {
+      'davide=salvo': { n: 'La domanda giusta', perk: 'davide', pt: 'Il tavolo di Davide, vicino alla finestra (+3 Atmosfera)' },
+      'davide=fragile': { n: 'Un giorno alla volta', perk: 'davide', pt: 'Il tavolo di Davide, vicino alla finestra (+3 Atmosfera)' },
+      'davide=crisi': { n: 'Il tavolo vuoto', perk: 'davide', pt: 'Il tavolo di Davide aspetta che torni' }
+    },
+    ch: [
+      {
+        t: 'Il caffè più semplice',
+        r: 0,
+        l: [
+          [0, '*entra senza ombrello, fradicio, e non sembra accorgersene*'],
+          [0, 'Un caffè. Il più semplice che avete.'],
+          [0, '*si siede vicino alla finestra e fissa la tazza senza berla*'],
+          [0, "*guarda l'orologio, come se avesse un posto dove andare*"],
+          [0, 'Scusi. È che... ventisette anni. E una lettera di due righe.'],
+          {
+            c: {
+              q: 'Davide guarda la pioggia. Il caffè si sta raffreddando.',
+              o: [
+                {
+                  t: '«Questo lo offre la casa. Torni quando vuole.»',
+                  f: 'davide1=caldo',
+                  r: [
+                    [0, "...Grazie. Non me l'aspettavo."],
+                    [0, 'Davide. Mi chiamo Davide.']
+                  ]
+                },
+                {
+                  t: '«Ventisette anni di cosa? Le va di raccontare?»',
+                  f: 'davide1=domanda',
+                  r: [
+                    [0, 'Tipografia. Stampavamo libri, manifesti, menù come il vostro.'],
+                    [0, 'Ha chiuso. Le macchine le hanno vendute a peso. Io pure, credo.']
+                  ]
+                },
+                {
+                  t: 'Lasciarlo tranquillo con il suo caffè',
+                  f: 'davide1=nulla',
+                  r: [[0, '*beve il caffè freddo in un sorso, lascia le monete sul tavolo ed esce*']]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'Le otto e mezza',
+        r: 0,
+        l: [
+          [0, 'Buongiorno. Il caffè semplice, grazie.'],
+          [0, 'Ogni mattina esco di casa alle otto, con la borsa del pranzo.'],
+          [0, 'Mia moglie crede che vada al lavoro. Anche mia figlia.'],
+          [0, 'Sono quattro mesi che vengo qui, o al parco, o in biblioteca. Fino alle cinque.'],
+          [0, 'Ho mandato quaranta curriculum. A cinquantadue anni sei un costo, non una persona.'],
+          {
+            c: {
+              q: 'Davide si rigira la fede al dito. «Non so più chi sono, se non stampo.»',
+              o: [
+                {
+                  t: '«Lo dica a sua moglie. Non deve portarlo da solo.»',
+                  f: 'davide2=parla',
+                  r: [
+                    [0, 'E come glielo dico? Che le ho mentito per quattro mesi?'],
+                    [0, '...Forse ha ragione. Forse il peso è il segreto, non il lavoro.']
+                  ]
+                },
+                {
+                  t: '«Mi aiuterebbe a rifare la lavagna del menù? Mi serve una mano esperta.»',
+                  f: 'davide2=lavagna',
+                  r: [
+                    [0, 'La lavagna? Da giovane facevo i caratteri a mano.'],
+                    [0, '*prende il gesso. Per dieci minuti le mani non gli tremano*']
+                  ]
+                },
+                {
+                  t: '«Vedrà che qualcosa troverà. Su, coraggio!»',
+                  f: 'davide2=coraggio',
+                  r: [
+                    [0, 'Sì. Certo. Lo dicono tutti.'],
+                    [0, '*sorride, ma solo con la bocca*']
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'Le lettere',
+        r: 0,
+        l: [
+          [0, '*non ordina niente. Si siede e basta*'],
+          [0, 'Ho provato a dirlo a mia moglie. Mi si è chiusa la gola.', 'davide2=parla'],
+          [0, "Con la lavagna mi sono sentito utile, l'altra volta. È stato bello. Ma è durato poco.", 'davide2=lavagna'],
+          [0, 'Non ho detto niente a nessuno. Non ci riesco.', 'davide2=coraggio'],
+          [0, "Stanotte ho controllato l'assicurazione. Se non ci fossi, il mutuo sarebbe pagato."],
+          [0, 'Ho scritto delle lettere. Per mia moglie, per Elena. Così, nel caso.'],
+          [0, 'Forse varrei di più così. Almeno i conti tornerebbero.'],
+          {
+            c: {
+              q: 'Davide parla piano, senza guardarti. Le sue parole ti restano addosso.',
+              o: [
+                {
+                  t: '«Davide, glielo chiedo apertamente: sta pensando di togliersi la vita? Se è così, restiamo qui e chiamiamo qualcuno insieme.»',
+                  f: 'davide3=chiedi',
+                  r: [
+                    [0, '...'],
+                    [0, 'Sì. Ci penso. Tutte le notti.'],
+                    [0, "Nessuno me l'aveva mai chiesto. Pensavo che dirlo l'avrebbe reso vero."],
+                    [0, 'Invece è come togliersi uno zaino pieno di sassi.'],
+                    [0, 'Va bene. Chiamiamo. Ma resta qui, mentre parlo?']
+                  ]
+                },
+                {
+                  t: '«Non dica così! Ha una famiglia, ha tanto per cui vivere.»',
+                  f: 'davide3=rassicura',
+                  r: [
+                    [0, 'Lo so. È proprio per loro che...'],
+                    [0, 'Lasci stare. Ha ragione lei. Scusi lo sfogo.']
+                  ]
+                },
+                {
+                  t: '«Le porto un altro caffè? Oggi i cornetti sono buonissimi.»',
+                  f: 'davide3=evita',
+                  r: [
+                    [0, '*ti guarda un momento, come se aspettasse altro*'],
+                    [0, 'No, grazie. Va bene così.']
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'Dopo',
+        r: 0,
+        gap: 3,
+        who: ['elena', 'davide'],
+        whoBy: { 'davide=crisi': ['elena'] },
+        calc: {
+          flag: 'davide',
+          values: ['salvo', 'fragile', 'crisi'],
+          fn: () => {
+            const f = k => st.flags[k];
+            const s = (['caldo', 'domanda'].includes(f('davide1')) ? 1 : 0) + (['parla', 'lavagna'].includes(f('davide2')) ? 1 : 0);
+            if (f('davide3') === 'chiedi') return s >= 1 ? 'salvo' : 'fragile';
+            if (f('davide3') === 'rassicura' && s >= 2) return 'fragile';
+            return 'crisi';
+          }
+        },
+        l: [
+          [1, 'Sono tornato. E stavolta non sto fingendo di andare al lavoro.', 'davide=salvo'],
+          [0, 'Papà ci ha detto tutto. A cena. Abbiamo pianto tutti e tre. Anche il cane, credo.', 'davide=salvo'],
+          [1, 'Vado da una dottoressa, il giovedì. Parlo. Pensavo fosse una cosa da deboli.', 'davide=salvo'],
+          [0, 'È la cosa più coraggiosa che gli abbia mai visto fare.', 'davide=salvo'],
+          [1, 'E ho trovato un lavoro. Insegno ai ragazzi del centro professionale a usare le vecchie macchine da stampa.', 'davide=salvo'],
+          [
+            1,
+            'Quella sera qualcuno mi ha fatto la domanda che nessuno aveva il coraggio di farmi. Me lo ricorderò sempre.',
+            'davide=salvo'
+          ],
+          [1, 'Ci sono giorni brutti. Oggi è un giorno così così.', 'davide=fragile'],
+          [0, "L'ho trovato in cucina alle quattro, una notte. Abbiamo parlato fino all'alba. Ora va da un medico.", 'davide=fragile'],
+          [1, 'Non è finita. Ma non sono più solo, là dentro.', 'davide=fragile'],
+          [0, 'Gli tenga il suo tavolo, va bene? Gli fa bene sapere che qualcuno lo aspetta.', 'davide=fragile'],
+          [0, 'Lei è il barista? Mio padre è Davide. Il signore del caffè semplice.', 'davide=crisi'],
+          [0, "Due settimane fa ha avuto una crisi. Una notte. L'abbiamo trovato in tempo.", 'davide=crisi'],
+          [0, 'Adesso è in un reparto, lo seguono. Starà meglio, dicono. Ci vuole tempo.', 'davide=crisi'],
+          [0, 'Fingeva di andare al lavoro da quattro mesi. Non se ne era accorto nessuno. Nemmeno io.', 'davide=crisi'],
+          [0, "Parlava di questo posto. Diceva che era l'unico dove non doveva fingere.", 'davide=crisi'],
+          [0, 'Quando torna... gli tenga il suo tavolo. Ci tiene.', 'davide=crisi']
+        ]
+      }
+    ],
+    rt: []
+  },
+  {
+    id: 'yusuf',
+    t: 'Farina e sale',
+    d: 'Un ragazzo con la farina sulle maniche analizza i cornetti come un critico. Fa il turno di notte in pasticceria.',
+    who: ['yusuf'],
+    perk: 'yusuf',
+    pt: 'I dolci di Yusuf in vetrina (+4 Atmosfera)',
+    end: {
+      'yusuf=difendi': { n: 'Casa', perk: 'yusuf', pt: 'I dolci di Yusuf in vetrina (+4 Atmosfera)' },
+      'yusuf=lascia': { n: 'Il permesso', perk: 'yusuf', pt: 'I dolci di Yusuf in vetrina (+4 Atmosfera)' }
+    },
+    ch: [
+      {
+        t: 'Sfoglia',
+        r: 22,
+        l: [
+          [0, '*spezza il cornetto e lo guarda controluce*'],
+          [0, 'Burro vero. Ventisette strati, forse ventotto. Bravi.'],
+          [0, 'Scusate, deformazione professionale. Faccio cornetti dalle tre di notte, in una pasticceria qui dietro.'],
+          [
+            0,
+            'Sono arrivato in Italia su una barca. Avevo sedici anni. Il primo cornetto della mia vita me lo ha dato un volontario, sul molo.'
+          ],
+          [0, 'Era secco. Ma era il cibo più buono del mondo.'],
+          {
+            c: {
+              q: 'Yusuf ti porge metà cornetto, serissimo: «Assaggia. Dimmi cosa senti.»',
+              o: [
+                {
+                  t: '«Cosa sogni di fare, Yusuf?»',
+                  f: 'yusuf1=sogno',
+                  r: [[0, 'Una pasticceria mia. Metà gambiana, metà napoletana. La gente penserà che sono pazzo.']]
+                },
+                {
+                  t: '«Ti va di assaggiare i nostri dolci e darci i voti?»',
+                  f: 'yusuf1=assaggio',
+                  r: [
+                    [0, 'Davvero? Guarda che sono severo.'],
+                    [0, '*assaggia la cheesecake* Sette. Troppa vaniglia. Ma la mangio tutta.']
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'La voce di mamma',
+        r: 40,
+        who: ['yusuf', 'rosa'],
+        l: [
+          [0, "*ascolta un messaggio vocale con il telefono attaccato all'orecchio*"],
+          [0, '*sorride, poi si asciuga gli occhi con la manica infarinata*'],
+          [1, 'Ragazzo, tutto bene?'],
+          [0, 'È mia madre. Mi manda un vocale ogni mattina. Le galline, il mercato, mia sorella che si sposa.'],
+          [0, 'Non la vedo da tre anni.'],
+          [1, 'Mio figlio è partito per la Germania nel 1970. Con una valigia di cartone.'],
+          [1, 'Ogni domenica aspettavo la sua telefonata dal posto pubblico. Tre minuti, poi cadeva la linea.'],
+          [0, "E lui com'era, là?"],
+          [1, "Solo, all'inizio. Poi qualcuno gli ha offerto un caffè. Così si comincia."],
+          [0, 'Sogno una pasticceria mia. Metà gambiana, metà napoletana.', 'yusuf1=sogno'],
+          [1, 'Allora la prima sfogliatella la assaggio io.', 'yusuf1=sogno'],
+          [0, 'Qui il barista mi fa assaggiare i dolci e io do i voti. Sono severo.', 'yusuf1=assaggio'],
+          [1, 'Bravo. I baristi vanno tenuti in riga.', 'yusuf1=assaggio']
+        ]
+      },
+      {
+        t: 'Il cliente',
+        r: 58,
+        l: [
+          [0, 'Oggi un signore, qui al bancone, ha detto che rubo il lavoro agli italiani.'],
+          [0, 'Ad alta voce. Tutti hanno guardato il pavimento.'],
+          [0, 'Io lavoro dalle tre di notte. Faccio i cornetti che lui mangia a colazione.'],
+          [0, 'E il permesso di soggiorno scade tra un mese. Se non mi rinnovano il contratto...'],
+          {
+            c: {
+              q: 'Yusuf stringe il bicchiere. Nel locale tutti fanno finta di non ascoltare.',
+              o: [
+                {
+                  t: '«Qui sei a casa. Chi non lo capisce, il caffè può prenderlo altrove.»',
+                  f: 'yusuf=difendi',
+                  r: [
+                    [0, '*alza gli occhi, sorpreso*'],
+                    [0, "L'hai detto forte. Ti hanno sentito tutti."],
+                    [0, '...Grazie.']
+                  ]
+                },
+                {
+                  t: '«Lascia perdere. Non vale la pena arrabbiarsi.»',
+                  f: 'yusuf=lascia',
+                  r: [
+                    [0, 'Lo so. Lascio sempre perdere. Sono bravissimo a lasciar perdere.'],
+                    [0, '*abbassa la testa sul bicchiere*']
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'Il permesso',
+        r: 76,
+        who: ['yusuf', 'rosa'],
+        l: [
+          [0, 'Signora Rosa! Il permesso! Rinnovato, due anni!'],
+          [1, "Lo sapevo. Ho acceso una candela a Sant'Antonio. E una al tuo santo, qualunque sia."],
+          [0, 'Quel giorno al bancone qualcuno ha detto che questa è casa mia. Ci ho creduto.', 'yusuf=difendi'],
+          [1, "E quel signore non si è più visto. Il caffè l'ha trovato altrove.", 'yusuf=difendi'],
+          [0, 'Quel giorno ho lasciato perdere. Ma la notte ci pensavo.', 'yusuf=lascia'],
+          [1, 'La prossima volta non lasci perdere. Adesso ci siamo noi.', 'yusuf=lascia'],
+          [0, 'Il capo mi ha fatto il contratto fisso. Primo pasticcere del turno di notte.'],
+          [0, 'I miei dolci li porto qui. Nella vostra vetrina, se volete.'],
+          [1, 'E mandiamo una foto a tua madre. Con tutti noi dietro.'],
+          [0, '*registra un vocale ridendo, mentre Rosa saluta in dialetto*']
+        ]
+      }
+    ],
+    rt: [
+      [
+        [0, 'Assaggi questo, signora. Ricetta nuova.'],
+        [1, 'Troppo zucchero. Dammene un altro.']
+      ],
+      [
+        [1, 'Hai chiamato tua madre?'],
+        [0, 'Stamattina. Ti saluta. Dice che sei la mia nonna italiana.']
+      ]
+    ]
   }
 ];
 const CINE = [
