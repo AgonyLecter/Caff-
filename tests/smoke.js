@@ -829,7 +829,7 @@ async function playMini(page, kind, itemId) {
     await sp.waitForTimeout(2500);
     const gone = await sp.evaluate(() => !document.getElementById('splash'));
     await sp.close();
-    ok(shown && gone, 'schermata di caricamento «Caffè Notturno»: compare e poi sparisce');
+    ok(shown && gone, 'schermata di caricamento «Caffè sotto la pioggia»: compare e poi sparisce');
   }
 
   console.log('Gioco attivo: ora di punta e bisogni ai tavoli');

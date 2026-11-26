@@ -1339,6 +1339,11 @@ function wallSlots() {
       });
   }
   out.push({ id: 'bancone', n: 'Dietro il bancone', x: counterX + 6, y: 5, w: W - 34 - counterX - 8, h: 16 });
+  // sui pilastri tra due finestre aperte (insegne piccole)
+  for (let k = 0; k + 1 < Math.min(st.space, cols); k++)
+    out.push({ id: 'col' + k, n: `Tra la finestra ${k + 1} e la ${k + 2}`, x: colX[k] - 30, y: 46, w: 8, h: 12 });
+  // sotto la finestrella della cucina, quando c'è il cuoco
+  if (st.cook) out.push({ id: 'cucina', n: 'Sotto la finestra della cucina', x: counterX + 6, y: 57, w: 28, h: 24 });
   return out;
 }
 let neonZap = {};
