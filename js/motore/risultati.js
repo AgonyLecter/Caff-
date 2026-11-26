@@ -15,7 +15,7 @@ function startResult(m) {
   cancelAnimationFrame(resRaf);
   const loop = () => {
     if (mini !== m || !m.done) return;
-    drawResult(cv.getContext('2d'), m.k, item, m.q, (performance.now() - t0) / 1000, m.seq || [], seed);
+    drawResult(cv.getContext('2d'), m.k, item, m.q, (performance.now() - t0) / 1000, m.seq || [], seed, m.drawPx);
     resRaf = requestAnimationFrame(loop);
   };
   loop();
@@ -24,7 +24,7 @@ function stopResult() {
   cancelAnimationFrame(resRaf);
 }
 
-function drawResult(x, kind, item, q, t, seq, seed) {
+function drawResult(x, kind, item, q, t, seq, seed, drawPx) {
   x.clearRect(0, 0, RES_N, RES_N);
   const R = (px, py, w, h, c) => {
       x.fillStyle = c;
@@ -80,7 +80,23 @@ function drawResult(x, kind, item, q, t, seq, seed) {
     },
     bob = Math.round(Math.sin(t * 2.4) * 0.6);
 
-  if (kind === 'latte') {
+  if (kind === 'mano') {
+    disc(16, 16, 14, '#e8dcf0');
+    disc(16, 16, 12, '#fffaf2');
+    disc(16, 16, 10, '#8a5230');
+    disc(16, 16, 9, '#a8663a');
+    const open = Math.min(1, t * 1.2);
+    x.globalAlpha = open;
+    for (const v of drawPx || []) {
+      const px = v % RES_N,
+        py = (v / RES_N) | 0;
+      if (Math.hypot(px - 16, py - 16) < 10) R(px, py, 1, 1, '#f8ecd8');
+    }
+    x.globalAlpha = 1;
+    R(27, 14, 3, 4, '#fffaf2');
+    steam(16, 6, 3);
+    sparkles();
+  } else if (kind === 'latte') {
     // tazza vista dall'alto, con il disegno che si "apre" piano
     disc(16, 16, 14, '#e8dcf0');
     disc(16, 16, 12, '#fffaf2');
@@ -231,4 +247,161 @@ function drawResult(x, kind, item, q, t, seq, seed) {
     if (q === 0) for (let i = 0; i < 4; i++) R(22 + i * 2, 25, 1, 1, '#c98030');
     sparkles();
   }
+}
+
+/* ----- latte art a mano libera ----- */
+// Disegni col dito sulla schiuma. La forma si vede chiara per un attimo e poi resta appena accennata.
+// Il punteggio confronta il disegno con la forma su una griglia 48x48 (con un po' di tolleranza):
+// quanta parte del disegno sta sulla forma e quanta parte della forma hai coperto.
+const MANO_N = 96;
+let mano = null;
+function manoStart(m) {
+  const shape = (m.c.req && m.c.req.shape) || 'cuore',
+    cv = $('#mdraw');
+  mano = { m, shape, strokes: [], cur: null, t0: performance.now(), tpl: SHAPES[shape]() };
+  cv.width = cv.height = MANO_N;
+  cv.hidden = false;
+  $('#mmeter').hidden = true;
+  $('#mdots').hidden = true;
+  $('#mtxt').textContent = `Disegna ${SHAPEN[shape]} sulla schiuma, poi tocca «Fatto!».`;
+  m.arm = true;
+  const loop = () => {
+    if (!mano || mano.m !== m || m.done) return;
+    manoDraw();
+    m.raf = requestAnimationFrame(loop);
+  };
+  loop();
+}
+function manoDraw() {
+  const x = $('#mdraw').getContext('2d'),
+    N = MANO_N,
+    age = (performance.now() - mano.t0) / 1000;
+  x.clearRect(0, 0, N, N);
+  x.fillStyle = '#e8dcf0';
+  x.beginPath();
+  x.arc(N / 2, N / 2, N / 2, 0, 7);
+  x.fill();
+  x.fillStyle = '#8a5230';
+  x.beginPath();
+  x.arc(N / 2, N / 2, N * 0.44, 0, 7);
+  x.fill();
+  x.fillStyle = '#a8663a';
+  x.beginPath();
+  x.arc(N / 2, N / 2, N * 0.4, 0, 7);
+  x.fill();
+  // la forma: chiara all'inizio, poi solo un'ombra
+  const show = age < 1.4 ? 0.6 : Math.max(0.12, 0.6 - (age - 1.4) * 0.8);
+  x.strokeStyle = `rgba(255,255,255,${show})`;
+  x.lineWidth = 2;
+  x.setLineDash([3, 3]);
+  x.lineCap = x.lineJoin = 'round';
+  for (const s of mano.tpl) {
+    x.beginPath();
+    s.forEach(([a, b], i) => (i ? x.lineTo(a * N, b * N) : x.moveTo(a * N, b * N)));
+    x.stroke();
+  }
+  x.setLineDash([]);
+  x.strokeStyle = '#f8ecd8';
+  x.lineWidth = 5;
+  for (const s of mano.strokes.concat(mano.cur ? [mano.cur] : [])) {
+    x.beginPath();
+    s.forEach(([a, b], i) => (i ? x.lineTo(a * N, b * N) : x.moveTo(a * N, b * N)));
+    if (s.length === 1) x.lineTo(s[0][0] * N + 0.1, s[0][1] * N);
+    x.stroke();
+  }
+}
+function manoPoint(e) {
+  const r = $('#mdraw').getBoundingClientRect();
+  return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
+}
+$('#mdraw').addEventListener('pointerdown', e => {
+  if (!mano || mano.m.done) return;
+  e.preventDefault();
+  try {
+    $('#mdraw').setPointerCapture(e.pointerId);
+  } catch (err) {}
+  mano.cur = [manoPoint(e)];
+});
+$('#mdraw').addEventListener('pointermove', e => {
+  if (!mano || !mano.cur) return;
+  const p = manoPoint(e),
+    l = mano.cur[mano.cur.length - 1];
+  if (Math.hypot(p[0] - l[0], p[1] - l[1]) > 0.008) mano.cur.push(p);
+});
+['pointerup', 'pointercancel'].forEach(ev =>
+  $('#mdraw').addEventListener(ev, () => {
+    if (mano && mano.cur) {
+      mano.strokes.push(mano.cur);
+      mano.cur = null;
+    }
+  })
+);
+// trasforma dei tratti in un insieme di caselle su una griglia GxG
+function manoGrid(strokes, G) {
+  const set = new Set();
+  for (const s of strokes)
+    for (let i = 0; i < s.length; i++) {
+      const a = s[i],
+        b = s[i + 1] || a,
+        n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) * G * 2));
+      for (let k = 0; k <= n; k++) {
+        const gx = Math.floor((a[0] + ((b[0] - a[0]) * k) / n) * G),
+          gy = Math.floor((a[1] + ((b[1] - a[1]) * k) / n) * G);
+        if (gx >= 0 && gy >= 0 && gx < G && gy < G) set.add(gy * G + gx);
+      }
+    }
+  return set;
+}
+function manoGrow(set, G) {
+  const out = new Set(set);
+  for (const v of set) {
+    const x = v % G,
+      y = (v / G) | 0;
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++) if (x + dx >= 0 && y + dy >= 0 && x + dx < G && y + dy < G) out.add((y + dy) * G + x + dx);
+  }
+  return out;
+}
+// punteggio 0..1: media fra «quanto del disegno è sulla forma» e «quanto della forma hai disegnato»
+function manoScore(strokes, tpl) {
+  const G = 48,
+    A = manoGrid(tpl, G),
+    B = manoGrid(strokes, G);
+  if (B.size < 4) return 0;
+  const A2 = manoGrow(A, G),
+    B2 = manoGrow(B, G);
+  let inA = 0,
+    cov = 0;
+  for (const v of B) if (A2.has(v)) inA++;
+  for (const v of A) if (B2.has(v)) cov++;
+  const p = inA / B.size,
+    r = cov / A.size;
+  return p + r ? (2 * p * r) / (p + r) : 0;
+}
+// tocco su «Fatto!»
+function manoDone() {
+  if (!mano) return;
+  if (mano.cur) (mano.strokes.push(mano.cur), (mano.cur = null));
+  const pts = mano.strokes.reduce((a, s) => a + s.length, 0);
+  if (pts < 6) {
+    $('#mtxt').textContent = `Prima disegna ${SHAPEN[mano.shape]} col dito sulla schiuma!`;
+    sfx('meh');
+    return;
+  }
+  const f = manoScore(mano.strokes, mano.tpl);
+  // il caffè nell'animazione finale ha raggio 10 su 32: riportiamo il disegno a quella scala
+  const k = 10 / RES_N / 0.44;
+  mano.m.drawPx = [
+    ...manoGrid(
+      mano.strokes.map(st2 => st2.map(([a, b]) => [0.5 + (a - 0.5) * k, 0.5 + (b - 0.5) * k])),
+      RES_N
+    )
+  ];
+  mano.m.score = [f];
+  miniEnd(f >= 0.72 ? 2 : f >= 0.45 ? 1 : 0);
+}
+function manoStop() {
+  mano = null;
+  const cv = $('#mdraw');
+  if (cv) cv.hidden = true;
 }

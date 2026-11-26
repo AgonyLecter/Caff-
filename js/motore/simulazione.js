@@ -164,6 +164,11 @@ function makeReq(c) {
     c.req.dl = T + c.req.len;
   }
   if (r.k === 'doppio') c.order = Object.assign({}, c.order, { t: c.order.t * 1.8, p: c.order.p * 2, n: c.order.n + ' doppio' });
+  if (r.k === 'forma') {
+    c.req.shape = pick(Object.keys(SHAPES));
+    c.reqLine = c.reqLine.replace('{forma}', SHAPEN[c.req.shape]);
+    c.req.t = 'Disegna ' + SHAPEN[c.req.shape];
+  }
   if (r.mg) c.special = true;
 }
 function pickOrder(c) {

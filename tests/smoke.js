@@ -333,6 +333,54 @@ async function playMini(page, kind, itemId) {
   ])
     await playMini(page, k, id);
 
+  {
+    // latte art a mano: ricalcare la forma vale tre stelle, uno scarabocchio no; il disegno finisce sulla tazza
+    const res = {};
+    for (const [shape, mode] of [
+      ['cuore', 'bene'],
+      ['gatto', 'bene'],
+      ['stella', 'male']
+    ]) {
+      await page.evaluate(shape => {
+        const C = window.__cafe;
+        C.openMini({ order: C.MENU.find(m => m.id === 'capp'), type: 'normale', req: { mg: 'mano', t: 'Prova', shape }, x: 0, y: 0 });
+      }, shape);
+      await sleep(300);
+      const box = await page.locator('#mdraw').boundingBox();
+      const strokes =
+        mode === 'bene'
+          ? await page.evaluate(() => mano.tpl)
+          : [
+              [
+                [0.15, 0.85],
+                [0.3, 0.7],
+                [0.45, 0.6],
+                [0.6, 0.45],
+                [0.75, 0.3],
+                [0.85, 0.2]
+              ]
+            ];
+      for (const st0 of strokes) {
+        await page.mouse.move(box.x + st0[0][0] * box.width, box.y + st0[0][1] * box.height);
+        await page.mouse.down();
+        for (const [a, b] of st0.slice(1)) await page.mouse.move(box.x + a * box.width, box.y + b * box.height, { steps: 3 });
+        await page.mouse.up();
+      }
+      await page.locator('#mbtn').dispatchEvent('pointerdown');
+      await sleep(200);
+      res[shape] = await page.evaluate(() => ({ q: mini && mini.q, px: mini && (mini.drawPx || []).length }));
+      await page.evaluate(() => {
+        mini.done = true;
+        finishMini();
+      });
+      await sleep(100);
+    }
+    ok(
+      res.cuore.q === 2 && res.gatto.q === 2 && res.stella.q === 0 && res.cuore.px > 10,
+      `latte art a mano: forme ricalcate ★★★, scarabocchio ★ (${JSON.stringify(res)})`
+    );
+  }
+
   console.log('Bancone e tavoli');
   await page.evaluate(() => (window.__cafe.speed = 1));
   const coins0 = await page.evaluate(() => window.__cafe.st.coins);
