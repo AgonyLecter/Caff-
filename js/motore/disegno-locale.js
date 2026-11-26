@@ -1165,26 +1165,146 @@ function drawCounter() {
     g.fillRect(x + 46, 90, 3, 1);
   }
   const mx = W - 27;
-  g.fillStyle = '#8a8fa8';
-  g.fillRect(mx, 84, 15, 13);
-  g.fillStyle = '#5a5f78';
-  g.fillRect(mx, 84, 15, 2);
-  g.fillStyle = '#2a2d3a';
-  g.fillRect(mx + 3, 90, 9, 4);
-  g.fillStyle = '#cfd3e6';
-  g.fillRect(mx + 7, 94, 1, 1);
-  g.fillStyle = Math.floor(T * 2) % 2 ? '#ff4fa3' : '#7a2a55';
-  g.fillRect(mx + 12, 87, 1, 1);
-  if (st.machine >= 5) {
-    g.fillStyle = '#d9b441';
-    g.fillRect(mx, 84, 15, 1);
-    g.fillRect(mx, 96, 15, 1);
-  }
+  drawMachine(mx, 84, machCfg());
   if (queue[0] && queue[0].state === 'order') {
     g.fillStyle = '#f4f1de';
     g.fillRect(mx + 6, 95, 3, 2);
     if (Math.random() < 0.3) parts.push({ x: mx + 7, y: 92, vx: rnd(-2, 2), vy: -8, t: 0.9, max: 0.9, k: 'steam' });
   }
+}
+// macchina del caffè personalizzabile: corpo 15x13 con angolo in alto a sinistra in (mx, my)
+function machCfg() {
+  return {
+    fin: st.mfin || 'acciaio',
+    dec: st.mdec || '',
+    acc: (st.macc || []).filter(a => !(st.maccOff || []).includes(a)),
+    gold: st.machine >= 5
+  };
+}
+function drawMachine(mx, my, cfg) {
+  const F = MACH.fin.find(f => f.id === cfg.fin) || MACH.fin[0],
+    A = k => cfg.acc.includes(k),
+    R = (x, y, w, h, c) => {
+      g.fillStyle = c;
+      g.fillRect(x, y, w, h);
+    };
+  if (A('insegna')) {
+    const on = blackout() ? 0.25 : Math.sin(T * 9) > -0.9 ? 1 : 0.3;
+    R(mx - 1, my - 15, 17, 6, '#1a1020');
+    g.globalAlpha = on;
+    R(mx, my - 14, 15, 1, '#ff4fa3');
+    R(mx, my - 11, 15, 1, '#ff4fa3');
+    for (let i = 0; i < 7; i++) R(mx + 1 + i * 2, my - 13, 1, 2, i % 2 ? '#4ff0ff' : '#ffd1ea');
+    g.globalAlpha = 1;
+  }
+  if (A('lucine'))
+    for (let i = 0; i < 9; i++) {
+      const on = (Math.floor(T * 2) + i) % 3 !== 0;
+      R(mx - 2 + i * 2, my - 3 + (i % 2), 1, 1, on ? ['#ff4fa3', '#4ff0ff', '#ffd166', '#7bd389'][i % 4] : '#3a2a4a');
+    }
+  if (A('tazze'))
+    for (let i = 0; i < 3; i++) {
+      R(mx + 2 + i * 4, my - 3, 3, 3, '#fffaf2');
+      R(mx + 2 + i * 4, my - 3, 3, 1, '#e8dcf0');
+    }
+  // corpo
+  R(mx, my, 15, 13, F.b);
+  R(mx, my, 15, 2, F.d);
+  R(mx, my + 2, 1, 11, F.t);
+  R(mx + 14, my + 2, 1, 11, F.d);
+  R(mx + 3, my + 6, 9, 4, '#2a2d3a');
+  R(mx + 7, my + 10, 1, 1, '#cfd3e6');
+  R(mx + 3, my + 3, 1, 1, F.t);
+  R(mx + 5, my + 3, 1, 1, F.t);
+  R(mx, my + 12, 15, 1, F.d);
+  R(mx + 13, my + 3, 1, 1, Math.floor(T * 2) % 2 ? '#ff4fa3' : '#7a2a55');
+  if (cfg.gold) {
+    R(mx, my, 15, 1, '#d9b441');
+    R(mx, my + 12, 15, 1, '#d9b441');
+  }
+  if (A('manometro')) {
+    R(mx + 9, my + 2, 3, 3, '#fffaf2');
+    R(mx + 10, my + 3, 1, 1, '#2a2d3a');
+    R(mx + 9 + (Math.sin(T * 3) > 0 ? 2 : 0), my + 2, 1, 1, '#e63946');
+  }
+  // adesivo
+  const S = {
+    cuore: [
+      '#ff4fa3',
+      [
+        [0, 0],
+        [2, 0],
+        [0, 1],
+        [1, 1],
+        [2, 1],
+        [1, 2]
+      ]
+    ],
+    stella: [
+      '#ffd166',
+      [
+        [1, 0],
+        [0, 1],
+        [1, 1],
+        [2, 1],
+        [1, 2]
+      ]
+    ],
+    gatto: [
+      '#1b1420',
+      [
+        [0, 0],
+        [2, 0],
+        [0, 1],
+        [1, 1],
+        [2, 1],
+        [0, 2],
+        [1, 2],
+        [2, 2]
+      ]
+    ],
+    fulmine: [
+      '#4ff0ff',
+      [
+        [1, 0],
+        [2, 0],
+        [1, 1],
+        [0, 2],
+        [1, 2]
+      ]
+    ]
+  }[cfg.dec];
+  if (S) S[1].forEach(([x, y]) => R(mx + 1 + x, my + 7 + y, 1, 1, S[0]));
+  if (A('lattiera')) {
+    R(mx - 5, my + 7, 4, 6, '#cfd3e6');
+    R(mx - 5, my + 7, 4, 1, '#ffffff');
+    R(mx - 6, my + 8, 1, 3, '#8a8fa8');
+    R(mx - 2, my + 6, 1, 1, '#cfd3e6');
+  }
+  if (A('piantina')) {
+    R(mx + 16, my + 9, 4, 4, '#c0704a');
+    R(mx + 16, my + 9, 4, 1, '#d8804a');
+    [
+      [1, 5, 1, 4],
+      [2, 3, 1, 6],
+      [0, 6, 1, 2],
+      [3, 5, 1, 3]
+    ].forEach(([x, y, w, h]) => R(mx + 16 + x, my + y, w, h, '#3f9a5c'));
+    R(mx + 18, my + 3, 1, 1, '#5cc07a');
+  }
+}
+// anteprima della macchina per la scheda Stili (immagine ingrandita)
+function machPreview(cfg) {
+  const c = document.createElement('canvas');
+  c.width = 30;
+  c.height = 32;
+  const old = g;
+  g = c.getContext('2d');
+  try {
+    drawMachine(8, 17, cfg);
+  } catch (e) {}
+  g = old;
+  return c.toDataURL();
 }
 function drawParts() {
   for (const p of parts) {

@@ -243,3 +243,30 @@ const SWEETS = [
   ['muffin', 'Muffin'],
   ['cookie', 'Biscotto']
 ].map(([k, n]) => [pxSvg(PXS[k].r, PXS[k].p), n]);
+
+// Personalizzazione della macchina del caffè (scheda Stili). Ogni oggetto comprato dà +1 Atmosfera.
+// fin: finiture (una alla volta) con colori corpo/ombra/riflesso; dec: adesivi (uno alla volta); acc: accessori (si possono avere tutti)
+const MACH = {
+  fin: [
+    { id: 'acciaio', n: 'Acciaio', c: 0, b: '#8a8fa8', d: '#5a5f78', t: '#cfd3e6' },
+    { id: 'rame', n: 'Rame', c: 800, b: '#c87a4a', d: '#8a4a2a', t: '#ffd0a0' },
+    { id: 'rosa', n: 'Rosa pastello', c: 2500, b: '#f4a0c0', d: '#c06a8a', t: '#fff0f6' },
+    { id: 'menta', n: 'Verde menta', c: 6000, b: '#8ad8c0', d: '#4a9a8a', t: '#e8fff8' },
+    { id: 'nera', n: 'Nera opaca', c: 12000, b: '#3a3842', d: '#1e1c24', t: '#8a8fa8' },
+    { id: 'oro', n: 'Oro', c: 40000, b: '#d9b441', d: '#a8822a', t: '#fff3c4' }
+  ],
+  dec: [
+    { id: 'cuore', n: 'Adesivo a cuore', c: 300 },
+    { id: 'stella', n: 'Adesivo a stella', c: 600 },
+    { id: 'gatto', n: 'Adesivo col gatto', c: 1200 },
+    { id: 'fulmine', n: 'Fulmine al neon', c: 3000 }
+  ],
+  acc: [
+    { id: 'tazze', n: 'Tazzine impilate', d: 'Una pila di tazzine calde sopra la macchina', c: 400 },
+    { id: 'lattiera', n: 'Lattiera', d: "Una lattiera d'acciaio accanto alla macchina", c: 900 },
+    { id: 'piantina', n: 'Piantina', d: "Un vasetto con una piantina, per un po' di verde", c: 1500 },
+    { id: 'manometro', n: 'Manometro', d: "L'orologio della pressione, con la lancetta che balla", c: 2500 },
+    { id: 'lucine', n: 'Lucine', d: 'Un filo di lucine colorate sopra la macchina', c: 5000 },
+    { id: 'insegna', n: 'Insegna «Espresso»', d: 'Una piccola insegna al neon sopra la macchina', c: 9000 }
+  ]
+};

@@ -1179,3 +1179,14 @@ input {
     font-size: 13px;
   }
 }
+
+/* anteprima della macchina del caffè nella scheda Stili */
+.mach img {
+  display: block;
+  width: 120px;
+  height: 128px;
+  margin: 4px auto;
+  image-rendering: pixelated;
+  background: radial-gradient(circle at 50% 70%, #3a2458, transparent 70%);
+  border-radius: 10px;
+}
