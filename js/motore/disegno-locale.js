@@ -827,7 +827,7 @@ function drawChair(se) {
   }
 }
 function drawItem(id, x, y) {
-  const it = MENU.find(m => m.id === id);
+  const it = itemOf(id);
   const i = it ? it.i : 'cup';
   const R = (c, a) => {
       g.fillStyle = c;

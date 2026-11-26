@@ -24,6 +24,7 @@ const DEF = {
   mdecOwn: [],
   macc: [],
   maccOff: [],
+  recipes: [], // ricette scoperte nel laboratorio
   neonOwn: [], // insegne al neon comprate e dove sono installate { punto: insegna }
   neonAt: {},
   name: '',
@@ -247,7 +248,11 @@ function arrival() {
   if (st.served < 60) m *= 1.5; // i primi clienti arrivano più spesso: l'inizio non deve essere lento
   return 5.5 / rushArrival(m);
 }
-const availMenu = () => MENU.slice(0, st.menu).filter(it => it.s !== 'k' || st.cook > 0);
+const availMenu = () =>
+  MENU.slice(0, st.menu)
+    .filter(it => it.s !== 'k' || st.cook > 0)
+    .concat(RICETTE.filter(r => (st.recipes || []).includes(r.id)));
+const itemOf = id => MENU.find(m => m.id === id) || RICETTE.find(m => m.id === id);
 const dailyItem = () => {
   const m = availMenu();
   return st.lav && m.length > 1 ? m[(st.day * 7 + 3) % m.length] : null;

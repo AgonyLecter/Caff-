@@ -1,6 +1,7 @@
 // Segreti da scoprire (EGGS) e visitatori rari (RARE).
 
 const EGGS = [
+  { id: 'ricettario', n: 'Alchimista del caffè', h: 'Scopri tutte le ricette del laboratorio.' },
   { id: 'tuttofare', n: 'Tuttofare', h: 'Cocci, pozzanghere, macchine capricciose, ombrelli dimenticati: sistemane venti.' },
   { id: 'neon', n: 'Città al neon', h: 'Colleziona tutte le insegne al neon del negozio.' },
   { id: 'macchina', n: 'Una macchina da sogno', h: "Personalizza la macchina del caffè con tutto quello che c'è nel negozio." },

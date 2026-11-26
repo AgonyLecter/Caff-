@@ -917,6 +917,32 @@ async function playMini(page, kind, itemId) {
       n1.own === 'cuore,w_caffe' && n1.at === 'cuore,w_caffe' && n1.atm >= a1 + 4 && (!slot || moved) && stored,
       `insegne al neon: comprate e accese (${n1.at}), spostate e rimesse in magazzino, +Atmosfera`
     );
+    // laboratorio: una combinazione sbagliata dà un indizio, quella giusta mette la ricetta nel menu
+    await page.click('#tabs button:has-text("Menu")');
+    await sleep(100);
+    const lab = async ks => {
+      await page.evaluate(() => {
+        labSel = [];
+        renderPanel();
+      });
+      for (const k of ks) {
+        await page.click(`button[data-ing="${k}"]`);
+        await sleep(30);
+      }
+      await page.click('button[data-lab]');
+      await sleep(120);
+      const t = await page.textContent('#mbox');
+      await page.click('#mbox .btns button');
+      await sleep(80);
+      return t;
+    };
+    const t1 = await lab(['cioccolato', 'menta']);
+    const t2 = await lab(['cioccolato', 'menta', 'latte']);
+    const inMenu = await page.evaluate(() => availMenu().some(i => i.id === 'r_mentacioc'));
+    ok(
+      /Manca qualcosa di morbido/.test(t1) && /Nuova ricetta/.test(t2) && inMenu,
+      'laboratorio: indizio per la combinazione sbagliata, la ricetta giusta entra nel menu'
+    );
     await page.click('#pclose');
     await sleep(250);
     const sp = await browser.newPage();
@@ -986,6 +1012,7 @@ async function playMini(page, kind, itemId) {
     );
     await page.evaluate(() => {
       window.__cafe.speed = 1;
+      if (st.ds) st.ds.rushPlan = []; // niente altre ore di punta in programma oggi
       endRush();
     });
     await sleep(100);

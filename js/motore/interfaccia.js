@@ -875,8 +875,87 @@ function tabHTML() {
       : '') +
     UP.filter(u => u.tab === tab)
       .map(upRow)
-      .join('')
+      .join('') +
+    (tab === 'Menu' ? labHTML() : '')
   );
+}
+// laboratorio delle ricette: scegli fino a tre ingredienti e prova
+let labSel = [];
+const labCost = () => Math.round(Math.max(25, incomeRef() * 25));
+const labOpen = () => st.menu >= 3;
+function labHTML() {
+  if (!labOpen())
+    return `<div class="card2"><h3>Laboratorio<small>chiuso</small></h3><p class="ad">Si apre quando nel menu c'è il cappuccino.</p></div>`;
+  const got = st.recipes || [],
+    c = labCost();
+  return (
+    `<div class="card2 lab"><h3>Laboratorio<small>${got.length}/${RICETTE.length} ricette</small></h3><p class="ad">Scegli fino a tre ingredienti e prova. Se la combinazione è giusta, la bevanda entra nel menu e i clienti la ordinano. Se sbagli, ti do un indizio.</p><div class="ingr">` +
+    Object.entries(INGR)
+      .map(([k, g]) => `<button data-ing="${k}" class="${labSel.includes(k) ? 'on' : ''}">${pxSvg(g.r, g.p)}<small>${g.n}</small></button>`)
+      .join('') +
+    `</div><div class="who" style="justify-content:space-between;margin-top:8px"><span class="ad" style="margin:0">${labSel.length ? labSel.map(k => INGR[k].n).join(' + ') : 'Nessun ingrediente'}</span><button data-lab="1" ${!labSel.length || st.coins < c ? 'disabled' : ''}>Prova · ${coinB(c)}</button></div></div>` +
+    `<p class="note">Ricettario</p>` +
+    RICETTE.map(r =>
+      got.includes(r.id)
+        ? `<div class="row"><b>${r.n.charAt(0).toUpperCase() + r.n.slice(1)}</b><span>${r.ing.map(k => INGR[k].n).join(' + ')} · si vende a ${fmt(priceOf(r))}</span><button disabled>Nel menu</button></div>`
+        : ''
+    ).join('') +
+    (got.length < RICETTE.length
+      ? `<div class="lock"><span>Ancora ${RICETTE.length - got.length} ricette da scoprire</span><small>???</small></div>`
+      : '')
+  );
+}
+function labTry() {
+  const c = labCost();
+  if (!labSel.length || st.coins < c) return;
+  st.coins -= c;
+  const sel = labSel.slice().sort(),
+    same = r =>
+      r.ing.length === sel.length &&
+      r.ing
+        .slice()
+        .sort()
+        .every((x, i) => x === sel[i]),
+    hit = RICETTE.find(same),
+    got = (st.recipes = st.recipes || []);
+  let html;
+  if (hit && !got.includes(hit.id)) {
+    got.push(hit.id);
+    st.hearts++;
+    sfx('story');
+    logB(`Nuova ricetta del laboratorio: ${hit.n}`);
+    html = `<h2>Nuova ricetta!</h2><p><b>${hit.a} ${hit.n}</b>. Da adesso è nel menu: si vende a ${fmt(priceOf(hit))} monete. ♥ +1</p>`;
+    if (got.length >= RICETTE.length) egg('ricettario');
+    labSel = [];
+  } else if (hit) {
+    sfx('tap');
+    html = `<h2>La conosci già</h2><p>È il tuo ${hit.n}: lo hai già nel menu.</p>`;
+  } else {
+    sfx('meh');
+    // l'indizio: la ricetta non ancora scoperta più vicina a quello che hai provato
+    const near = RICETTE.filter(r => !got.includes(r.id))
+      .map(r => ({ r, inn: sel.filter(x => r.ing.includes(x)).length }))
+      .map(o => Object.assign(o, { miss: o.r.ing.length - o.inn }))
+      .sort((a, b) => b.inn - a.inn || a.miss - b.miss)[0];
+    let hint = "Mmh... non sa di niente di speciale. Prova un'altra combinazione.";
+    if (near && near.inn >= 1) {
+      const miss = near.r.ing.filter(x => !sel.includes(x)),
+        extra = sel.filter(x => !near.r.ing.includes(x));
+      if (!miss.length && extra.length) hint = "Ci sei quasi, ma c'è un ingrediente di troppo.";
+      else if (miss.length === 1 && !extra.length) hint = `Ci sei quasi! Manca qualcosa ${INGR[miss[0]].h}.`;
+      else if (miss.length === 1) hint = `Sei sulla buona strada: togli qualcosa e aggiungi qualcosa ${INGR[miss[0]].h}.`;
+      else {
+        const good = sel.filter(x => near.r.ing.includes(x)).map(k2 => INGR[k2].n.toLowerCase());
+        hint =
+          good.length > 1
+            ? `Qualcosa di buono c'è: ${good.join(' e ')} stanno bene insieme.`
+            : `Con ${good[0]} si può fare qualcosa di buono... ma non così.`;
+      }
+    }
+    html = `<h2>Non ancora...</h2><p>${hint}</p>`;
+  }
+  showModal(html, [{ t: 'Ok', big: 1, fn: () => (hideModal(), renderPanel()) }]);
+  save();
 }
 function cliHTML() {
   const a = atm();
@@ -977,7 +1056,7 @@ function cliHTML() {
         .slice()
         .sort((x, y) => (y.key ? 1 : 0) - (x.key ? 1 : 0) || y.f - x.f)
         .map(r => {
-          const fav = MENU.find(m => m.id === r.fav);
+          const fav = itemOf(r.fav);
           const rels = Object.entries(st.rel).filter(([k]) => k.includes(r.id)).length;
           const ft = favTable(r),
             hh = r.hn >= 3 ? Math.floor(r.hr) % 24 : -1,
@@ -1258,6 +1337,17 @@ $('#pbody').addEventListener('click', e => {
       renderPanel();
       save();
     }
+    return;
+  }
+  if (bt.dataset.ing) {
+    const k = bt.dataset.ing;
+    labSel = labSel.includes(k) ? labSel.filter(x => x !== k) : labSel.length < 3 ? labSel.concat(k) : labSel;
+    sfx('tap');
+    renderPanel();
+    return;
+  }
+  if (bt.dataset.lab) {
+    labTry();
     return;
   }
   if (bt.dataset.nb) {
