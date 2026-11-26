@@ -414,3 +414,104 @@ const SHAPES = {
     Array.from({ length: 50 }, (_, i) => [0.5 + Math.cos(i * 0.36) * (0.02 + i * 0.0062), 0.5 + Math.sin(i * 0.36) * (0.02 + i * 0.0062)])
   ]
 };
+
+// Laboratorio delle ricette (scheda Menu): combini fino a tre ingredienti; se la combinazione è giusta,
+// la bevanda entra nel menu e i clienti la ordinano. h è l'indizio che dà l'ingrediente quando manca.
+const INGR = {
+  caffe: { n: 'Caffè', h: 'di forte', p: { a: '#5a3020', b: '#c98a4a' }, r: ['..aaaa..', '.abbbba.', '.aaaaaa.', '.aaaaaa.', '..aaaa..'] },
+  latte: { n: 'Latte', h: 'di morbido', p: { a: '#f4f1de', b: '#8ab8ff' }, r: ['..bb..', '.aaaa.', '.aaaa.', '.aaaa.', '.aaaa.'] },
+  cioccolato: {
+    n: 'Cioccolato',
+    h: 'di dolce e scuro',
+    p: { a: '#5a2a18', b: '#8a4a2a' },
+    r: ['aabbaa', 'aabbaa', 'bbbbbb', 'aabbaa', 'aabbaa']
+  },
+  cannella: { n: 'Cannella', h: 'di speziato', p: { a: '#b8603a', b: '#8a4428' }, r: ['.a.a', '.a.a', '.b.b', '.a.a', '.a.a'] },
+  vaniglia: { n: 'Vaniglia', h: 'di profumato', p: { a: '#f4e8b0', b: '#3a2a20' }, r: ['..b...', '..b...', '.aab..', 'aaaa..', '.aa...'] },
+  menta: { n: 'Menta', h: 'di fresco', p: { a: '#5cc07a', b: '#2f7a4a' }, r: ['..a..', '.aaa.', 'aabaa', '.aba.', '..b..'] },
+  caramello: {
+    n: 'Caramello',
+    h: 'di appiccicoso',
+    p: { a: '#e0a040', b: '#ffd166' },
+    r: ['.aaaa.', 'abbbba', 'aaaaaa', '.a..a.', '.a....']
+  },
+  ghiaccio: { n: 'Ghiaccio', h: 'di freddo', p: { a: '#c8e8ff', b: '#ffffff' }, r: ['aaa.aa', 'aba.ab', 'aaa.aa', '.aaa..', '.aba..'] },
+  panna: { n: 'Panna', h: 'di soffice', p: { a: '#fffaf2', b: '#e8dcf0' }, r: ['..a...', '.aaa..', 'aaaaa.', 'bbbbb.'] },
+  arancia: { n: 'Arancia', h: 'di agrumato', p: { a: '#ff9f43', b: '#7bd389' }, r: ['..b...', '.aaa..', 'aaaaa.', 'aaaaa.', '.aaa..'] },
+  miele: { n: 'Miele', h: 'di dorato', p: { a: '#ffc43d', b: '#c98a2a' }, r: ['.bbb..', 'aaaaa.', 'aaaaa.', 'aaaaa.', '.aaa..'] },
+  matcha: { n: 'Matcha', h: 'di verde e amaro', p: { a: '#7bd389', b: '#3f9a5c' }, r: ['.aaa.', 'abbba', 'aaaaa', 'abbba', '.aaa.'] }
+};
+const RICETTE = [
+  { id: 'r_cannella', n: 'cappuccino alla cannella', a: 'Un', p: 18, s: 'm', t: 1.2, i: 'cup', ing: ['caffe', 'latte', 'cannella'] },
+  { id: 'r_mocaccino', n: 'mocaccino', a: 'Un', p: 20, s: 'm', t: 1.2, i: 'mug', ing: ['caffe', 'cioccolato', 'panna'] },
+  { id: 'r_arancia', n: "caffè all'arancia", a: 'Un', p: 16, s: 'm', t: 1, i: 'cup', ing: ['caffe', 'arancia'] },
+  { id: 'r_caramel', n: 'caramel macchiato', a: 'Un', p: 24, s: 'm', t: 1.3, i: 'glass', ing: ['caffe', 'caramello', 'panna'] },
+  { id: 'r_mielecaffe', n: 'caffè al miele', a: 'Un', p: 19, s: 'm', t: 1.1, i: 'cup', ing: ['caffe', 'miele', 'latte'] },
+  {
+    id: 'r_freddo',
+    n: 'caffè freddo alla vaniglia',
+    a: 'Un',
+    p: 26,
+    s: 'b',
+    t: 1.2,
+    i: 'glass',
+    ing: ['caffe', 'ghiaccio', 'vaniglia'],
+    pr: { sun: 3, rain: 0.4 }
+  },
+  {
+    id: 'r_mentacioc',
+    n: 'cioccolata alla menta',
+    a: 'Una',
+    p: 28,
+    s: 'b',
+    t: 1.3,
+    i: 'mug',
+    ing: ['cioccolato', 'menta', 'latte'],
+    pr: { rain: 2, snow: 2.5 }
+  },
+  {
+    id: 'r_arcioc',
+    n: "cioccolata all'arancia",
+    a: 'Una',
+    p: 30,
+    s: 'b',
+    t: 1.3,
+    i: 'mug',
+    ing: ['cioccolato', 'arancia'],
+    pr: { snow: 2 }
+  },
+  {
+    id: 'r_mieletti',
+    n: 'latte miele e cannella',
+    a: 'Un',
+    p: 22,
+    s: 'b',
+    t: 1.2,
+    i: 'mug',
+    ing: ['latte', 'miele', 'cannella'],
+    pr: { n: 2 }
+  },
+  {
+    id: 'r_matchafr',
+    n: 'matcha freddo',
+    a: 'Un',
+    p: 32,
+    s: 'b',
+    t: 1.2,
+    i: 'smoothie',
+    ing: ['matcha', 'latte', 'ghiaccio'],
+    pr: { sun: 2.5 }
+  },
+  {
+    id: 'r_granita',
+    n: 'granita menta e arancia',
+    a: 'Una',
+    p: 34,
+    s: 'b',
+    t: 1.1,
+    i: 'smoothie',
+    ing: ['ghiaccio', 'menta', 'arancia'],
+    pr: { sun: 3, snow: 0.1 }
+  },
+  { id: 'r_vaniglia', n: 'latte alla vaniglia con panna', a: 'Un', p: 25, s: 'b', t: 1.2, i: 'mug', ing: ['latte', 'vaniglia', 'panna'] }
+];

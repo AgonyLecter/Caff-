@@ -19,7 +19,7 @@ const ctx = vm.createContext({
   JSON
 });
 for (const f of files) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
-const D = vm.runInContext('({ CH, ARCS, MENU, FILI, FILI2, KEYS, KSEED, XS, XEPI, REL, PETC })', ctx);
+const D = vm.runInContext('({ CH, ARCS, MENU, FILI, FILI2, KEYS, KSEED, XS, XEPI, REL, PETC, RICETTE, INGR })', ctx);
 
 const problems = [];
 const bad = msg => problems.push(msg);
@@ -172,6 +172,20 @@ for (const [k, L] of Object.entries(D.REL))
       if (!Array.isArray(l) || !(l[0] === 0 || l[0] === 1)) bad(`frasi REL.${k}/${i}: battuta non valida`);
     })
   );
+
+// --- ricette del laboratorio
+const combos = new Set();
+D.RICETTE.forEach(r => {
+  r.ing.forEach(k => {
+    if (!D.INGR[k]) bad(`ricetta ${r.id}: ingrediente ${k} sconosciuto`);
+  });
+  if (r.ing.length < 2 || r.ing.length > 3) bad(`ricetta ${r.id}: servono 2 o 3 ingredienti`);
+  const key = r.ing.slice().sort().join('+');
+  if (combos.has(key)) bad(`ricetta ${r.id}: stessa combinazione di un'altra`);
+  combos.add(key);
+  if (!['m', 'b', 'v', 'k'].includes(r.s) || !(r.p > 0) || !r.n || !r.a) bad(`ricetta ${r.id}: campi mancanti`);
+  if (D.MENU.some(m => m.id === r.id)) bad(`ricetta ${r.id}: id già usato nel menu`);
+});
 
 // --- app offline: ogni file del gioco deve essere nella lista del servizio offline (sw.js)
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');

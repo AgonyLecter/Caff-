@@ -1323,3 +1323,34 @@ input {
     height: 150px;
   }
 }
+
+/* laboratorio delle ricette */
+.ingr {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.ingr button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 52px;
+  padding: 4px 2px;
+  background: #1b1030;
+}
+.ingr button .pxi {
+  width: 22px;
+  height: 22px;
+}
+.ingr button small {
+  font-size: 11px;
+  color: var(--dim);
+}
+.ingr button.on {
+  border-color: var(--gold);
+  box-shadow: 0 0 10px #ffd16688;
+}
+.ingr button.on small {
+  color: var(--gold);
+}
