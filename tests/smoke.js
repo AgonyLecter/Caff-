@@ -81,13 +81,13 @@ async function playMini(page, kind, itemId) {
     const C = window.__cafe; const it = C.MENU.find(m => m.id === itemId);
     C.openMini({ order: it, type: 'normale', req: { mg: kind, t: 'Test' }, x: 0, y: 0 });
   }, [kind, itemId]);
-  const mini = () => page.evaluate(() => { const m = window.__cafe.mini; return m && { pos: m.pos, zone: m.zone, done: m.done, q: m.q, lock: m.lock, phase: m.phase, seq: m.seq, hold: m.hold, k: m.k }; });
+  const mini = () => page.evaluate(() => { const m = window.__cafe.mini; return m && { pos: m.pos, zone: m.zone, done: m.done, q: m.q, lock: m.lock, arm: m.arm, phase: m.phase, seq: m.seq, hold: m.hold, k: m.k }; });
   const t0 = Date.now();
   let holding = false;
   while (Date.now() - t0 < 15000) {
     const m = await mini();
     if (!m || m.done) break;
-    if (m.lock) { await sleep(30); continue; }
+    if (m.lock || !m.arm) { await sleep(30); continue; }
     const mid = (m.zone[0] + m.zone[1]) / 2, inZ = m.pos >= m.zone[0] + .01 && m.pos <= m.zone[1] - .01;
     if (kind === 'latte' || kind === 'padella') { if (Math.abs(m.pos - mid) < .03) await page.evaluate(() => window.__cafe.miniDown({ target: document.body })); }
     else if (kind === 'monta') {
@@ -118,7 +118,30 @@ async function playMini(page, kind, itemId) {
 
   validateData(await page.evaluate(() => ({ ARCS: window.__cafe.ARCS, CH: window.__cafe.CH })));
 
-  console.log('Minigiochi');
+  {
+    const bad = await page.evaluate(() => { const C = window.__cafe, out = [];
+      C.FILI.forEach(F => { if (F.b.length !== 3) out.push(F.id + ': servono 3 visite');
+        const ch = F.b[1].find(l => l && l.c); if (!ch || ch.c.o.length !== 2) out.push(F.id + ': manca la scelta a metà');
+        const fl = ch ? ch.c.o.map(o => o.f) : []; ['@a', '@b'].forEach(f => { if (!fl.includes(f)) out.push(F.id + ': scelta ' + f + ' mancante'); if (!F.b[2].some(l => Array.isArray(l) && l[2] === f)) out.push(F.id + ': il finale ' + f + ' non ha battute'); if (!F.e[f.slice(1)]) out.push(F.id + ': testo del finale ' + f + ' mancante'); });
+        F.b.forEach((b, i) => b.forEach(l => { if (Array.isArray(l) && (l[0] !== 0 || !l[1])) out.push(F.id + '/' + i + ': battuta non valida'); })); });
+      return out; });
+    bad.forEach(b => console.log('    - ' + b));
+    ok(!bad.length, `vite degli habitué: ${await page.evaluate(() => window.__cafe.FILI.length)} storie coerenti`);
+  }
+  {
+    // i tocchi sullo schermo fuori dal pulsante, e quelli durante il «Pronto…», non contano
+    await page.evaluate(() => { const C = window.__cafe; C.openMini({ order: C.MENU.find(m => m.id === 'capp'), type: 'normale', req: { mg: 'latte', t: 'Test' }, x: 0, y: 0 }); });
+    await sleep(100);
+    for (let i = 0; i < 6; i++) { await page.mouse.click(30, 30 + i * 10); await page.locator('#mbtn').dispatchEvent('pointerdown'); await sleep(40); }
+    const early = await page.evaluate(() => window.__cafe.mini.score.length);
+    await sleep(1000);
+    for (let i = 0; i < 5; i++) { await page.mouse.click(20, 20); await sleep(30); }
+    const outside = await page.evaluate(() => window.__cafe.mini.score.length);
+    await page.locator('#mbtn').dispatchEvent('pointerdown'); await sleep(50);
+    const onBtn = await page.evaluate(() => window.__cafe.mini.score.length);
+    ok(early === 0 && outside === 0 && onBtn === 1, `minigioco: ignorati i tocchi durante «Pronto» (${early}) e fuori dal pulsante (${outside}), il pulsante conta (${onBtn})`);
+    await page.evaluate(() => { const C = window.__cafe, m = C.mini; m.done = true; C.finishMini(); });
+  }
   for (const [k, id] of [['latte', 'capp'], ['monta', 'capp'], ['monta', 'caffe'], ['padella', 'toast'], ['shaker', 'smooth'], ['vetrina', 'cake']]) await playMini(page, k, id);
 
   console.log('Bancone e tavoli');
@@ -154,6 +177,38 @@ async function playMini(page, kind, itemId) {
   ok(await page.evaluate(g => window.__cafe.st.grinder === g + 1, g0), 'si può comprare un miglioramento (macinino)');
   await page.click('#pclose'); await sleep(250);
 
+
+  console.log('Vite degli habitué');
+  {
+    await page.evaluate(() => { const C = window.__cafe; C.speed = 8; C.st.regs.push({ id: 'rtest', n: 'Tester', look: C.CH.mia.l, type: 'studente', fav: 'caffe', v: 5, f: 5, tr: ['nerd'] }); });
+    let ok3 = true;
+    for (let step = 0; step < 3; step++) {
+      await page.evaluate(step => { const C = window.__cafe, r = C.st.regs.find(x => x.id === 'rtest'); if (r.fl) r.fl.day = -5;
+        const seat = C.slots.slice(0, C.st.tables).flatMap(sl => sl.seats).find(q => !q.occ && !q.res) || C.slots[0].seats[0];
+        const c = { id: 9e6 + step, look: r.look, name: r.n, reg: r, type: 'studente', x: seat.x, y: seat.y, state: 'sit', face: 1, order: C.MENU[0], seat, mood: 80, sitT: 999, thinkT: 999, sipT: 9, act: '' }; seat.occ = c; seat.dirty = false; C.people.push(c); C.startFilo(c); }, step);
+      for (let i = 0; i < 150; i++) {
+        if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=1');
+        const left = await page.evaluate(() => window.__cafe.scenes.some(s => s.story === 'filo'));
+        if (!left) break; await sleep(100);
+      }
+      await page.evaluate(() => { const C = window.__cafe; C.people.filter(p => p.id >= 9e6).forEach(p => { p.dead = true; if (p.seat) p.seat.occ = null; }); });
+    }
+    const res = await page.evaluate(() => { const C = window.__cafe, r = C.st.regs.find(x => x.id === 'rtest'); return { fl: r.fl, done: (C.st.fdone || [])[0] }; });
+    ok(!res.fl && res.done && res.done.n === 'Tester' && res.done.log.length === 3 && res.done.log[1].ch, `una vita completa in 3 visite con una scelta: «${res.done && res.done.t}» → ${res.done && res.done.e}`);
+    await page.evaluate(() => window.__cafe.speed = 1);
+    await page.click('#hud button[data-p="cli"]'); await sleep(150);
+    await page.click('#tabs button:has-text("Vite")'); await sleep(100);
+    await page.click('button[data-fd="0"]'); await sleep(150);
+    const rtxt = await page.textContent('#rtext');
+    await page.click('#rnext'); await sleep(80); await page.click('#rnext'); await sleep(80);
+    const endTxt = await page.textContent('#rtext .end').catch(() => '');
+    ok(rtxt.length > 40 && endTxt.length > 10 && await page.isVisible('#rport img'), 'il Diario si legge come un libro, con ritratti e finale');
+    await page.click('#rclose'); await sleep(100);
+    await page.click('#tabs button:has-text("Storie")'); await sleep(100);
+    const chap = await page.$('button[data-rd]');
+    if (chap) { await chap.click(); await sleep(120); ok((await page.textContent('#rtext')).length > 20, 'si rilegge un capitolo delle storie principali'); await page.click('#rclose'); await sleep(80); }
+    await page.click('#pclose'); await sleep(250);
+  }
 
   console.log('Segreti e interazioni');
   await page.evaluate(() => { window.__cafe.speed = 1; const st = window.__cafe.st; st.found = {}; });
