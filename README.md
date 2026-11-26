@@ -26,6 +26,13 @@ I file si caricano nell'ordine scritto in fondo a `index.html`: prima `js/motore
 poi i contenuti, poi il resto del motore. Sono script normali (non moduli), così il gioco funziona
 anche aprendo il file direttamente.
 
+## La regia dei racconti
+
+I momenti importanti (capitoli, vite degli habitué, incontri, visitatori rari) arrivano **uno alla volta**
+(`js/motore/regia.js`). Chi vuole raccontare fa segno con una stellina e aspetta che il giocatore lo tocchi
+(o che il bancone si liberi); mentre racconta il locale si calma e l'orologio si ferma, e il testo compare
+grande in alto. Dopo ogni racconto c'è un breve respiro, e ogni giorno ha un numero massimo di momenti.
+
 ## Aggiungere personaggi e storie
 
 Vedi [docs/come-aggiungere-contenuti.md](docs/come-aggiungere-contenuti.md).

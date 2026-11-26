@@ -1008,7 +1008,7 @@ function cliHTML() {
       done = st.fdone || [],
       ready = st.regs.filter(r => !r.fl && r.f >= 3).length;
     return (
-      `<p class="note">Le vite dei tuoi habitué. Quando un cliente si affeziona (affetto 3), ti racconta qualcosa di sé in tre visite, e a metà ti chiede un consiglio. Anche le coppie, gli amici e i rivali vivono storie a due. E quando i personaggi delle storie si incontrano, succedono cose. Le storie non finiscono mai.</p>` +
+      `<p class="note">Le vite dei tuoi habitué. Quando un cliente si affeziona (affetto 3), ti racconta qualcosa di sé in tre visite, e a metà ti chiede un consiglio. Anche le coppie, gli amici e i rivali vivono storie a due. E quando i personaggi delle storie si incontrano, succedono cose. Ogni vita è unica: la vive una persona sola.</p>` +
       (act.length
         ? `<div class="card2"><h3>In corso<small>${act.length}</small></h3>${act
             .map(r => {

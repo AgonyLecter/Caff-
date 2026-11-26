@@ -1678,6 +1678,7 @@ function hiRes() {
   const talkers = performer ? people.concat([performer]) : people;
   for (const c of talkers) {
     if (!c.bub) continue;
+    if (regia.live && (regia.capOn || !regia.live.mem.includes(c))) continue; // durante un momento parlano solo loro, nel riquadro grande
     ctx.font = `500 ${fs}px ${FONT}`;
     const maxW = Math.min(175 * DPR, cv.width * 0.3),
       lines = wrap(c.bub.txt, maxW);
@@ -1909,6 +1910,7 @@ function render() {
   drawParts();
   lighting();
   drawNeons(); // dopo le luci: di notte le insegne brillano davvero
+  regiaDraw(); // mentre qualcuno racconta, il resto si abbassa
   g.setTransform(1, 0, 0, 1, 0, 0);
   grade();
   const v = g.createRadialGradient(VW / 2, 90, VH * 0.35, VW / 2, 90, VW * 0.7);

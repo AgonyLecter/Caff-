@@ -133,6 +133,10 @@ Un **incontro** succede una sola volta, quando due personaggi che restano si tro
 
 Tre visite; nella seconda c'è una scelta con due risposte, `@a` e `@b`, e la terza cambia di conseguenza.
 
+**Ogni vita la vive una persona sola** (e ogni vita a due una coppia sola): così il giocatore non legge mai la stessa
+storia con le stesse parole per due persone diverse. Quando tutte le vite sono state vissute, gli habitué continuano
+con legami, incontri e rituali; per avere altre vite bisogna scriverne di nuove (più ce ne sono, meglio è).
+
 ```js
 { id: 'serra2', t: 'Titolo nel Diario',
   ok: r => r.tr.includes('sognatore'),   // a chi può capitare (r è l'habitué: r.type, r.tr, r.key, r.pet...)
