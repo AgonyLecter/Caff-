@@ -803,6 +803,24 @@ async function playMini(page, kind, itemId) {
       await page.evaluate(() => st.maccOff.includes('tazze') && !machCfg().acc.includes('tazze')),
       'un accessorio comprato si può nascondere'
     );
+    // insegne al neon: si comprano, si accendono da sole in un punto libero, si spostano o si mettono in magazzino
+    const a1 = await page.evaluate(() => atm());
+    await page.click('button[data-nb="cuore"]');
+    await sleep(60);
+    await page.click('button[data-nb="w_caffe"]');
+    await sleep(60);
+    const n1 = await page.evaluate(() => ({ own: st.neonOwn.join(','), at: Object.values(st.neonAt).sort().join(','), atm: atm() }));
+    const slot = await page.evaluate(() => wallSlots().find(S => !st.neonAt[S.id] && neonFit(NEONS[0], S)));
+    if (slot) await page.selectOption('select[data-ns="cuore"]', slot.id);
+    await sleep(60);
+    const moved = await page.evaluate(id => st.neonAt[id] === 'cuore', slot && slot.id);
+    await page.selectOption('select[data-ns="w_caffe"]', '');
+    await sleep(60);
+    const stored = await page.evaluate(() => !Object.values(st.neonAt).includes('w_caffe'));
+    ok(
+      n1.own === 'cuore,w_caffe' && n1.at === 'cuore,w_caffe' && n1.atm >= a1 + 4 && (!slot || moved) && stored,
+      `insegne al neon: comprate e accese (${n1.at}), spostate e rimesse in magazzino, +Atmosfera`
+    );
     await page.click('#pclose');
     await sleep(250);
     const sp = await browser.newPage();

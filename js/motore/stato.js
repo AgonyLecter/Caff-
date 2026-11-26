@@ -24,6 +24,8 @@ const DEF = {
   mdecOwn: [],
   macc: [],
   maccOff: [],
+  neonOwn: [], // insegne al neon comprate e dove sono installate { punto: insegna }
+  neonAt: {},
   name: '',
   found: {},
   chalk: '',
@@ -191,6 +193,7 @@ function machAtm() {
 function atm() {
   return (
     machAtm() +
+    neonAtm() +
     st.chairs * 4 +
     st.decor * 4 +
     st.music * 5 +
