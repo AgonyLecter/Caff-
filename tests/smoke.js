@@ -32,7 +32,8 @@ const SAVE = {
   wifi: 2,
   story: {},
   perks: {},
-  flags: {}
+  flags: {},
+  tutOff: 1 // i consigli di Nonna Rosa hanno il loro test
 };
 
 async function startGame(page, save) {
@@ -772,6 +773,48 @@ async function playMini(page, kind, itemId) {
         })
       );
     await clear();
+  }
+
+  console.log('Primo giorno guidato');
+  {
+    const gp = await browser.newPage({ viewport: { width: 1000, height: 450 } });
+    await gp.goto(FILE);
+    await gp.evaluate(() => localStorage.clear());
+    await gp.reload();
+    await gp.waitForTimeout(300);
+    await gp.click('#go');
+    await gp.waitForTimeout(800);
+    await gp.click('#skip');
+    await gp.waitForTimeout(300);
+    await gp.fill('#nameIn', 'Guida');
+    await gp.click('#openBtn');
+    let shown = false;
+    for (let i = 0; i < 80 && !shown; i++) {
+      shown = await gp.evaluate(() => !document.querySelector('#guide').hidden && gCur && gCur.id === 'servi');
+      await gp.waitForTimeout(250);
+    }
+    const ring = await gp.evaluate(() => !document.querySelector('#gring').hidden);
+    for (let i = 0; i < 40 && (await gp.evaluate(() => !st.tut.servi)); i++) {
+      await gp.locator('#serve').dispatchEvent('pointerdown');
+      await gp.waitForTimeout(80);
+    }
+    await gp.waitForTimeout(500);
+    const after = await gp.evaluate(() => ({
+      done: !!st.tut.servi,
+      hidden: document.querySelector('#guide').hidden || (gCur && gCur.id !== 'servi')
+    }));
+    ok(
+      shown && ring && after.done && after.hidden,
+      'Nonna Rosa compare al primo cliente, indica «Servi» e il consiglio si chiude dopo il primo servizio'
+    );
+    const old = await gp.evaluate(() => {
+      st.tut = undefined;
+      st.served = 500;
+      guideForOldSaves();
+      return GUIDA.filter(g => g.base).every(g => st.tut[g.id]) && !st.tut.bisogno;
+    });
+    ok(old, 'i salvataggi avanzati vedono solo i consigli sulle novità');
+    await gp.close();
   }
 
   console.log('Macchina del caffè e schermata di caricamento');

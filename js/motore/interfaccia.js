@@ -1110,6 +1110,7 @@ function setHTML() {
   return `<div class="set"><label class="note" for="rn">Nome della caffetteria</label><div class="line"><input id="rn" maxlength="22"><button id="rnb">Salva</button></div>
  <button id="snd">Suoni: ${st.sound ? 'sì' : 'no'}</button><button id="mus">Musica: ${st.musicOn ? 'sì' : 'no'}${st.music ? '' : ' (serve il giradischi)'}</button>
  ${isApp() ? '' : `<button id="inst" class="big">Installa il gioco sul telefono</button>`}
+ <div class="line"><button id="gtog" style="flex:1">Consigli di Nonna Rosa: ${st.tutOff ? 'no' : 'sì'}</button><button id="grst" style="flex:1">Rivedi i consigli</button></div>
  <button id="fsb">Schermo intero</button><div class="line"><button id="pho" style="flex:1">Scatta una foto</button><button id="cin" style="flex:1">Rivedi l'introduzione</button></div><div class="line"><button id="exp" style="flex:1">Esporta salvataggio</button><button id="imp" style="flex:1">Importa salvataggio</button></div><button id="rst">Ricomincia da capo</button>
  <p class="note">Clienti serviti: ${st.served} · Monete totali: ${fmt(st.earned)} · Giornate perfette: ${st.perfect}<br>Trascina la sala a destra e a sinistra quando diventa grande.<br>Il gioco si salva da solo su questo dispositivo (con una copia di riserva). Esporta il salvataggio in un file per non perderlo se cambi telefono o cancelli i dati del browser.<br>Creato da GlitchCraft</p></div>`;
 }
@@ -1363,6 +1364,20 @@ $('#pbody').addEventListener('click', e => {
       $('#hud').hidden = false;
       $('#serve').hidden = false;
     });
+    return;
+  }
+  if (bt.id === 'gtog') {
+    st.tutOff = st.tutOff ? 0 : 1;
+    renderPanel();
+    save();
+    return;
+  }
+  if (bt.id === 'grst') {
+    st.tut = {};
+    st.tutOff = 0;
+    toast('Nonna Rosa ti rispiegherà tutto, un passo alla volta');
+    renderPanel();
+    save();
     return;
   }
   if (bt.id === 'inst') {

@@ -28,6 +28,7 @@ const FILE = [
   'js/motore/atmosfera.js',
   'js/motore/interfaccia.js',
   'js/motore/risultati.js',
+  'js/motore/guida.js',
   'js/motore/avvio.js',
   'icone/apple-touch-icon.png',
   'icone/favicon-48.png',

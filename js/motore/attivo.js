@@ -162,10 +162,6 @@ function needsTick(dt) {
   if (!ks.length) return;
   const k = pick(ks);
   c.need = { k, t: 25 };
-  if (!st.needTip) {
-    st.needTip = 1;
-    toast('Un cliente ha bisogno di qualcosa: toccalo per aiutarlo');
-  }
   if (!c.bub && Math.random() < 0.6) say(c, pick(NEEDS[k].ask), 2.6, c.reg ? c.name : '');
 }
 // tocco vicino a un cliente con un bisogno: lo aiuti
