@@ -657,23 +657,50 @@ function trySpawn() {
     return;
   newCust();
 }
+// Storie che arrivano in un giorno qualunque (rand) e che lasciano passare dei giorni tra un capitolo e l'altro (gap)
+function storyDayOk(arc, k) {
+  if (arc.rand && k === 0) {
+    if (st.day < arc.rand.from) return false;
+    st.rolls = st.rolls || {};
+    const r = st.rolls[arc.id];
+    if (!r || r.d !== st.day) st.rolls[arc.id] = { d: st.day, v: Math.random() < arc.rand.p };
+    if (!st.rolls[arc.id].v) return false;
+  }
+  const gap = (arc.ch[k] && arc.ch[k].gap) || arc.gap || 0;
+  if (k > 0 && gap && ((st.arcDay || {})[arc.id] || 0) > st.day - gap) return false;
+  return true;
+}
+// chi entra in un capitolo può dipendere dal finale (whoBy: { 'storia=valore': [...] })
+function chapterWho(arc, ch) {
+  if (ch.whoBy) {
+    const e = Object.entries(ch.whoBy).find(([f]) => checkFlag(f));
+    if (e) return e[1];
+  }
+  return ch.who || arc.who;
+}
+function storyNote(arc) {
+  showModal(`<h2>${esc(arc.t)}</h2><p>${esc(arc.nota)}</p>`, [{ t: 'Ho capito', big: 1, fn: hideModal }]);
+}
 function tryStory() {
   const a = atm(),
     c = [];
   for (const arc of ARCS) {
     if (activeArcs.has(arc.id) || !arcReq(arc)) continue;
     const k = st.story[arc.id] || 0;
-    if (arc.ch.some(c => (c.who || arc.who).some(keyBusy))) continue;
+    if (arc.ch.some(c => chapterWho(arc, c).some(keyBusy))) continue;
     if (k >= arc.ch.length && arc.who.every(w => keyReg(w))) continue;
     if (k < arc.ch.length) {
+      if (!storyDayOk(arc, k)) continue;
       if (a >= arc.ch[k].r) c.push({ arc, k, ch: arc.ch[k] }, { arc, k, ch: arc.ch[k] });
     } else if (arc.rt.length && (st.rt[arc.id] || 0) < Date.now()) c.push({ arc, rt: 1 });
   }
   if (!c.length) return;
   const o = pick(c),
     arc = o.arc,
-    ch = o.ch || null,
-    who = ch ? ch.who || arc.who : arc.ch[arc.ch.length - 1].who || arc.who;
+    ch = o.ch || null;
+  // finale calcolato da tutte le scelte fatte (es. Davide): si decide prima che i personaggi entrino
+  if (ch && ch.calc) st.flags[ch.calc.flag] = ch.calc.fn();
+  const who = ch ? chapterWho(arc, ch) : arc.ch[arc.ch.length - 1].who || arc.who;
   let seats;
   if (who.length === 2) {
     const sl = freeTable();
@@ -695,6 +722,7 @@ function tryStory() {
       if (ch) {
         const bonus = Math.round(30 * Math.pow(1.5, Math.min(st.hearts, 25)) * (1 + 0.5 * st.frStars));
         st.story[arc.id] = o.k + 1;
+        (st.arcDay = st.arcDay || {})[arc.id] = st.day;
         st.hearts++;
         st.newStory = 1;
         if (st.ds) st.ds.stories++;
@@ -709,6 +737,7 @@ function tryStory() {
           setTimeout(() => toast(`Storia completata${E.n ? ' · finale «' + E.n + '»' : ''}! ${E.pt}`), 3600);
           logB(`Storia completata: ${arc.t}${E.n ? ' (finale: ' + E.n + ')' : ''}`);
           setTimeout(ensureKeyRegs, 7000);
+          if (arc.nota) setTimeout(() => storyNote(arc), 4800);
         }
         save();
       } else st.rt[arc.id] = Date.now() + 90000;

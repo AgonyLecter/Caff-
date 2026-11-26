@@ -234,6 +234,9 @@ $('#bSet').innerHTML = ICO.menu;
 $('#pclose').innerHTML = ICO.close;
 $('#dice').innerHTML = ICO.dice;
 window.__cafe = {
+  tryStory,
+  storyDayOk,
+  chapterWho,
   ritual,
   FILI2,
   XS,
