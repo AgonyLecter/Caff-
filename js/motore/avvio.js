@@ -42,6 +42,7 @@ function tap(e) {
     }
     return;
   }
+  if (tapNeed(x, y)) return;
   if (tapPet(x, y)) return;
   if (tapExtra(x, y)) return;
   for (let i = 0; i < 14; i++) {
@@ -94,6 +95,7 @@ function tapCounter() {
     return true;
   }
   q.prog += tapPow();
+  q.tapT = T;
   st.tapServe++;
   sfx('tap');
   for (let i = 0; i < 3; i++)

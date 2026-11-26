@@ -1,6 +1,8 @@
 // Segreti da scoprire (EGGS) e visitatori rari (RARE).
 
 const EGGS = [
+  { id: 'punta', n: "Mani d'oro", h: "Nell'ora di punta, servi tu venti clienti di fila senza farne scappare nessuno." },
+  { id: 'premura', n: 'Sempre presente', h: 'Accorgiti di quello che serve ai tuoi clienti. Cinquanta volte.' },
   { id: 'luna', n: "La luna fa l'occhiolino", h: 'Di notte guarda bene la luna. E insisti.' },
   { id: 'zampe', n: 'Amici a quattro zampe', h: 'Quando i padroni si siedono, gli animali vanno a conoscersi. Lasciali fare.' },
   { id: 'soffio', n: 'Il re del bancone', h: 'Il gatto del locale ha un carattere. Prova a fargli conoscere un cane.' },

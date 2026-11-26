@@ -774,6 +774,94 @@ async function playMini(page, kind, itemId) {
     await clear();
   }
 
+  console.log('Gioco attivo: ora di punta e bisogni ai tavoli');
+  {
+    await page.evaluate(() => {
+      const C = window.__cafe;
+      C.people.forEach(p => {
+        p.dead = true;
+        if (p.seat) p.seat.occ = null;
+      });
+      C.queue.length = 0;
+      C.speed = 1;
+      if (C.mini) {
+        C.mini.done = true;
+        C.finishMini();
+      }
+      startRush();
+    });
+    // chi tocca Servi durante l'ora di punta fa salire la combo (clienti messi già al bancone: il test non dipende dai tempi)
+    for (let n = 0; n < 4; n++) {
+      await page.evaluate(() => {
+        const C = window.__cafe;
+        C.queue.forEach(q => (q.dead = true));
+        C.queue.length = 0;
+        const c = C.newCust({ type: 'normale' });
+        Object.assign(c, { state: 'order', x: C.counterX - 8, y: 137, order: C.MENU[0], prog: 0, special: false, req: null, path: [] });
+      });
+      for (let i = 0; i < 30 && (await page.evaluate(() => window.__cafe.queue.length > 0)); i++) {
+        await page.locator('#serve').dispatchEvent('pointerdown');
+        await sleep(30);
+      }
+    }
+    const r = await page.evaluate(() => ({
+      combo: rush && rush.combo,
+      ui: !document.querySelector('#rush').hidden,
+      mult: rush && rushMult()
+    }));
+    if (!(r.combo >= 3))
+      console.log(
+        '    diagnosi:',
+        await page.evaluate(() =>
+          JSON.stringify({
+            paused,
+            modal: !document.querySelector('#modal').hidden,
+            mini: !!mini,
+            reader: !document.querySelector('#reader').hidden,
+            panel,
+            q: queue.map(q => q.state + (q.special ? '*' : '') + ' ' + q.waited.toFixed(0)),
+            people: people.filter(p => !p.dead).length,
+            t: rush && rush.t,
+            staff: baristaRate()
+          })
+        )
+      );
+    ok(
+      r.combo >= 3 && r.ui && r.mult > 1,
+      `ora di punta: combo ${r.combo}, moltiplicatore x${r.mult && r.mult.toFixed(1)}, banner visibile`
+    );
+    await page.evaluate(() => {
+      window.__cafe.speed = 1;
+      endRush();
+    });
+    await sleep(100);
+    ok(await page.evaluate(() => !rush && document.querySelector('#rush').hidden), "l'ora di punta finisce e il banner sparisce");
+    // un cliente seduto chiede qualcosa: toccandolo lo aiuti
+    const helped = await page.evaluate(() => {
+      const C = window.__cafe,
+        seat = C.slots[0].seats[0];
+      Object.assign(seat, { occ: null, dirty: false, res: null });
+      const c = C.newCust({ type: 'normale' });
+      C.queue.splice(C.queue.indexOf(c), 1);
+      Object.assign(c, { state: 'sit', seat, x: seat.x, y: seat.y, sitT: 99, thinkT: 99, order: C.MENU[0], mood: 50 });
+      seat.occ = c;
+      c.need = { k: 'zucchero', t: 25 };
+      const n0 = st.needs || 0,
+        m0 = c.mood;
+      const ok1 = tapNeed(c.x, c.y - 14);
+      return { ok: ok1 && !c.need && (st.needs || 0) === n0 + 1 && c.mood > m0 && c.tipx > 1 };
+    });
+    ok(helped.ok, 'bisogni ai tavoli: toccando il cliente lo aiuti (umore e mancia salgono)');
+    const expired = await page.evaluate(() => {
+      const c = window.__cafe.people.find(p => !p.dead && p.state === 'sit');
+      c.need = { k: 'acqua', t: 0.05 };
+      const m0 = c.mood;
+      needsTick(0.1);
+      return !c.need && c.mood < m0;
+    });
+    ok(expired, 'un bisogno ignorato passa, ma il cliente è meno contento');
+  }
+
   console.log('Davide e Yusuf');
   {
     // il finale di Davide dipende da tutte le scelte: soprattutto dal chiedergli apertamente se pensa di togliersi la vita
@@ -838,6 +926,7 @@ async function playMini(page, kind, itemId) {
         C.queue.length = 0;
         C.slots.forEach(sl => sl.seats.forEach(q => Object.assign(q, { occ: null, dirty: false, res: null })));
         st.rolls.davide = { d: st.day, v: true };
+        if (st.ds) st.ds.chap = 0;
         if (k) st.arcDay.davide = st.day - 5;
         // solo la storia di Davide è disponibile in questo momento
         C.ARCS.forEach(a => {

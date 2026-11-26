@@ -234,11 +234,28 @@ function addCoins(n, x, y) {
   if (x != null) floats.push({ x, y, txt: '+' + fmt(n), t: 1.3, col: '#ffd166' });
   qProgress('earned');
 }
+// Incasso «vero» del locale (vendite e mance, non premi): serve a dare premi proporzionati al momento della partita
+let salesLog = [];
+function logSale(n) {
+  salesLog.push([T, n]);
+  while (salesLog.length && salesLog[0][0] < T - 180) salesLog.shift();
+}
+function incomeRef() {
+  const s = salesLog.reduce((a, e) => a + e[1], 0),
+    span = Math.max(60, Math.min(180, T - (salesLog[0] ? salesLog[0][0] : T)));
+  return Math.max(1.5, s / span);
+}
+// premio pari a qualche decina di secondi di incasso (con un minimo che cresce con i giorni)
+function reward(sec) {
+  return Math.round(Math.max(40 + st.day * 10, incomeRef() * sec));
+}
 function serve(c, quality) {
   queue.shift();
   const it = c.order,
     price = priceOf(it);
   addCoins(price, c.x, c.y - 24);
+  logSale(price);
+  rushServe(c, price);
   st.served++;
   sfx('coin');
   if (st.ds) {
@@ -380,7 +397,10 @@ function leaveSeat(c) {
     (c.reg ? 1 + c.reg.f * 0.05 : 1) *
     (c.tipx || 1);
   tip = Math.round(tip);
-  if (tip > 0) addCoins(tip, c.x, c.y - 22);
+  if (tip > 0) {
+    addCoins(tip, c.x, c.y - 22);
+    logSale(tip);
+  }
   finishVisit(c);
   if (Math.random() < 0.15 && !c.story) say(c, pick(['Grazie, a domani!', 'Buonanotte!', 'Torno presto.', 'Ciao ciao!']), 2);
   exitC(c);
@@ -658,7 +678,10 @@ function trySpawn() {
   newCust();
 }
 // Storie che arrivano in un giorno qualunque (rand) e che lasciano passare dei giorni tra un capitolo e l'altro (gap)
+const CHAP_PER_DAY = 3; // capitoli delle storie principali al massimo in una giornata
 function storyDayOk(arc, k) {
+  if (st.ds && (st.ds.chap || 0) >= CHAP_PER_DAY) return false;
+  if ((st.arcDay || {})[arc.id] === st.day) return false; // un capitolo per storia al giorno
   if (arc.rand && k === 0) {
     if (st.day < arc.rand.from) return false;
     st.rolls = st.rolls || {};
@@ -720,12 +743,15 @@ function tryStory() {
     onEnd: () => {
       activeArcs.delete(arc.id);
       if (ch) {
-        const bonus = Math.round(30 * Math.pow(1.5, Math.min(st.hearts, 25)) * (1 + 0.5 * st.frStars));
+        const bonus = reward(120);
         st.story[arc.id] = o.k + 1;
         (st.arcDay = st.arcDay || {})[arc.id] = st.day;
         st.hearts++;
         st.newStory = 1;
-        if (st.ds) st.ds.stories++;
+        if (st.ds) {
+          st.ds.stories++;
+          st.ds.chap = (st.ds.chap || 0) + 1;
+        }
         const m = people.find(p => p.group === gid);
         addCoins(bonus, m ? m.x : W / 2, m ? m.y - 26 : 90);
         floats.push({ x: m ? m.x : W / 2, y: (m ? m.y : 110) - 36, txt: '♥ +1', t: 1.8, col: '#ff4fa3' });
@@ -774,6 +800,7 @@ function updCust(c, dt) {
         emo(c, 'sweat', 3);
       }
       if (c.pat <= 0) {
+        rushMiss();
         queue.splice(queue.indexOf(c), 1);
         say(c, pick(['Troppa attesa...', 'Uff, ripasso domani.', 'Niente, vado.']), 2.5);
         emo(c, 'angry');
@@ -798,9 +825,9 @@ function updCust(c, dt) {
         if (i === 0) {
           c.state = 'order';
           c.order = pickOrder(c);
-          c.special = c.type === 'critico' || Math.random() < (c.type === 'influencer' ? 0.5 : 0.07);
+          c.special = c.type === 'critico' || (!rush && Math.random() < (c.type === 'influencer' ? 0.5 : 0.07)); // nell'ora di punta niente speciali
           c.req = null;
-          if (!c.special && !c.story && Math.random() < 0.17) makeReq(c);
+          if (!c.special && !c.story && !rush && Math.random() < 0.17) makeReq(c);
           const o = c.order;
           const line =
             c.reg && c.order.id === c.reg.fav && Math.random() < 0.6
@@ -1189,7 +1216,8 @@ function genQuests() {
     () => ({ k: 'five', n: 2 + Math.min(6, d >> 1), t: 'Ricevi {n} recensioni da 5 stelle' }),
     () => ({ k: 'couples', n: 2 + Math.min(5, d >> 1), t: 'Fai sedere {n} coppie' }),
     () => ({ k: 'cleaned', n: 6 + d, t: 'Pulisci {n} tavoli' }),
-    () => ({ k: 'special', n: 1 + Math.min(3, d >> 2), t: 'Ordini speciali completati: {n}' })
+    () => ({ k: 'special', n: 1 + Math.min(3, d >> 2), t: 'Ordini speciali completati: {n}' }),
+    () => ({ k: 'needs', n: 2 + Math.min(5, d >> 1), t: 'Aiuta {n} clienti ai tavoli' })
   ];
   const qs = [],
     used = new Set();
@@ -1349,7 +1377,7 @@ function update(dt) {
   }
   if (q && q.state === 'order' && !q.special) {
     const r = q.order.s === 'k' ? cookRate() + baristaRate() * 0.3 : q.order.s === 'v' ? baristaRate() * 1.6 : baristaRate();
-    q.prog += r * dt;
+    q.prog += rushStaff(r) * dt;
     if (q.prog >= q.order.t) serve(q, 0);
   }
   people.forEach(c => {
@@ -1357,6 +1385,7 @@ function update(dt) {
     if (c.pet) updPet(c, dt);
   });
   petSocial(dt);
+  activeTick(dt);
   socialAI(dt);
   people = people.filter(c => !c.dead);
   musicianOn = people.some(p => p.state === 'sit' && p.act === 'guitar');
