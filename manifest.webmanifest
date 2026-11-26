@@ -1,0 +1,17 @@
+{
+  "name": "Caffè sotto la pioggia",
+  "short_name": "Caffè",
+  "description": "Un piccolo caffè in pixel art in una città dove piove sempre: clienti che tornano, si conoscono e vivono le loro storie.",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0b0716",
+  "theme_color": "#0b0716",
+  "icons": [
+    { "src": "icone/icona-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icone/icona-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icone/icona-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
