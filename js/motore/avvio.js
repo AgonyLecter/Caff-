@@ -353,3 +353,25 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+// La schermata di caricamento sparisce quando tutto è pronto (pagina e font), restando almeno un attimo per non lampeggiare.
+// Nei test automatici (navigator.webdriver) sparisce subito, a meno che l'indirizzo contenga ?splash.
+(function hideSplash() {
+  const el = document.getElementById('splash');
+  if (!el) return;
+  if (navigator.webdriver && !/splash/.test(location.search)) {
+    el.remove();
+    return;
+  }
+  const go = () => {
+    const wait = Math.max(0, 900 - (performance.now() - (window.__t0 || 0)));
+    setTimeout(() => {
+      el.classList.add('out');
+      setTimeout(() => el.remove(), 600);
+    }, wait);
+  };
+  const fonts = document.fonts && document.fonts.ready ? document.fonts.ready.catch(() => {}) : Promise.resolve();
+  const loaded = document.readyState === 'complete' ? Promise.resolve() : new Promise(r => addEventListener('load', r, { once: true }));
+  Promise.all([fonts, loaded]).then(go);
+  setTimeout(go, 6000); // in ogni caso, dopo qualche secondo si entra
+})();

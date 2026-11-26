@@ -18,6 +18,12 @@ const KEY = 'cafe_pioggia_v2',
   KEY1 = 'cafe_pioggia_v1';
 const DEF = {
   v: 2,
+  mfin: 'acciaio', // macchina del caffè: finitura in uso, finiture comprate, adesivo, adesivi comprati, accessori comprati e nascosti
+  mfinOwn: ['acciaio'],
+  mdec: '',
+  mdecOwn: [],
+  macc: [],
+  maccOff: [],
   name: '',
   found: {},
   chalk: '',
@@ -179,8 +185,12 @@ function perkAtm() {
   if (st.perks.yusuf) a += 4;
   return a;
 }
+function machAtm() {
+  return (st.mfinOwn || []).length - 1 + (st.mdecOwn || []).length + (st.macc || []).length;
+}
 function atm() {
   return (
+    machAtm() +
     st.chairs * 4 +
     st.decor * 4 +
     st.music * 5 +

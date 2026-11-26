@@ -774,6 +774,46 @@ async function playMini(page, kind, itemId) {
     await clear();
   }
 
+  console.log('Macchina del caffè e schermata di caricamento');
+  {
+    await page.evaluate(() => (window.__cafe.st.coins += 1e5));
+    await page.click('#hud button[data-p="up"]');
+    await sleep(150);
+    await page.click('#tabs button:has-text("Stili")');
+    await sleep(100);
+    const a0 = await page.evaluate(() => atm());
+    for (const sel of ['button[data-mf="rame"]', 'button[data-md="cuore"]', 'button[data-ma="tazze"]', 'button[data-ma="lattiera"]']) {
+      await page.click(sel);
+      await sleep(60);
+    }
+    const m = await page.evaluate(() => ({
+      fin: st.mfin,
+      dec: st.mdec,
+      acc: st.macc.join(','),
+      atm: atm(),
+      img: !!document.querySelector('.mach img')
+    }));
+    ok(
+      m.fin === 'rame' && m.dec === 'cuore' && m.acc === 'tazze,lattiera' && m.atm >= a0 + 4 && m.img,
+      `macchina personalizzata (${m.fin}, ${m.dec}, ${m.acc}) con anteprima e +Atmosfera`
+    );
+    await page.click('button[data-ma="tazze"]');
+    await sleep(60);
+    ok(
+      await page.evaluate(() => st.maccOff.includes('tazze') && !machCfg().acc.includes('tazze')),
+      'un accessorio comprato si può nascondere'
+    );
+    await page.click('#pclose');
+    await sleep(250);
+    const sp = await browser.newPage();
+    await sp.goto(FILE + '?splash');
+    const shown = await sp.evaluate(() => !!document.getElementById('splash'));
+    await sp.waitForTimeout(2500);
+    const gone = await sp.evaluate(() => !document.getElementById('splash'));
+    await sp.close();
+    ok(shown && gone, 'schermata di caricamento «Caffè Notturno»: compare e poi sparisce');
+  }
+
   console.log('Gioco attivo: ora di punta e bisogni ai tavoli');
   {
     await page.evaluate(() => {

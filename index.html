@@ -5,11 +5,48 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0b0716">
 <title>Caffè sotto la pioggia</title>
+<script>window.__t0 = performance.now();</script>
+<style>
+/* schermata di caricamento: qui dentro la pagina, così compare subito, prima di tutto il resto */
+#splash{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,#2a1650 0%,#140a28 55%,#07040f 100%);transition:opacity .5s ease;overflow:hidden}
+#splash.out{opacity:0;pointer-events:none}
+#splash::before{content:'';position:absolute;inset:-40px;background:repeating-linear-gradient(105deg,transparent 0 14px,rgba(160,190,255,.07) 14px 15px);animation:sp-rain .6s linear infinite}
+@keyframes sp-rain{to{transform:translate(-8px,40px)}}
+.sp-box{position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px}
+.sp-neon{font-family:'Pixelify Sans',ui-monospace,monospace;font-weight:700;font-size:clamp(34px,9vmin,64px);color:#ffe3f1;letter-spacing:1px;text-shadow:0 0 4px #fff,0 0 10px #ff4fa3,0 0 22px #ff4fa3,0 0 44px #ff3d9a;animation:sp-flick 4s infinite}
+@keyframes sp-flick{0%,18%,22%,62%,64%,100%{opacity:1}20%,63%{opacity:.35}}
+.sp-cup{position:relative;width:96px;height:80px}
+.sp-cup svg{position:absolute;left:0;bottom:0;width:96px;height:72px;image-rendering:pixelated;animation:sp-bob 2.4s ease-in-out infinite}
+@keyframes sp-bob{50%{transform:translateY(-3px)}}
+.sp-cup i{position:absolute;bottom:52px;width:6px;height:12px;background:rgba(255,255,255,.75);opacity:0;animation:sp-steam 2.2s ease-in infinite}
+.sp-cup i:nth-child(2){left:30px}.sp-cup i:nth-child(3){left:45px;animation-delay:.7s}.sp-cup i:nth-child(4){left:60px;animation-delay:1.4s}
+@keyframes sp-steam{0%{opacity:0;transform:translate(0,0)}25%{opacity:.8}100%{opacity:0;transform:translate(6px,-34px)}}
+.sp-load{font-family:'Pixelify Sans',ui-monospace,monospace;color:#b9a3cf;font-size:15px;letter-spacing:2px}
+.sp-load span{animation:sp-dot 1.2s infinite}.sp-load span:nth-child(2){animation-delay:.2s}.sp-load span:nth-child(3){animation-delay:.4s}
+@keyframes sp-dot{0%,60%,100%{opacity:.2}30%{opacity:1}}
+@media (prefers-reduced-motion:reduce){#splash::before,.sp-neon,.sp-cup svg,.sp-cup i,.sp-load span{animation:none}.sp-cup i{opacity:.5}}
+</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="css/stile.css">
 </head>
 <body>
+<div id="splash" aria-label="Caricamento">
+  <div class="sp-box">
+    <div class="sp-neon">Caffè Notturno</div>
+    <div class="sp-cup">
+      <svg viewBox="0 0 16 12" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="1" y="10" width="14" height="1" fill="#e8dcf0"/><rect x="2" y="11" width="12" height="1" fill="#b8a8c8"/>
+        <rect x="3" y="3" width="9" height="7" fill="#fffaf2"/><rect x="3" y="3" width="9" height="1" fill="#7a4a2a"/>
+        <rect x="4" y="3" width="7" height="1" fill="#c98a4a"/><rect x="3" y="6" width="9" height="1" fill="#ff4fa3"/>
+        <rect x="12" y="4" width="2" height="1" fill="#fffaf2"/><rect x="13" y="4" width="1" height="4" fill="#fffaf2"/><rect x="12" y="7" width="2" height="1" fill="#fffaf2"/>
+        <rect x="4" y="9" width="7" height="1" fill="#e8dcf0"/>
+      </svg>
+      <i></i><i></i><i></i>
+    </div>
+    <div class="sp-load">Caricamento<span>.</span><span>.</span><span>.</span></div>
+  </div>
+</div>
 <canvas id="c"></canvas>
 
 <div id="hud" hidden>

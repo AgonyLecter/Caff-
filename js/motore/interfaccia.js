@@ -779,6 +779,30 @@ function upRow(u) {
     lv = u.lv ? `<span class="lv">Liv. ${u.lv()}</span>` : '';
   return `<div class="row${u.id === recId ? ' rec' : ''}"><b>${u.n()}${lv}</b><span>${u.d()}</span><button data-u="${u.id}" ${mx || lk || st.coins < c ? 'disabled' : ''}>${mx ? 'Fatto' : lk ? lk : coinB(c)}</button></div>`;
 }
+// scheda Stili: personalizzazione della macchina del caffè, con anteprima
+function machHTML() {
+  const row = (id, n, d, own, on, c, kind) =>
+    `<div class="row"><b>${n}</b><span>${d}</span><button data-${kind}="${id}" ${on && kind !== 'ma' ? 'disabled' : !own && st.coins < c ? 'disabled' : ''}>${
+      own ? (kind === 'ma' ? (on ? 'Nascondi' : 'Mostra') : on ? 'In uso' : 'Usa') : coinB(c)
+    }</button></div>`;
+  const cfg = machCfg();
+  return (
+    `<div class="card2 mach"><h3>La tua macchina del caffè<small>+${machAtm()} Atmosfera</small></h3><img alt="Anteprima della macchina" src="${machPreview(cfg)}"><p class="ad">Finiture, adesivi e accessori. Ogni oggetto comprato dà +1 Atmosfera.</p></div>` +
+    `<p class="note">Finitura</p>` +
+    MACH.fin
+      .map(f =>
+        row(f.id, f.n, f.c ? 'Una nuova veste' : 'Quella di sempre', (st.mfinOwn || []).includes(f.id), st.mfin === f.id, f.c, 'mf')
+      )
+      .join('') +
+    `<p class="note">Adesivo</p>` +
+    row('', 'Nessun adesivo', 'Macchina pulita', true, !st.mdec, 0, 'md') +
+    MACH.dec
+      .map(f => row(f.id, f.n, 'Sul fianco della macchina', (st.mdecOwn || []).includes(f.id), st.mdec === f.id, f.c, 'md'))
+      .join('') +
+    `<p class="note">Accessori</p>` +
+    MACH.acc.map(f => row(f.id, f.n, f.d, (st.macc || []).includes(f.id), !(st.maccOff || []).includes(f.id), f.c, 'ma')).join('')
+  );
+}
 function tabHTML() {
   if (tab === 'Stili')
     return (
@@ -789,7 +813,8 @@ function tabHTML() {
             on = st.theme === k;
           return `<div class="row"><b>${t.n}</b><span>${on ? 'In uso' : own ? 'Comprato' : 'Nuovo stile'}</span><button data-th="${k}" ${on || (!own && st.coins < t.c) ? 'disabled' : ''}>${on ? 'In uso' : own ? 'Usa' : coinB(t.c)}</button></div>`;
         })
-        .join('')
+        .join('') +
+      machHTML()
     );
   if (tab === 'Franchising') {
     const ok = st.space >= 7 && st.runEarned >= 500000,
@@ -1163,6 +1188,42 @@ $('#pbody').addEventListener('click', e => {
       renderPanel();
       save();
     }
+    return;
+  }
+  if (bt.dataset.mf !== undefined || bt.dataset.md !== undefined || bt.dataset.ma !== undefined) {
+    const buy = c => {
+      if (st.coins < c) return false;
+      st.coins -= c;
+      sfx('buy');
+      return true;
+    };
+    if (bt.dataset.mf !== undefined) {
+      const f = MACH.fin.find(x => x.id === bt.dataset.mf);
+      if (!st.mfinOwn.includes(f.id)) {
+        if (!buy(f.c)) return;
+        st.mfinOwn.push(f.id);
+      }
+      st.mfin = f.id;
+    } else if (bt.dataset.md !== undefined) {
+      const id = bt.dataset.md,
+        f = MACH.dec.find(x => x.id === id);
+      if (f && !st.mdecOwn.includes(id)) {
+        if (!buy(f.c)) return;
+        st.mdecOwn.push(id);
+      }
+      st.mdec = id;
+    } else {
+      const id = bt.dataset.ma,
+        f = MACH.acc.find(x => x.id === id);
+      if (!st.macc.includes(id)) {
+        if (!buy(f.c)) return;
+        st.macc.push(id);
+        st.maccOff = st.maccOff.filter(x => x !== id);
+      } else st.maccOff = st.maccOff.includes(id) ? st.maccOff.filter(x => x !== id) : st.maccOff.concat(id);
+    }
+    if (machAtm() >= MACH.fin.length - 1 + MACH.dec.length + MACH.acc.length) egg('macchina');
+    renderPanel();
+    save();
     return;
   }
   if (bt.dataset.th) {
