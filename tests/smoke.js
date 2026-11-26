@@ -17,7 +17,7 @@ const SAVE = {
 };
 
 async function startGame(page, save) {
-  await page.addInitScript(([k, s]) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem(k, JSON.stringify(s)); sessionStorage.setItem('seeded', '1'); } }, [KEY, save]);
+  await page.addInitScript(([k, s]) => { if (!localStorage.getItem('__test_seeded')) { localStorage.setItem(k, JSON.stringify(s)); localStorage.setItem('__test_seeded', '1'); } }, [KEY, save]);
   await page.goto(FILE);
   await page.waitForTimeout(400);
   await page.click('#go');
@@ -66,6 +66,14 @@ function validateData(D) {
   }
   problems.forEach(p => console.log('    - ' + p));
   ok(!problems.length, `${ARCS.length} storie, ${Object.keys(CH).length} personaggi, ${produced.size} scelte: nessuna incoerenza`);
+}
+
+
+async function tapWorld(page, wx, wy) {
+  const pt = await page.evaluate(([wx, wy]) => { const C = window.__cafe, cv = document.querySelector('#c'), r = cv.getBoundingClientRect();
+    if ((wx - C.camX) * C.S / C.DPR < 10 || (wx - C.camX) * C.S / C.DPR > innerWidth - 10) C.camX = Math.max(0, Math.min(C.W - Math.ceil(cv.width / C.S), wx - Math.ceil(cv.width / C.S) / 2));
+    return { x: (wx - C.camX) * C.S / C.DPR + r.left, y: wy * C.S / C.DPR + r.top }; }, [wx, wy]);
+  await page.mouse.click(pt.x, pt.y);
 }
 
 async function playMini(page, kind, itemId) {
@@ -124,11 +132,11 @@ async function playMini(page, kind, itemId) {
     const C = window.__cafe, cv = document.querySelector('#c'), r = cv.getBoundingClientRect();
     C.camX = Math.max(0, C.counterX + 86 - Math.ceil(cv.width / C.S));
     const out = [];
-    C.slots.forEach(sl => { if (sl.k < C.cols && sl.k < C.st.space) { sl.seats.forEach(s => { if (!s.occ) s.dirty = true; }); out.push({ x: (sl.x - C.camX) * C.S / C.DPR + r.left, y: (sl.y - 8) * C.S / C.DPR + r.top }); } });
+    C.slots.forEach(sl => { if (sl.k < C.cols && sl.k < C.st.space) { sl.seats.forEach(s => { if (!s.occ) { s.dirty = true; s._t = 1; } }); out.push({ x: (sl.x - C.camX) * C.S / C.DPR + r.left, y: (sl.y - 8) * C.S / C.DPR + r.top }); } });
     return out.filter(p => p.x > 0 && p.x < innerWidth);
   });
   for (const p of pts) { await page.mouse.click(p.x, p.y); await sleep(60); }
-  const dirty = await page.evaluate(() => window.__cafe.slots.filter(sl => sl.k < window.__cafe.cols).some(sl => sl.seats.some(s => s.dirty)));
+  const dirty = await page.evaluate(() => window.__cafe.slots.some(sl => sl.seats.some(s => { const d = s._t && s.dirty; delete s._t; return d; })));
   ok(pts.length > 0 && !dirty, `toccando i tavoli (${pts.length}) si puliscono, anche vicino al bancone`);
 
   console.log('Pannelli');
@@ -145,6 +153,35 @@ async function playMini(page, kind, itemId) {
   await page.click('button[data-u="grinder"]'); await sleep(100);
   ok(await page.evaluate(g => window.__cafe.st.grinder === g + 1, g0), 'si può comprare un miglioramento (macinino)');
   await page.click('#pclose'); await sleep(250);
+
+
+  console.log('Segreti e interazioni');
+  await page.evaluate(() => { window.__cafe.speed = 1; const st = window.__cafe.st; st.found = {}; });
+  for (let i = 0; i < 6; i++) { await tapWorld(page, 18, 70); await sleep(60); }
+  ok(await page.evaluate(() => !!window.__cafe.st.found.campanello), 'campanello della porta (6 tocchi) → segreto');
+  await page.evaluate(() => { window.__cafe.queue.length = 0; });
+  const W = await page.evaluate(() => window.__cafe.W);
+  await tapWorld(page, W - 20, 90); await sleep(80);
+  ok(await page.evaluate(() => !!window.__cafe.st.found.pausa && window.__cafe.boostT > 0), 'macchina del caffè senza clienti → pausa caffè e tocchi doppi');
+  const sb = await page.evaluate(() => window.__cafe.signBox);
+  for (let i = 0; i < 8; i++) { await tapWorld(page, sb.x + sb.w / 2, sb.y + 7); await sleep(50); }
+  ok(await page.evaluate(() => !!window.__cafe.st.found.insegna), 'insegna toccata 8 volte → neon arcobaleno');
+  const cb = await page.evaluate(() => window.__cafe.CB);
+  if (cb.chalk) {
+    await tapWorld(page, cb.chalk.x + 10, cb.chalk.y + 10); await sleep(150);
+    await page.fill('#chIn', 'Oggi piove, resta qui'); await page.click('#mbox .btns .big'); await sleep(100);
+    ok(await page.evaluate(() => window.__cafe.st.chalk === 'Oggi piove, resta qui' && !!window.__cafe.st.found.lavagna), 'si scrive sulla lavagna');
+  }
+  if (cb.rec) { for (let i = 0; i < 3; i++) { await tapWorld(page, cb.rec.x + 6, cb.rec.y + 9); await sleep(80); } ok(await page.evaluate(() => !!window.__cafe.st.found.radio), 'giradischi: tutte le stazioni → segreto'); }
+  if (cb.plant) { for (let i = 0; i < 3; i++) { await tapWorld(page, cb.plant.x + 4, cb.plant.y + 10); await sleep(80); } ok(await page.evaluate(() => !!window.__cafe.st.flower), 'annaffiando la pianta sboccia un fiore'); }
+  const pane = await page.evaluate(() => window.__cafe.panes().find(p => !p.locked));
+  await page.evaluate(() => { window.__cafe.st.wx = 'pioggia'; window.__cafe.st.wx2 = null; });
+  await tapWorld(page, pane.x + 20, 78); await sleep(80);
+  ok(await page.evaluate(() => !!window.__cafe.st.found.disegno), 'disegno sul vetro appannato quando piove');
+  await page.evaluate(() => { const C = window.__cafe; C.st.wx = 'pioggia'; C.st.tod = .9; C.st.rareDay = 0; for (let i = 0; i < 40 && !C.queue.some(p => p.rare); i++) C.tryRare(); });
+  const rare = await page.evaluate(() => { const p = window.__cafe.queue.find(p => p.rare); return p && p.rare; });
+  ok(!!rare, `arriva un visitatore raro (${rare})`);
+  await page.evaluate(() => { window.__cafe.st.tod = .3; });
 
   console.log('Gioco accelerato (storie, richieste speciali, scelte)');
   await page.evaluate(() => { const st = window.__cafe.st; st.decor = 8; st.chairs = 6; st.music = 4; window.__cafe.speed = 6; });
@@ -176,6 +213,22 @@ async function playMini(page, kind, itemId) {
   await page.evaluate(k => localStorage.setItem(k, '{rotto'), KEY);
   await page.reload(); await page.waitForTimeout(300);
   ok(await page.evaluate(() => !!window.__cafe.st.name), 'con il salvataggio rovinato riparte dalla copia di riserva');
+
+
+  console.log('Ricomincia e filmato');
+  await page.click('#go'); await sleep(700);
+  await page.click('#hud button[data-p="set"]'); await sleep(150);
+  await page.click('#rst'); await sleep(100);
+  await Promise.all([page.waitForEvent('load'), page.click('#rst')]);
+  await page.waitForTimeout(400);
+  const after = await page.evaluate(k => ({ ls: localStorage.getItem(k), bak: localStorage.getItem(k + '_bak'), name: window.__cafe.st.name, day: window.__cafe.st.day, tables: window.__cafe.st.tables }), KEY);
+  ok(!after.ls && !after.bak && !after.name && after.day === 1 && after.tables === 1, `Ricomincia azzera tutto (giorno ${after.day}, tavoli ${after.tables})`);
+  await page.click('#go'); await sleep(1500);
+  ok(await page.evaluate(() => !!window.__cafe.cine), 'nuova partita: parte il filmato iniziale');
+  await page.click('#skip'); await sleep(300);
+  ok(await page.isVisible('#naming'), 'il filmato si può saltare e poi si sceglie il nome');
+  await page.fill('#nameIn', 'Bar Luna'); await page.click('#openBtn'); await sleep(600);
+  ok(await page.evaluate(() => window.__cafe.st.name === 'Bar Luna' && !!window.__cafe.st.found.nome && window.__cafe.st.day === 1), 'si apre il nuovo locale (e il nome «Luna» è un segreto)');
 
   ok(!errors.length, 'nessun errore JavaScript' + (errors.length ? ': ' + [...new Set(errors)].join(' | ') : ''));
   await browser.close();
