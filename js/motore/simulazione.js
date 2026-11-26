@@ -655,6 +655,7 @@ function present(r) {
   return people.some(p => p.reg === r && !p.dead);
 }
 function trySpawn() {
+  if (intro) return; // il locale resta vuoto mentre parla Nonna Rosa
   if (queue.length >= 5) return;
   if (!freeSeats().length && queue.length >= 2) return;
   if (st.regs.length && Math.random() < Math.min(0.4, 0.1 + st.regs.length * 0.02)) {
@@ -714,6 +715,7 @@ function storyNote(arc) {
   showModal(`<h2>${esc(arc.t)}</h2><p>${esc(arc.nota)}</p>`, [{ t: 'Ho capito', big: 1, fn: hideModal }]);
 }
 function tryStory() {
+  if (intro) return; // il locale resta vuoto mentre parla Nonna Rosa
   const a = atm(),
     c = [];
   for (const arc of ARCS) {

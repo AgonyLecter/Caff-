@@ -130,6 +130,7 @@ function dirtySeat() {
 let gCur = null,
   gT = 0;
 function guideTick(dt) {
+  if (intro) return; // durante la scena di Nonna Rosa la scheda è sua
   if (!started || cine) return hideGuide();
   st.tut = st.tut || {};
   if (st.tutOff) return hideGuide();
@@ -207,3 +208,94 @@ function guideForOldSaves() {
   });
 }
 setInterval(() => guideTick(0.3), 300);
+
+/* ----- il primo giorno si apre con Nonna Rosa ----- */
+// Dopo il filmato e il nome, prima che entrino i clienti: il locale è vuoto, entra Nonna Rosa col suo gatto
+// e spiega che qui contano le persone e le loro storie, non solo le monete. Poi se ne va e il gioco parte.
+const INTRO = [
+  "Oh! Le luci sono accese! Finalmente. Io sono Rosa, abito qui sopra da sessant'anni. Lui è Ciuffo.",
+  "Quando ero giovane qui c'era un forno. Poi è rimasto chiuso tanto tempo, e la via si era fatta triste.",
+  'Ti dico un segreto: questo non sarà un posto dove si fanno solo caffè. Chi entra da quella porta porta con sé una storia.',
+  'Ascoltali. Ricordati di loro, di cosa ordinano, di cosa ti raccontano. A volte ti chiederanno un consiglio: quello che dirai cambierà le loro vite.',
+  'Qualcuno tornerà ogni giorno, si innamorerà, litigherà, avrà bisogno di te più di quanto dica. Fai attenzione ai piccoli segni.',
+  'Le monete servono, certo. Ma il tesoro di {nome} saranno le persone. Le loro storie le ritrovi nel Diario, in «Clienti».',
+  "Bene, ho parlato anche troppo. Apri le porte, che arriva gente! All'inizio ti do io qualche consiglio."
+];
+let intro = null;
+function startIntro() {
+  if (intro || st.introDone) return;
+  const c = {
+    id: ++uid,
+    look: CH.rosa.l,
+    name: 'Nonna Rosa',
+    type: 'nonno',
+    x: DOORX,
+    y: DOORY,
+    face: 1,
+    spd: 30,
+    state: 'intro',
+    // si ferma al centro di quello che si vede sullo schermo
+    path: [
+      { x: DOORX + 4, y: LANE },
+      { x: clamp(camX + VW * 0.45, DOORX + 30, counterX - 46), y: LANE + 6 }
+    ],
+    moving: false,
+    wt: 0,
+    bub: null,
+    emo: null,
+    act: '',
+    mood: 90,
+    key: 'rosa',
+    sitT: 0
+  };
+  c.pet = petOf(c);
+  people.push(c);
+  doorOpen = 1;
+  sfx('door');
+  intro = { c, i: -1, phase: 'walk' };
+  hideGuide();
+}
+function introTick(dt) {
+  if (!intro) return;
+  const c = intro.c;
+  if (intro.phase === 'walk' && follow(c, dt)) {
+    intro.phase = 'talk';
+    c.face = 1;
+    emo(c, 'heart', 1.6);
+    introShow(0);
+  } else if (intro.phase === 'leave' && follow(c, dt)) {
+    c.dead = true;
+    doorOpen = 1;
+    intro = null;
+    st.introDone = 1;
+    spawnT = 1.5;
+    save();
+  }
+}
+function introShow(i) {
+  intro.i = i;
+  const el = $('#guide'),
+    last = i >= INTRO.length - 1;
+  el.innerHTML = `<img alt="" src="${portrait(CH.rosa.l)}"><div><b>Nonna Rosa</b><p>${esc(INTRO[i].replace('{nome}', st.name || 'questo posto'))}</p><div class="gb"><button id="iok">${
+    last ? 'Apri le porte' : 'Avanti ›'
+  }</button>${last ? '' : '<button id="iskip">Salta</button>'}</div></div>`;
+  el.hidden = false;
+  sfx('pop');
+}
+function introEnd() {
+  if (!intro) return;
+  hideGuide();
+  intro.phase = 'leave';
+  const c = intro.c;
+  say(c, pick(['A domani, cara!', 'Torno a trovarti, eh!', 'Ciuffo, andiamo.']), 2.4, 'Nonna Rosa');
+  c.path = [
+    { x: c.x, y: LANE },
+    { x: DOORX + 4, y: LANE },
+    { x: DOORX, y: DOORY }
+  ];
+}
+document.addEventListener('click', e => {
+  if (!intro || intro.phase !== 'talk') return;
+  if (e.target.id === 'iok') intro.i >= INTRO.length - 1 ? introEnd() : introShow(intro.i + 1);
+  if (e.target.id === 'iskip') introEnd();
+});

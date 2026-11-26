@@ -179,6 +179,7 @@ function begin() {
   save();
   hud();
   guideForOldSaves();
+  if (!st.introDone && st.served === 0) setTimeout(startIntro, 1200); // partita nuova: apre Nonna Rosa
 }
 function showNaming() {
   $('#intro').hidden = true;

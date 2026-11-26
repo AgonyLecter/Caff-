@@ -13,6 +13,7 @@ function egg(id) {
   return true;
 }
 function tryRare() {
+  if (intro) return; // il locale resta vuoto mentre parla Nonna Rosa
   const ids = Object.keys(RARE).filter(k => RARE[k].w());
   if (!ids.length || queue.length >= 4) return;
   const f = st.found || {};

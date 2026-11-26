@@ -192,6 +192,8 @@ function tapNeed(x, y) {
 }
 
 function activeTick(dt) {
+  introTick(dt);
+  if (intro) return; // finché parla Nonna Rosa non succede altro
   incidentTick(dt);
   rushTick(dt);
   needsTick(dt);
