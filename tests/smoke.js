@@ -1020,7 +1020,18 @@ async function playMini(page, kind, itemId) {
         });
       });
     }
-    await sleep(5200);
+    // la nota arriva qualche secondo dopo, quando non ci sono altre finestre aperte: rispondiamo a quelle che compaiono nel frattempo
+    for (let i = 0; i < 150; i++) {
+      if (
+        await page.evaluate(
+          () => /Telefono Amico/.test((document.querySelector('#mbox') || {}).textContent || '') && !document.querySelector('#modal').hidden
+        )
+      )
+        break;
+      if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
+      else if (await page.isVisible('#nd')) await page.click('#nd');
+      await sleep(100);
+    }
     const end = await page.evaluate(() => ({
       flag: window.__cafe.st.flags.davide,
       note: document.querySelector('#mbox') && !document.querySelector('#modal').hidden ? document.querySelector('#mbox').textContent : ''
@@ -1029,7 +1040,7 @@ async function playMini(page, kind, itemId) {
       seen.join(',') === '1,2,3,4' && end.flag === 'salvo' && /Telefono Amico/.test(end.note),
       `Davide: quattro incontri in giorni diversi (${seen.join(',')}), finale «${end.flag}» e nota con i numeri di aiuto`
     );
-    if (await page.isVisible('#modal')) await page.click('#modal .btns button >> nth=0');
+    if (await page.isVisible('#modal .btns button')) await page.click('#modal .btns button >> nth=0');
     await page.evaluate(() => {
       const C = window.__cafe;
       C.speed = 1;
