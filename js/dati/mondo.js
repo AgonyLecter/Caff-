@@ -176,6 +176,14 @@ const REQS = [
     lines: ['Con tantissima schiuma, tipo nuvola.', 'Il latte bello caldo, mi raccomando!']
   },
   {
+    k: 'forma',
+    t: 'Disegno a mano',
+    w: 1.6,
+    mg: 'mano',
+    ok: c => ['capp', 'choc'].includes(c.order.id),
+    lines: ['Mi disegni {forma} sulla schiuma?', 'Sulla schiuma vorrei {forma}. Si può?', 'È per una persona speciale: mi fai {forma}?']
+  },
+  {
     k: 'dedica',
     t: 'Con un disegno',
     w: 1.5,
@@ -223,6 +231,7 @@ const STATIONS = [
   { n: 'City pop', B: 2, pop: 1, songs: ['Neon love', 'Tokyo drive', 'Luci sulla tangenziale'] }
 ];
 const MGI = {
+  mano: { t: 'Latte art a mano', x: 'Disegna col dito sulla schiuma la forma che vedi, poi tocca «Fatto!».', b: 'Fatto!' },
   latte: { t: 'Latte art', x: 'Tocca quando la lancetta è nel verde. Tre versate.', b: 'Versa!' },
   monta: { t: 'Monta il latte', x: 'Tieni premuto per scaldare il latte, lascia quando è nel verde. Tre lattiere.', b: 'Tieni premuto' },
   padella: { t: 'Ai fornelli', x: 'Tocca quando è dorato, prima che bruci. Tre pezzi.', b: 'Gira!' },
@@ -230,6 +239,7 @@ const MGI = {
   vetrina: { t: 'Dalla vetrina', x: "Guarda bene l'ordine dei dolci: poi toccali nella stessa sequenza.", b: '' }
 };
 const MGEND = {
+  mano: ['Diciamo che è... arte moderna.', 'Si riconosce! Mancia extra.', 'Un capolavoro sulla schiuma! Mancia tripla.'],
   latte: ['Una macchia di latte... pazienza.', 'Una bella rosetta. Mancia extra.', 'Un cuore perfetto! Mancia tripla.'],
   monta: ["Un po' bruciato... pazienza.", 'Quasi perfetto. Mancia extra.', 'Perfetto! Mancia tripla.'],
   padella: ["Un po' bruciacchiato... si mangia lo stesso.", 'Ben cotto. Mancia extra.', 'Dorato alla perfezione! Mancia tripla.'],
@@ -338,4 +348,69 @@ const NEONFONT = {
   R: ['##.', '#.#', '##.', '#.#', '#.#'],
   T: ['###', '.#.', '.#.', '.#.', '.#.'],
   V: ['#.#', '#.#', '#.#', '#.#', '.#.']
+};
+
+// Forme per la latte art a mano: tratti in coordinate 0..1 (il centro della tazza è 0.5, 0.5)
+const SHAPEN = {
+  cuore: 'un cuore',
+  foglia: 'una foglia',
+  stella: 'una stella',
+  sole: 'un sole',
+  gatto: 'un gatto',
+  spirale: 'una spirale'
+};
+const SHAPES = {
+  cuore: () => [
+    Array.from({ length: 41 }, (_, i) => {
+      const t = (i / 40) * Math.PI * 2;
+      return [
+        0.5 + (16 * Math.sin(t) ** 3) / 48,
+        0.47 - (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 48
+      ];
+    })
+  ],
+  foglia: () => [
+    [
+      [0.5, 0.2],
+      [0.5, 0.82]
+    ],
+    ...[0.3, 0.42, 0.54, 0.66].map(y => [
+      [0.5 - 0.22 + y * 0.12, y - 0.08],
+      [0.5, y + 0.04],
+      [0.5 + 0.22 - y * 0.12, y - 0.08]
+    ])
+  ],
+  stella: () => [
+    Array.from({ length: 11 }, (_, i) => {
+      const a = -Math.PI / 2 + (i * Math.PI) / 5,
+        r = i % 2 ? 0.14 : 0.32;
+      return [0.5 + Math.cos(a) * r, 0.52 + Math.sin(a) * r];
+    })
+  ],
+  sole: () => [
+    Array.from({ length: 21 }, (_, i) => [0.5 + Math.cos((i / 20) * Math.PI * 2) * 0.13, 0.5 + Math.sin((i / 20) * Math.PI * 2) * 0.13]),
+    ...Array.from({ length: 8 }, (_, i) => {
+      const a = (i / 8) * Math.PI * 2;
+      return [
+        [0.5 + Math.cos(a) * 0.2, 0.5 + Math.sin(a) * 0.2],
+        [0.5 + Math.cos(a) * 0.32, 0.5 + Math.sin(a) * 0.32]
+      ];
+    })
+  ],
+  gatto: () => [
+    Array.from({ length: 25 }, (_, i) => [0.5 + Math.cos((i / 24) * Math.PI * 2) * 0.22, 0.55 + Math.sin((i / 24) * Math.PI * 2) * 0.19]),
+    [
+      [0.32, 0.43],
+      [0.3, 0.22],
+      [0.43, 0.37]
+    ],
+    [
+      [0.68, 0.43],
+      [0.7, 0.22],
+      [0.57, 0.37]
+    ]
+  ],
+  spirale: () => [
+    Array.from({ length: 50 }, (_, i) => [0.5 + Math.cos(i * 0.36) * (0.02 + i * 0.0062), 0.5 + Math.sin(i * 0.36) * (0.02 + i * 0.0062)])
+  ]
 };

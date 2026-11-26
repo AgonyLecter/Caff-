@@ -119,6 +119,12 @@ function openMini(c) {
     vetrinaStart();
     return;
   }
+  if (k === 'mano') {
+    mb.classList.remove('wait');
+    mb.textContent = I.b;
+    manoStart(m);
+    return;
+  }
   newRound();
   $('#mneedle').style.left = 'calc(0% - 2px)';
   $('#mfill').style.width = '0';
@@ -252,6 +258,7 @@ function miniEnd(q) {
   $('#mmeter').hidden = true;
   $('#mopts').hidden = true;
   $('#mbtn').hidden = false;
+  if (m.k === 'mano') $('#mdraw').hidden = true;
   startResult(m); // animazione di quello che hai preparato
   $('#mtxt').innerHTML = pxText(q === 2 ? '★★★ ' : q === 1 ? '★★☆ ' : '★☆☆ ') + ' ' + esc(MGEND[m.k][q]);
   $('#mbtn').textContent = 'Servi';
@@ -264,6 +271,7 @@ function miniDown(e) {
     if (performance.now() - m.endT > 700) finishMini();
     return;
   }
+  if (m.k === 'mano') return manoDone();
   if (m.lock || !m.arm) return;
   const p = m.pos,
     [a, b] = m.zone;
@@ -336,6 +344,7 @@ function vetrinaPick(i) {
 function finishMini() {
   const m = mini;
   stopResult();
+  manoStop();
   mini = null;
   miniLast = 0;
   $('#mini').hidden = true;
