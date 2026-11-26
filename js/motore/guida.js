@@ -90,6 +90,16 @@ const GUIDA = [
     done: () => panel === 'cli'
   },
   {
+    id: 'imprevisto',
+    when: () => incid.length > 0 || machTilt > 0,
+    text: () =>
+      machTilt
+        ? 'La macchina fa i capricci e i baristi sono fermi! Dalle qualche colpetto: toccala finché riparte.'
+        : 'Vedi il punto esclamativo? Qualcosa non va: un ombrello dimenticato, dei cocci, una pozzanghera. Toccalo e sistemi.',
+    world: () => (machTilt ? { x: W - 20, y: 96 } : incid[0]),
+    done: () => !incid.length && !machTilt
+  },
+  {
     id: 'punta',
     when: () => !!rush,
     text: 'Ora di punta! La macchina non regge: tocca «Servi» più veloce che puoi. Più clienti servi di fila, più guadagni.',
@@ -137,7 +147,7 @@ function showGuide(s) {
   gCur = s;
   gT = 0;
   const el = $('#guide');
-  el.innerHTML = `<img alt="" src="${portrait(CH.rosa.l)}"><div><b>Nonna Rosa</b><p>${esc(s.text)}</p><div class="gb"><button id="gok">Ok</button><button id="goff">Niente consigli</button></div></div>`;
+  el.innerHTML = `<img alt="" src="${portrait(CH.rosa.l)}"><div><b>Nonna Rosa</b><p>${esc(typeof s.text === 'function' ? s.text() : s.text)}</p><div class="gb"><button id="gok">Ok</button><button id="goff">Niente consigli</button></div></div>`;
   el.hidden = false;
   sfx('pop');
   placeRing();

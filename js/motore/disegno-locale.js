@@ -1880,6 +1880,7 @@ function render() {
   g.clearRect(0, 0, VW, VH);
   g.setTransform(1, 0, 0, 1, -Math.round(camX), 0);
   drawRoom();
+  drawIncidents();
   const items = [];
   for (let i = 0; i < 14; i++) {
     const sl = slots[i];

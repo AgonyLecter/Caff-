@@ -45,6 +45,7 @@ function tap(e) {
     }
     return;
   }
+  if (tapIncident(x, y)) return;
   if (tapNeed(x, y)) return;
   if (tapNeon(x, y)) return;
   if (tapPet(x, y)) return;

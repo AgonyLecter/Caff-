@@ -53,6 +53,7 @@ function rushArrival(m) {
 }
 // lo staff rallenta: la macchina è una sola
 function rushStaff(r) {
+  if (machTilt) return 0; // macchina in tilt: lo staff è fermo
   return rush ? r * 0.35 : r;
 }
 // chiamata da serve(): se l'hai servito tu (tocco recente), la combo cresce e l'incasso si moltiplica
@@ -191,7 +192,156 @@ function tapNeed(x, y) {
 }
 
 function activeTick(dt) {
+  incidentTick(dt);
   rushTick(dt);
   needsTick(dt);
   rushUI();
+}
+
+/* ----- imprevisti ----- */
+// Tazza rotta, pozzanghera all'ingresso, macchina in tilt, ombrello dimenticato.
+// Ognuno ha un punto esclamativo che lampeggia: toccalo per sistemare. Se li ignori, i clienti ne risentono.
+let incid = [],
+  incT = 40,
+  machTilt = 0;
+function incidentTick(dt) {
+  // conseguenze degli imprevisti ancora aperti
+  for (const I of incid) {
+    I.t -= dt;
+    if (I.k === 'cocci' || I.k === 'pozza')
+      for (const c of people)
+        if (!c.dead && !c.hurt && c.moving && Math.abs(c.x - I.x) < 9 && Math.abs(c.y - I.y) < 7) {
+          c.hurt = 1;
+          c.mood -= I.k === 'cocci' ? 10 : 6;
+          emo(c, 'sweat', 1.6);
+          if (!c.bub && Math.random() < 0.6)
+            say(
+              c,
+              pick(
+                I.k === 'cocci'
+                  ? ['Ahi! Cocci per terra!', 'Attenzione, vetri!', 'Qualcuno ha rotto una tazza...']
+                  : ['Whoa! Si scivola!', 'Quasi cado...', 'Che pozzanghera!']
+              ),
+              2
+            );
+        }
+  }
+  incid = incid.filter(I => I.t > 0);
+  if (machTilt) {
+    if (Math.random() < dt * 2) parts.push({ x: W - 20 + rnd(-6, 6), y: 82, vx: rnd(-8, 8), vy: rnd(-14, -6), t: 1, max: 1, k: 'steam' });
+  }
+  incT -= dt;
+  if (incT > 0 || incid.length >= 2 || rush || st.served < 40) return;
+  incT = rnd(45, 90);
+  const r = Math.random();
+  if (r < 0.3 && (rainy() || curWx() === 'neve') && !incid.some(I => I.k === 'pozza')) newIncident('pozza', rnd(34, 60), LANE + rnd(-2, 4));
+  else if (r < 0.5 && !machTilt && baristaLv() > 0 && st.ds && !st.ds.tilt) {
+    machTilt = 5; // servono cinque colpetti
+    st.ds.tilt = 1;
+    sfx('hiss');
+    toast('La macchina fa i capricci! I baristi sono fermi: dalle qualche colpetto');
+  }
+}
+function newIncident(k, x, y, o) {
+  incid.push(Object.assign({ k, x, y, t: k === 'ombrello' ? 70 : 60, id: ++uid }, o || {}));
+}
+// chiamata quando un cliente si alza: a volte rompe la tazza, a volte dimentica l'ombrello
+function incidentOnLeave(c, seat) {
+  if (!seat || st.served < 40 || incid.length >= 2) return;
+  const r = Math.random();
+  if (r < 0.03) newIncident('cocci', seat.x + seat.side * 3, seat.y + 4);
+  else if (r < 0.07 && (rainy() || c.umb))
+    newIncident('ombrello', seat.x + seat.side * 7, seat.y, {
+      col: (c.look && c.look.uc) || '#e63946',
+      owner: c.reg ? c.reg.id : null,
+      name: c.name
+    });
+}
+function drawIncidents() {
+  for (const I of incid) {
+    const x = Math.round(I.x),
+      y = Math.round(I.y);
+    if (I.k === 'cocci') {
+      g.fillStyle = '#fffaf2';
+      [
+        [-3, 0],
+        [-1, -1],
+        [1, 0],
+        [3, -1],
+        [0, 1],
+        [2, 1]
+      ].forEach(([dx, dy]) => g.fillRect(x + dx, y + dy, 1, 1));
+      g.fillStyle = '#7a4a2a';
+      g.fillRect(x - 2, y + 1, 2, 1);
+    } else if (I.k === 'pozza') {
+      g.fillStyle = 'rgba(140,180,255,.55)';
+      g.fillRect(x - 8, y, 17, 3);
+      g.fillRect(x - 5, y - 1, 11, 1);
+      g.fillRect(x - 5, y + 3, 11, 1);
+      g.fillStyle = 'rgba(230,240,255,.7)';
+      g.fillRect(x - 3 + Math.floor((T * 2) % 6), y, 2, 1);
+    } else if (I.k === 'ombrello') {
+      g.fillStyle = '#333';
+      g.fillRect(x, y - 9, 1, 9);
+      g.fillStyle = I.col;
+      g.fillRect(x - 1, y - 9, 3, 7);
+      g.fillRect(x - 2, y - 8, 5, 4);
+      g.fillStyle = '#333';
+      g.fillRect(x + 1, y - 1, 2, 1);
+    }
+    drawEmote(x - 2, y - (I.k === 'ombrello' ? 22 : 14) - Math.round(Math.abs(Math.sin(T * 5)) * 2), 'excl');
+  }
+  if (machTilt) drawEmote(W - 22, 66 - Math.round(Math.abs(Math.sin(T * 6)) * 2), 'excl');
+}
+function tapIncident(x, y) {
+  if (machTilt && x > W - 30 && x < W - 8 && y > 70 && y < 100) {
+    machTilt--;
+    sfx('knock');
+    for (let i = 0; i < 3; i++)
+      parts.push({ x: W - 20 + rnd(-4, 4), y: 88, vx: rnd(-6, 6), vy: rnd(-10, -4), t: 0.6, max: 0.6, k: 'spark' });
+    if (!machTilt)
+      incidentDone(W - 20, 84, pick(['Riparata! Si riparte.', 'Un colpetto al punto giusto. Come faceva il vecchio barista.']));
+    return true;
+  }
+  const I = incid.find(I => Math.abs(x - I.x) < 9 && y > I.y - 18 && y < I.y + 5);
+  if (!I) return false;
+  incid = incid.filter(o => o !== I);
+  if (I.k === 'ombrello') {
+    st.lost = (st.lost || []).filter(l => l.owner !== I.owner || !I.owner).concat({ owner: I.owner, name: I.name, col: I.col, d: st.day });
+    if (st.lost.length > 12) st.lost.shift();
+    incidentDone(I.x, I.y - 10, `Ombrello di ${I.name} messo da parte${I.owner ? ': quando torna glielo ridai' : ''}`);
+  } else incidentDone(I.x, I.y, I.k === 'cocci' ? 'Cocci raccolti' : 'Pavimento asciutto');
+  return true;
+}
+function incidentDone(x, y, msg) {
+  for (let i = 0; i < 6; i++)
+    parts.push({ x: x + rnd(-5, 5), y: y + rnd(-4, 2), vx: rnd(-8, 8), vy: rnd(-14, -4), t: 0.8, max: 0.8, k: 'spark' });
+  addCoins(reward(15), x, y - 10);
+  st.incid = (st.incid || 0) + 1;
+  if (st.incid >= 20) egg('tuttofare');
+  sfx('good');
+  toast(msg);
+}
+// un habitué che torna e ritrova il suo ombrello
+function incidentOnArrive(c) {
+  if (!c.reg || !st.lost) return;
+  const L = st.lost.find(l => l.owner === c.reg.id);
+  if (!L) return;
+  st.lost = st.lost.filter(l => l !== L);
+  c.reg.f = Math.min(10, c.reg.f + 1);
+  setTimeout(() => {
+    if (!c.dead) {
+      say(
+        c,
+        pick([
+          'Il mio ombrello! Lo avevo dato per perso. Grazie!',
+          'Me lo avete tenuto? Siete un tesoro.',
+          'Il mio ombrello preferito! Grazie mille.'
+        ]),
+        3,
+        c.name
+      );
+      emo(c, 'heart', 2);
+    }
+  }, 2500);
 }

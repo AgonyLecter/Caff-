@@ -144,6 +144,7 @@ function newCust(o) {
     sipT: rnd(2, 5)
   };
   c.key = o.key || (o.reg && o.reg.key) || null;
+  incidentOnArrive(c);
   if (o.reg) learnRoutine(o.reg);
   c.pet = petOf(c);
   people.push(c);
@@ -377,6 +378,7 @@ function makeReg(c) {
 }
 function leaveSeat(c) {
   const s = c.seat;
+  incidentOnLeave(c, s);
   if (s) {
     s.occ = null;
     s.dirty = true;
