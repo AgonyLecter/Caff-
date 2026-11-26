@@ -4,7 +4,8 @@ Un cozy game incrementale in pixel art: un piccolo caffè in una città dove pio
 clienti che tornano, si conoscono, si innamorano e vivono le loro storie.
 
 **Si gioca aprendo `index.html` nel browser** (in orizzontale sul telefono). Non serve compilare niente:
-è un sito statico che funziona anche su GitHub Pages.
+è un sito statico che funziona anche su GitHub Pages. Da GitHub Pages si può **installare sul telefono**
+come un'app (Impostazioni → «Installa il gioco sul telefono») e funziona anche **senza connessione**.
 
 ## Struttura
 
@@ -16,7 +17,10 @@ js/dati/            i contenuti: personaggi, storie, vite, incontri, frasi
 tests/dati.js       controllo veloce dei contenuti (senza browser)
 tests/smoke.js      prova completa nel browser
 docs/               guida per aggiungere contenuti
+manifest.webmanifest, sw.js, icone/   app installabile e funzionamento offline
 ```
+
+Se aggiungi un file al gioco, aggiungilo anche alla lista `FILE` in `sw.js` (il controllo `node tests/dati.js` te lo ricorda).
 
 I file si caricano nell'ordine scritto in fondo a `index.html`: prima `js/motore/base.js`,
 poi i contenuti, poi il resto del motore. Sono script normali (non moduli), così il gioco funziona

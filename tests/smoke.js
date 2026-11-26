@@ -1192,6 +1192,13 @@ async function playMini(page, kind, itemId) {
   const code = await page.inputValue('#savecode');
   const name = await page.evaluate(() => window.__cafe.st.name);
   ok(code.length > 100, 'esporta produce un codice');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#modal .btns button:has-text("Scarica file")')]);
+  const dlPath = await dl.path();
+  const fileOk = JSON.parse(require('fs').readFileSync(dlPath, 'utf8')).name === name;
+  ok(
+    fileOk && /caffe-sotto-la-pioggia-giorno-\d+\.json/.test(dl.suggestedFilename()),
+    `il salvataggio si scarica in un file (${dl.suggestedFilename()})`
+  );
   await page.click('#modal .btns button >> nth=0');
   await sleep(100);
   await page.evaluate(k => {
@@ -1201,7 +1208,9 @@ async function playMini(page, kind, itemId) {
   }, KEY);
   await page.click('#imp');
   await sleep(150);
-  await page.fill('#savein', code);
+  // si ricarica dal file scaricato
+  await page.setInputFiles('#savefile', dlPath);
+  await page.waitForFunction(() => document.querySelector('#savein').value.length > 100);
   await Promise.all([page.waitForEvent('load'), page.click('#modal .btns button >> nth=1')]);
   await page.waitForTimeout(300);
   ok(await page.evaluate(([k, n]) => JSON.parse(localStorage.getItem(k)).name === n, [KEY, name]), 'importa ripristina la partita');

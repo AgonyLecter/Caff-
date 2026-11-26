@@ -1074,11 +1074,44 @@ function dayHTML() {
       : '')
   );
 }
+// salvataggio su file: lo stesso contenuto del codice, ma in un file da tenere da parte
+function saveCode() {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(st))));
+}
+function parseSave(text) {
+  text = (text || '').trim();
+  try {
+    return JSON.parse(text); // file JSON
+  } catch (e) {}
+  return JSON.parse(decodeURIComponent(escape(atob(text)))); // codice esportato
+}
+function downloadSave() {
+  save();
+  const blob = new Blob([JSON.stringify(st)], { type: 'application/json' }),
+    a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `caffe-sotto-la-pioggia-giorno-${st.day}.json`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }, 1000);
+  toast('Salvataggio scaricato');
+}
+document.addEventListener('change', e => {
+  if (e.target.id !== 'savefile' || !e.target.files[0]) return;
+  e.target.files[0].text().then(t => {
+    $('#savein').value = t;
+    toast('File caricato: tocca Carica');
+  });
+});
 function setHTML() {
   return `<div class="set"><label class="note" for="rn">Nome della caffetteria</label><div class="line"><input id="rn" maxlength="22"><button id="rnb">Salva</button></div>
  <button id="snd">Suoni: ${st.sound ? 'sì' : 'no'}</button><button id="mus">Musica: ${st.musicOn ? 'sì' : 'no'}${st.music ? '' : ' (serve il giradischi)'}</button>
+ ${isApp() ? '' : `<button id="inst" class="big">Installa il gioco sul telefono</button>`}
  <button id="fsb">Schermo intero</button><div class="line"><button id="pho" style="flex:1">Scatta una foto</button><button id="cin" style="flex:1">Rivedi l'introduzione</button></div><div class="line"><button id="exp" style="flex:1">Esporta salvataggio</button><button id="imp" style="flex:1">Importa salvataggio</button></div><button id="rst">Ricomincia da capo</button>
- <p class="note">Clienti serviti: ${st.served} · Monete totali: ${fmt(st.earned)} · Giornate perfette: ${st.perfect}<br>Trascina la sala a destra e a sinistra quando diventa grande.<br>Il gioco si salva da solo su questo dispositivo (con una copia di riserva). Esporta il salvataggio per non perderlo se cambi telefono o cancelli i dati del browser.<br>Creato da GlitchCraft</p></div>`;
+ <p class="note">Clienti serviti: ${st.served} · Monete totali: ${fmt(st.earned)} · Giornate perfette: ${st.perfect}<br>Trascina la sala a destra e a sinistra quando diventa grande.<br>Il gioco si salva da solo su questo dispositivo (con una copia di riserva). Esporta il salvataggio in un file per non perderlo se cambi telefono o cancelli i dati del browser.<br>Creato da GlitchCraft</p></div>`;
 }
 function renderPanel() {
   const b = $('#pbody'),
@@ -1332,6 +1365,10 @@ $('#pbody').addEventListener('click', e => {
     });
     return;
   }
+  if (bt.id === 'inst') {
+    installApp();
+    return;
+  }
   if (bt.id === 'exp') {
     save();
     const code = btoa(unescape(encodeURIComponent(JSON.stringify(st))));
@@ -1339,6 +1376,7 @@ $('#pbody').addEventListener('click', e => {
       `<h2>Esporta salvataggio</h2><p>Copia questo codice e conservalo. Per riprendere la partita: Impostazioni, poi Importa.</p><textarea class="savebox" id="savecode" readonly>${code}</textarea>`,
       [
         { t: 'Chiudi', fn: hideModal },
+        { t: 'Scarica file', fn: () => downloadSave() },
         {
           t: 'Copia',
           big: 1,
@@ -1363,7 +1401,7 @@ $('#pbody').addEventListener('click', e => {
   }
   if (bt.id === 'imp') {
     showModal(
-      `<h2>Importa salvataggio</h2><p>Incolla qui il codice esportato. La partita attuale verrà sostituita.</p><textarea class="savebox" id="savein"></textarea>`,
+      `<h2>Importa salvataggio</h2><p>Scegli il file del salvataggio, oppure incolla qui il codice esportato. La partita attuale verrà sostituita.</p><input type="file" id="savefile" accept=".json,.txt,application/json,text/plain"><textarea class="savebox" id="savein"></textarea>`,
       [
         { t: 'Annulla', fn: hideModal },
         {
@@ -1371,7 +1409,7 @@ $('#pbody').addEventListener('click', e => {
           big: 1,
           fn: () => {
             try {
-              const o = JSON.parse(decodeURIComponent(escape(atob($('#savein').value.trim()))));
+              const o = parseSave($('#savein').value);
               if (!o || typeof o !== 'object' || !o.name || typeof o.coins !== 'number') throw 0;
               localStorage.setItem(KEY + '_bak', localStorage.getItem(KEY) || '');
               localStorage.setItem(KEY, JSON.stringify(o));

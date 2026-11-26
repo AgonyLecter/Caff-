@@ -173,6 +173,15 @@ for (const [k, L] of Object.entries(D.REL))
     })
   );
 
+// --- app offline: ogni file del gioco deve essere nella lista del servizio offline (sw.js)
+const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+[...html.matchAll(/<script src="([^"]+)"/g)]
+  .map(m => m[1])
+  .concat(['css/stile.css', 'manifest.webmanifest'])
+  .forEach(f => {
+    if (!sw.includes(`'${f}'`)) bad(`sw.js: manca ${f} nella lista dei file offline`);
+  });
+
 const n = (a, b) => `${a} ${b}`;
 console.log(
   [

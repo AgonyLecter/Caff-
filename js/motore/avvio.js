@@ -376,3 +376,40 @@ requestAnimationFrame(frame);
   Promise.all([fonts, loaded]).then(go);
   setTimeout(go, 6000); // in ogni caso, dopo qualche secondo si entra
 })();
+
+// App installabile: servizio offline (solo da http/https), memoria persistente, pulsante «Installa l'app»
+let installEvt = null;
+const isApp = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  installEvt = e;
+  if (panel === 'set') renderPanel();
+});
+addEventListener('appinstalled', () => {
+  installEvt = null;
+  toast('Installata! La trovi tra le app del telefono');
+});
+// chiede al browser di non cancellare da solo il salvataggio quando manca spazio
+try {
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(p => p || navigator.storage.persist());
+} catch (e) {}
+function installApp() {
+  if (installEvt) {
+    installEvt.prompt();
+    installEvt.userChoice.finally(() => {
+      installEvt = null;
+      renderPanel();
+    });
+    return;
+  }
+  showModal(
+    isIOS()
+      ? `<h2>Installa il gioco</h2><p>Su iPhone: tocca il pulsante <b>Condividi</b> di Safari (il quadrato con la freccia) e poi <b>Aggiungi alla schermata Home</b>.</p>`
+      : `<h2>Installa il gioco</h2><p>Apri il menu del browser (i tre puntini) e scegli <b>Installa app</b> o <b>Aggiungi a schermata Home</b>. Funziona anche senza connessione.</p>`,
+    [{ t: 'Ho capito', big: 1, fn: hideModal }]
+  );
+}
