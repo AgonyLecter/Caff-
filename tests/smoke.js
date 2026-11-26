@@ -33,7 +33,8 @@ const SAVE = {
   story: {},
   perks: {},
   flags: {},
-  tutOff: 1 // i consigli di Nonna Rosa hanno il loro test
+  tutOff: 1, // i consigli di Nonna Rosa hanno il loro test
+  introDone: 1 // anche la scena d'apertura
 };
 
 async function startGame(page, save) {
@@ -841,6 +842,24 @@ async function playMini(page, kind, itemId) {
     await gp.waitForTimeout(300);
     await gp.fill('#nameIn', 'Guida');
     await gp.click('#openBtn');
+    // prima apre Nonna Rosa: locale vuoto, spiega che contano le storie, poi se ne va
+    let talking = false;
+    for (let i = 0; i < 80 && !talking; i++) {
+      talking = await gp.evaluate(() => !!intro && intro.phase === 'talk' && !document.querySelector('#guide').hidden);
+      await gp.waitForTimeout(200);
+    }
+    const empty = await gp.evaluate(() => people.filter(c => !c.dead && c.state !== 'intro').length === 0);
+    const storyText = await gp.evaluate(() => INTRO.join(' '));
+    for (let i = 0; i < 10 && (await gp.isVisible('#iok')); i++) {
+      await gp.click('#iok');
+      await gp.waitForTimeout(120);
+    }
+    for (let i = 0; i < 100 && (await gp.evaluate(() => !!intro)); i++) await gp.waitForTimeout(200);
+    const introDone = await gp.evaluate(() => !intro && st.introDone === 1);
+    ok(
+      talking && empty && introDone && /storia/.test(storyText),
+      'Nonna Rosa apre il primo giorno a locale vuoto, spiega le storie e poi se ne va'
+    );
     let shown = false;
     for (let i = 0; i < 80 && !shown; i++) {
       shown = await gp.evaluate(() => !document.querySelector('#guide').hidden && gCur && gCur.id === 'servi');
