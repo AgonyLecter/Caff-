@@ -607,6 +607,7 @@ function sfx(k){
  else if(k==='knock'){tone(master,190,t,.06,.09,'triangle');tone(master,170,t+.13,.06,.09,'triangle')}
  else if(k==='bells')[1568,1760,1976,2093,2349,2637,3136].forEach((f,i)=>tone(master,f,t+i*.09,.6,.03,'sine'));
  else if(k==='pop')tone(master,880,t,.08,.05,'square');
+ else if(k==='soffio'){const s=AC.createBufferSource();s.buffer=noiseBuf;const f=AC.createBiquadFilter();f.type='bandpass';f.frequency.value=2600;const gg=AC.createGain();gg.gain.setValueAtTime(.09,t);gg.gain.exponentialRampToValueAtTime(.001,t+.45);s.connect(f);f.connect(gg);gg.connect(master);s.start(t);s.stop(t+.5)}
  else if(k==='woof'){tone(master,320,t,.09,.06,'square');tone(master,260,t+.12,.12,.06,'square')}
  else if(k==='water')[900,700,820,760].forEach((f,i)=>tone(master,f,t+i*.06,.08,.02,'sine'));
  else if(k==='chime')[784,1047,1319].forEach((f,i)=>tone(master,f,t+i*.28,1.6,.04,'sine'));
@@ -891,7 +892,7 @@ function update(dt){
  storyT-=dt;if(storyT<=0){tryStory();storyT=rnd(18,34)}
  const q=queue[0];if(q&&q.state==='order'&&q.special&&q.waited>(st.manager?30:20)+(q.type==='critico'?25:0)){q.special=false;if(q.req&&q.req.mg)q.req=null;say(q,pick(['Va bene, fammelo normale.','Niente di speciale, allora. Pazienza.','Ok, va bene anche semplice.']),2.4);emo(q,'sweat',2)}
  if(q&&q.state==='order'&&!q.special){const r=q.order.s==='k'?cookRate()+baristaRate()*.3:q.order.s==='v'?baristaRate()*1.6:baristaRate();q.prog+=r*dt;if(q.prog>=q.order.t)serve(q,0)}
- people.forEach(c=>{updCust(c,dt);if(c.pet)updPet(c,dt)});people=people.filter(c=>!c.dead);
+ people.forEach(c=>{updCust(c,dt);if(c.pet)updPet(c,dt)});petSocial(dt);people=people.filter(c=>!c.dead);
  musicianOn=people.some(p=>p.state==='sit'&&p.act==='guitar');
  scenes.forEach(s=>updScene(s,dt));scenes=scenes.filter(s=>!s.done);
  for(const k in groups)if(!people.some(p=>p.group===k)&&!timers.length)delete groups[k];
@@ -1160,6 +1161,7 @@ function drawCounter(){const th=TH(),x=counterX,w=W-4-x;
  if(MENU.slice(0,st.menu).some(m=>m.s==='v')){g.fillStyle='#f4f1de';g.fillRect(x+16,95,12,1);g.fillStyle='#e0a040';g.fillRect(x+17,93,3,2);g.fillStyle='#ff9fc8';g.fillRect(x+21,92,3,3);g.fillStyle='#6a4028';g.fillRect(x+25,93,2,2);g.fillStyle='rgba(200,230,255,.3)';g.fillRect(x+16,87,12,8);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x+17,88,1,3)}
  if(st.perks.libro){g.fillStyle='#3d6b4f';g.fillRect(x+30,94,5,3);g.fillStyle='#f4f1de';g.fillRect(x+30,96,5,1)}
  if(st.cat&&catRoll>0){const cx=x+33,cy=96,wg=Math.floor(T*6)%2;g.fillStyle='#2a2238';g.fillRect(cx,cy-3,8,3);g.fillRect(cx+6,cy-4,3,3);g.fillStyle='#4a3e5c';g.fillRect(cx+1,cy-3,5,1);g.fillStyle='#2a2238';g.fillRect(cx+1,cy-5-wg,1,2);g.fillRect(cx+4,cy-4-(1-wg),1,2);g.fillRect(cx-2,cy-2,2,1);g.fillStyle='#ffd166';g.fillRect(cx+7,cy-3,1,1)}
+ else if(st.cat&&catHissT>0){const cx=x+33,cy=96;g.fillStyle='#2a2238';g.fillRect(cx,cy-5,8,2);g.fillRect(cx+1,cy-6,6,1);g.fillRect(cx,cy-3,1,3);g.fillRect(cx+7,cy-3,1,3);g.fillRect(cx-2,cy-8,4,4);g.fillRect(cx-2,cy-9,1,1);g.fillRect(cx+1,cy-9,1,1);g.fillRect(cx+8,cy-8,1,4);g.fillRect(cx+9,cy-9,1,2);g.fillStyle='#ffd166';g.fillRect(cx-2,cy-7,1,1);g.fillRect(cx,cy-7,1,1);g.fillStyle='#ff8fab';g.fillRect(cx-1,cy-5,1,1);drawEmote(cx-3,cy-20,'angry')}
  else if(st.cat){const cx=x+33,cy=96,tw=Math.round(Math.sin(T*2));g.fillStyle='#2a2238';g.fillRect(cx,cy-3,8,3);g.fillRect(cx+6,cy-5,3,3);g.fillRect(cx+6,cy-6,1,1);g.fillRect(cx+8,cy-6,1,1);g.fillRect(cx-2,cy-2+tw,2,1);g.fillStyle='#ffd166';g.fillRect(cx+8,cy-4,1,1)}
  if(MENU.slice(0,st.menu).some(m=>m.s==='b')){g.fillStyle='#c0c0d0';g.fillRect(x+45,91,5,6);g.fillRect(x+44,92,1,3);g.fillStyle='#222';g.fillRect(x+46,90,3,1)}
  const mx=W-27;g.fillStyle='#8a8fa8';g.fillRect(mx,84,15,13);g.fillStyle='#5a5f78';g.fillRect(mx,84,15,2);g.fillStyle='#2a2d3a';g.fillRect(mx+3,90,9,4);g.fillStyle='#cfd3e6';g.fillRect(mx+7,94,1,1);g.fillStyle=Math.floor(T*2)%2?'#ff4fa3':'#7a2a55';g.fillRect(mx+12,87,1,1);
@@ -1274,14 +1276,18 @@ const PETA={cane:'il cane',gatto:'il gatto',uccellino:"l'uccellino",coniglio:'il
 const PETL=['{P}, stai buono.','*accarezza {P}*','{P} adora questo posto.','Vero, {P}?','*passa un biscottino a {P}*','{P} oggi è di buon umore.','Shh, {P} sta dormendo.'];
 function randPet(type){const k=wpick(Object.keys(PETC),x=>({cane:type==='nonno'?5:3,gatto:2,uccellino:1,coniglio:1})[x]);const cc=pick(PETC[k]);return {k,n:pick(PETN),c:cc[0],c2:cc[1],s:k==='cane'&&Math.random()<.35?'s':''}}
 function petOf(c){if(c.reg&&c.reg.petR===undefined){c.reg.petR=1;if(Math.random()<.2)c.reg.pet=randPet(c.reg.type)}const d=(c.reg&&c.reg.pet)||(c.look&&c.look.pet);if(!d)return null;return Object.assign({x:c.x-6,y:c.y,face:1,wt:0,moving:false,t:rnd(3,8),mode:'',hop:0,heart:0},d)}
-function updPet(c,dt){const p=c.pet;if(!p||p.k==='uccellino')return;p.heart=Math.max(0,p.heart-dt);
+function updPet(c,dt){const p=c.pet;if(!p)return;if(p.emo){p.emo.t-=dt;if(p.emo.t<=0)p.emo=null}if(p.k==='uccellino')return;p.heart=Math.max(0,p.heart-dt);p.flee=Math.max(0,(p.flee||0)-dt);
  let tx,ty;if(c.state==='sit'&&c.seat){tx=c.seat.x+c.seat.side*8;ty=c.seat.y+2}else{tx=c.x-(c.face||1)*7;ty=c.y+1}
+ if(p.flee>0)tx-=16;
+ const v=p.visit;if(v){const b=v.to,q=b&&b.pet;if(!q||b.dead||b.state!=='sit'||c.state!=='sit'){p.visit=null}else{
+  if(v.ph==='go'){const sd=p.x<q.x?-1:1;tx=q.x+sd*7;ty=q.y;if(Math.hypot(tx-p.x,ty-p.y)<1.5){p.face=-sd;q.face=sd;petMeet(c,b)}}
+  else if(v.ph==='meet'){v.t-=dt;if(v.play){const an=T*4;tx=q.x+Math.cos(an)*9;ty=q.y+Math.sin(an)*3}else{tx=p.x;ty=p.y;p.face=p.x<q.x?1:-1;q.face=-p.face}if(v.t<=0){p.visit=null;if(q.mode==='sleep'||q.mode==='groom')q.mode=''}}}}
  const dx=tx-p.x,dy=ty-p.y,d=Math.hypot(dx,dy);p.moving=false;
  if(d>1.2){const sp=Math.max(30,(c.spd||28)*1.25)*(d>20?1.6:1),s=Math.min(d,sp*dt);p.x+=dx/d*s;p.y+=dy/d*s;if(Math.abs(dx)>.3)p.face=dx>0?1:-1;p.moving=true;p.wt+=dt;p.mode=''}
- else{p.t-=dt;if(c.state==='sit'&&c.seat)p.face=-c.seat.side;if(p.t<=0){p.t=rnd(4,9);p.mode=c.state==='sit'?pick(['','wag','sleep','sleep','groom']):pick(['','wag'])}
+ else{p.t-=dt;if(c.state==='sit'&&c.seat&&!p.visit)p.face=-c.seat.side;if(p.t<=0){p.t=rnd(4,9);p.mode=c.state==='sit'?pick(['','wag','sleep','sleep','groom']):pick(['','wag'])}
   if(p.mode==='sleep'&&Math.random()<dt*.5)parts.push({x:p.x+2,y:p.y-6,vx:2,vy:-5,t:2,max:2,k:'z'})}
  if(p.k==='coniglio'&&p.moving)p.hop=Math.abs(Math.sin(p.wt*10))*2;else p.hop=0}
-function drawPet(p,c){const f=p.face,x=Math.round(p.x),y=Math.round(p.y-p.hop),P=(dx,dy,w,h,col)=>{g.fillStyle=col;g.fillRect(f>0?x+dx:x-dx-w,y+dy,w,h)};
+function drawPet(p,c){if(p.emo)drawEmote(Math.round(p.x)-2-p.face*3,Math.round(p.y)-(p.k==='coniglio'?21:18),p.emo.k);const f=p.face,x=Math.round(p.x),y=Math.round(p.y-p.hop),P=(dx,dy,w,h,col)=>{g.fillStyle=col;g.fillRect(f>0?x+dx:x-dx-w,y+dy,w,h)};
  const a=p.c,b=p.c2,step=p.moving?Math.floor(p.wt*10)%2:0,sl=p.mode==='sleep',wag=(p.mode==='wag'||p.heart>0||(c&&c.mood>80))&&Math.floor(T*8)%2;
  g.fillStyle='rgba(0,0,0,.25)';g.fillRect(x-4,Math.round(p.y),9,1);
  if(p.k==='cane'){const sm=p.s==='s';
@@ -1299,11 +1305,44 @@ function drawPet(p,c){const f=p.face,x=Math.round(p.x),y=Math.round(p.y-p.hop),P
   if(sl){P(-3,-3,6,3,a);P(1,-4,4,3,a);P(-1,-5,3,1,a);P(4,-3,1,1,DK);P(-4,-2,1,1,'#fffaf2');return}
   P(-3,-4,6,4,a);P(-2,-5,4,1,a);P(1,-6,4,3,a);P(2,-10,1,4,a);P(4,-10,1,4,a);P(2,-9,1,2,b);P(4,-9,1,2,b);P(4,-5,1,1,DK);P(5,-4,1,1,'#ff8fab');P(-4,-3,1,1,'#fffaf2');P(2,-4,1,1,'#ffb0c8')}}
 function drawBird(c,x,y){const p=c.pet,f=c.face||1,hop=Math.floor(T*1.3+c.id)%7===0?1:0,P=(dx,dy,w,h,col)=>{g.fillStyle=col;g.fillRect(f>0?x+dx:x-dx-w,y+dy-hop,w,h)};
- P(-1,-2,3,2,p.c);P(0,-4,2,2,p.c);P(2,-3,1,1,'#ff9f43');P(1,-3,1,1,DK);P(-2,-1,1,1,p.c2);P(-1,-1,2,1,p.c2);p.x=x;p.y=y}
+ P(-1,-2,3,2,p.c);P(0,-4,2,2,p.c);P(2,-3,1,1,'#ff9f43');P(1,-3,1,1,DK);P(-2,-1,1,1,p.c2);P(-1,-1,2,1,p.c2);p.x=x;p.y=y;if(p.emo)drawEmote(x-2,y-14,p.emo.k)}
 function tapPet(x,y){for(const c of people){const p=c.pet;if(!p||c.dead)continue;if(Math.abs(x-p.x)<6&&y>p.y-(p.k==='uccellino'?6:10)&&y<p.y+3){
   p.heart=2.5;if(p.k==='cane'||p.k==='coniglio'){p.mode='wag';p.t=4}for(let i=0;i<3;i++)parts.push({x:p.x+rnd(-3,3),y:p.y-8,vx:rnd(-3,3),vy:-8,t:1.4,max:1.4,k:'heart'});
   sfx(p.k==='gatto'?'meow':p.k==='cane'?'woof':'pop');if(!c.bub&&Math.random()<.5)say(c,pick([`${p.n} ti adora.`,`Le coccole a ${p.n}? Grazie!`,`Visto, ${p.n}? Qui sei di casa.`,`${p.n} non vuole più andare via.`]),2.6,c.name);
   st.petted=st.petted||{};st.petted[p.k+p.n]=1;if(Object.keys(st.petted).length>=5)egg('cuccioli');return true}}return false}
+
+/* ----- gli animali tra loro ----- */
+let petT=rnd(6,12),catHissT=0;
+const PNAME={cane:'cane',gatto:'gatto',coniglio:'coniglio',uccellino:'uccellino'};
+function petEmo(p,k,t){p.emo={k,t:t||2}}
+function petKey(a,b){return [a.k+a.n,b.k+b.n].sort().join('|')}
+function petSocial(dt){
+ catHissT=Math.max(0,catHissT-dt);
+ // il gatto del locale non sopporta i cani vicino al bancone
+ if(st.cat&&catHissT<=0)for(const c of people){const p=c.pet;if(p&&p.k==='cane'&&!p.visit&&p.x>counterX-20&&Math.random()<dt*.25){catHissT=2.2;petEmo(p,'sweat',2);p.flee=1.2;sfx('soffio');if(!c.bub)say(c,pick([`${p.n}, lascia stare il gatto!`,`Scusate, ${p.n} voleva solo salutare.`]),2.4,c.reg?c.name:'');if(egg('soffio'))logB(`Il gatto del locale ha soffiato a ${p.n}`);break}}
+ petT-=dt;if(petT>0)return;petT=rnd(7,14);
+ const sit=people.filter(c=>c.pet&&c.state==='sit'&&c.seat&&!c.dead&&!c.pet.visit&&!c.pet.moving&&!people.some(o=>o.pet&&o.pet.visit&&o.pet.visit.to===c));
+ // due uccellini nella sala cantano insieme
+ const birds=sit.filter(c=>c.pet.k==='uccellino');
+ if(birds.length>=2&&Math.random()<.5){const [a,b]=birds;for(const c of [a,b])for(let i=0;i<3;i++)timers.push({t:i*.5,fn:()=>parts.push({x:c.pet.x,y:c.pet.y-5,vx:rnd(-3,3),vy:-7,t:1.6,max:1.6,k:'note'})});sfx('bells');befriend(a,b,'cantano in duetto');return}
+ const walk=sit.filter(c=>c.pet.k!=='uccellino');const pairs=[];
+ for(let i=0;i<walk.length;i++)for(let j=0;j<walk.length;j++)if(i!==j&&Math.abs(walk[i].pet.x-walk[j].pet.x)<110)pairs.push([walk[i],walk[j]]);
+ if(!pairs.length)return;const [a,b]=pick(pairs);
+ a.pet.visit={to:b,ph:'go',t:0};a.pet.mode=''}
+function petMeet(a,b){const p=a.pet,q=b.pet,ks=[p.k,q.k].sort().join('+');let ok=true,txt='';
+ p.visit.ph='meet';p.visit.t=ks==='cane+cane'?4.5:3;
+ if(ks==='cane+cane'){p.visit.play=1;petEmo(p,'heart');petEmo(q,'heart');q.mode='wag';sfx('woof');txt='giocano a rincorrersi'}
+ else if(ks==='cane+gatto'){const cat=p.k==='gatto'?p:q,dog=cat===p?q:p;if(Math.random()<.6){ok=false;petEmo(cat,'angry');petEmo(dog,'sweat');sfx('soffio');p.visit.t=1.2;txt=''}else{petEmo(cat,'heart');petEmo(dog,'heart');cat.mode='sleep';dog.mode='sleep';p.visit.t=5;txt='si sono accoccolati insieme'}}
+ else if(ks==='gatto+gatto'){petEmo(p,'heart');petEmo(q,'heart');sfx('meow');p.mode='groom';q.mode='groom';txt='si strusciano'}
+ else{petEmo(p,'heart');petEmo(q,'star');sfx('pop');txt='si toccano il naso'}
+ for(let i=0;i<(ok?3:0);i++)parts.push({x:(p.x+q.x)/2+rnd(-3,3),y:p.y-9,vx:rnd(-3,3),vy:-7,t:1.4,max:1.4,k:'heart'});
+ if(ok)befriend(a,b,txt);else if(!a.bub&&Math.random()<.6)say(a,pick([`${p.n}! Torna qui!`,`Ehm... scusate, ${p.n} è un po' invadente.`]),2.4,a.reg?a.name:'')}
+function befriend(a,b,txt){const p=a.pet,q=b.pet;st.petf=st.petf||{};const k=petKey(p,q);st.petf[k]=(st.petf[k]||0)+1;
+ if(!a.bub&&Math.random()<.6)say(a,pick([`Guarda, ${p.n} e ${q.n} ${txt}!`,`${p.n} si è fatto un amico.`,`Che teneri...`]),2.6,a.reg?a.name:'');
+ if(st.petf[k]===2){toast(`${p.n} e ${q.n} sono diventati amici!`);logB(`${p.n} e ${q.n} sono amici a quattro zampe`);egg('zampe')}
+ // i padroni si conoscono grazie ai loro animali
+ if(a.reg&&b.reg&&!st.rel[relKey(a.reg,b.reg)]){advanceRel(a.reg,b.reg);logB(`${a.reg.n} e ${b.reg.n} si sono conosciuti grazie a ${p.n} e ${q.n}`);toast(`${a.reg.n} e ${b.reg.n} si conoscono grazie ai loro animali`);
+  timers.push({t:1.2,fn:()=>{if(!b.bub&&!b.dead)say(b,`Piacere! Io sono ${b.name}, e lui è ${q.n}.`,2.8,b.name)}})}}
 
 /* ================= FILI: le storie infinite degli habitué ================= */
 // Ogni habitué affezionato può vivere una piccola storia personale in tre visite.
@@ -1393,6 +1432,8 @@ function startFilo(c){const r=c.reg;
 /* ================= ATMOSFERA, SEGRETI, FILMATO ================= */
 const EGGS=[
  {id:'luna',n:"La luna fa l'occhiolino",h:'Di notte guarda bene la luna. E insisti.'},
+ {id:'zampe',n:'Amici a quattro zampe',h:'Quando i padroni si siedono, gli animali vanno a conoscersi. Lasciali fare.'},
+ {id:'soffio',n:'Il re del bancone',h:'Il gatto del locale ha un carattere. Prova a fargli conoscere un cane.'},
  {id:'cuccioli',n:'Amico degli animali',h:'Alcuni clienti non vengono da soli. Fagli una carezza... a cinque diversi.'},
  {id:'stella',n:'Un desiderio',h:'Nelle notti serene passa una stella cadente. Prendila al volo.'},
  {id:'disegno',n:'Disegni sul vetro',h:'Quando il vetro è appannato, prova a toccarlo in basso.'},
@@ -1736,6 +1777,7 @@ function cliHTML(){
  if(tab==='Legami'){const L=Object.entries(st.rel);const IC={conoscenti:'conoscenti',amici:'amici',migliori:'migliori amici',cotta:'cotta ♥',coppia:'coppia ♥',fidanzati:'fidanzati ♥♥',rivali:'rivali'};
   const nm=id=>{const r=st.regs.find(x=>x.id===id);return r?esc(r.n):'?'};
   return `<p class="note">Legami nati nel tuo locale. Gli amici e le coppie iniziano a venire insieme, come una routine.</p>`+(L.length?L.map(([k,v])=>{const [a,b]=k.split('|');return `<div class="row"><b>${nm(a)} e ${nm(b)}</b><span>${IC[v.k]||v.k} · dal giorno ${v.d}</span></div>`}).join(''):'<p class="note">Nessun legame per ora.</p>')+
+  (()=>{const P=Object.entries(st.petf||{}).filter(([,v])=>v>=2);if(!P.length)return '';const nm=k=>k.replace(/^(cane|gatto|coniglio|uccellino)/,'');return `<div class="card2"><h3>Amici a quattro zampe<small>${P.length}</small></h3>${P.map(([k,v])=>{const [a,b]=k.split('|');return `<div class="rev">${esc(nm(a))} e ${esc(nm(b))} <small>· ${v} incontri</small></div>`}).join('')}</div>`})()+
   (st.log.length?`<div class="card2"><h3>Bacheca</h3>${st.log.slice(0,15).map(l=>`<div class="rev"><small>Giorno ${l.d}</small> ${esc(l.t)}</div>`).join('')}</div>`:'')}
  if(tab==='Segreti'){const f=st.found||{},n=EGGS.filter(e=>f[e.id]).length;return `<p class="note">Segreti scoperti: <b>${n}/${EGGS.length}</b>. Il locale è pieno di piccole sorprese: tocca le cose, guarda fuori dalla finestra, resta aperto fino a tardi.</p>`+EGGS.map(e=>f[e.id]?`<div class="row"><b>${e.n}</b><span>Scoperto · ${e.h}</span></div>`:`<div class="row"><b>???</b><span>${e.h}</span></div>`).join('')}
  if(tab==='Recensioni'){const r=st.reviews.slice().reverse();return `<p class="note">Media: <b>${rating().toFixed(1).replace('.',',')} ★</b> (ultime ${r.length}). Le stelle fanno arrivare più clienti. Attese lunghe e tavoli sporchi le abbassano.</p>`+(r.length?r.map(x=>`<div class="rev"><em>${'★'.repeat(x.s)}${'☆'.repeat(5-x.s)}</em>${esc(x.t)} <small>— ${esc(x.n)}${x.c?' (critico)':''}, giorno ${x.d}</small></div>`).join(''):'<p class="note">Nessuna recensione ancora.</p>')}
@@ -1849,7 +1891,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){save();if(
 addEventListener('pagehide',save);addEventListener('resize',layout);
 layout();
 $('#icoH').innerHTML=ICO.heart;$('#icoS').innerHTML=ICO.star;$('#icoA').innerHTML=ICO.lamp;$('#bSet').innerHTML=ICO.menu;[['bUp','up','Migliora'],['bCli','book','Clienti'],['bDay','cal','Giorno']].forEach(([id,ic,l])=>$('#'+id).innerHTML=`<span class="bi">${ICO[ic]}</span><span class="lbl">${l}</span>`);$('#pclose').innerHTML=ICO.close;$('#dice').innerHTML=ICO.dice;
-window.__cafe={FILI,startFilo,portrait,randPet,tapPet,newCust,get people(){return people},get scenes(){return scenes},get st(){return st},speed:1,ARCS,CH,MENU,UP,slots,get cols(){return cols},get counterX(){return counterX},get camX(){return camX},set camX(v){camX=v},get S(){return S},get DPR(){return DPR},get queue(){return queue},get mini(){return mini},openMini,miniDown,miniUp,finishMini,checkFlag,arcEnd,arcReq,EGGS,RARE,get cine(){return cine},tryRare,get boostT(){return boostT},get W(){return W},panes,get CB(){return CB},get signBox(){return signBox}};
+window.__cafe={FILI,startFilo,portrait,randPet,tapPet,newCust,petSocial,get catHissT(){return catHissT},get people(){return people},get scenes(){return scenes},get st(){return st},speed:1,ARCS,CH,MENU,UP,slots,get cols(){return cols},get counterX(){return counterX},get camX(){return camX},set camX(v){camX=v},get S(){return S},get DPR(){return DPR},get queue(){return queue},get mini(){return mini},openMini,miniDown,miniUp,finishMini,checkFlag,arcEnd,arcReq,EGGS,RARE,get cine(){return cine},tryRare,get boostT(){return boostT},get W(){return W},panes,get CB(){return CB},get signBox(){return signBox}};
 let last=performance.now();
 function frame(now){let dt=Math.min(.05,(now-last)/1000);last=now;if(cine){cine.t+=dt;T+=dt;ambient(dt);if(cine.t>=CINE_T)endCine();if(cine){drawCine();requestAnimationFrame(frame);return}}const sp=window.__cafe.speed||1;for(let i=0;i<sp;i++){T+=dt;if(started)update(dt);else ambient(dt)}render();if(started)serveUI();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);

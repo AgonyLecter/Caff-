@@ -229,6 +229,24 @@ async function playMini(page, kind, itemId) {
     ok(r.hearts === 5 && r.egg, `si accarezzano (${r.hearts}/5) e cinque animali diversi svelano un segreto`);
   }
 
+  {
+    // due cani con i padroni seduti vicini: si incontrano, diventano amici e fanno conoscere i padroni
+    await page.evaluate(() => { const C = window.__cafe; C.speed = 1; C.people.forEach(p => { p.dead = true; if (p.seat) p.seat.occ = null; }); C.queue.length = 0; C.st.petf = {};
+      const seats = C.slots[0].seats.concat(C.slots[2].seats);
+      [['rd1', 'Uno', 'Rex'], ['rd2', 'Due', 'Fido']].forEach(([id, n, pn], i) => { const reg = { id, n, look: C.CH.luca.l, type: 'normale', fav: 'caffe', v: 3, f: 2, tr: [], petR: 1, pet: { k: 'cane', n: pn, c: '#c98a4a', c2: '#8a5a3a', s: '' } };
+        C.st.regs.push(reg); const seat = seats[i === 0 ? 1 : 2]; seat.dirty = false; const c = C.newCust({ look: reg.look, name: n, reg, type: 'normale' });
+        C.queue.splice(C.queue.indexOf(c), 1); Object.assign(c, { state: 'sit', seat, x: seat.x, y: seat.y, sitT: 999, thinkT: 999, order: C.MENU[0], mood: 80 }); seat.occ = c; c.pet.x = seat.x + seat.side * 8; c.pet.y = seat.y + 2; }); });
+    for (let round = 0; round < 2; round++) {
+      await page.evaluate(() => window.__cafe.petSocial(30));
+      for (let i = 0; i < 120; i++) { const busy = await page.evaluate(() => window.__cafe.people.some(p => p.pet && (p.pet.visit || p.pet.moving))); if (!busy && i > 3) break; await sleep(100); }
+    }
+    const r = await page.evaluate(() => { const C = window.__cafe; return { f: (C.st.petf || {})['caneFido|caneRex'], rel: !!C.st.rel['rd1|rd2'], egg: !!C.st.found.zampe }; });
+    ok(r.f >= 2 && r.rel && r.egg, `due cani si incontrano ${r.f || 0} volte, diventano amici e i padroni si conoscono`);
+    const hiss = await page.evaluate(() => { const C = window.__cafe; C.st.cat = 1; const c = C.people.find(p => p.pet && p.pet.n === 'Rex'); c.pet.visit = null; c.pet.x = C.counterX - 5; for (let i = 0; i < 20 && !C.catHissT; i++) C.petSocial(.5); return C.catHissT > 0 && !!C.st.found.soffio; });
+    ok(hiss, 'il gatto del locale soffia al cane vicino al bancone');
+    await page.evaluate(() => { const C = window.__cafe; C.people.forEach(p => { if (p.reg && /^rd/.test(p.reg.id)) { p.dead = true; if (p.seat) p.seat.occ = null; } }); });
+  }
+
   console.log('Segreti e interazioni');
   await page.evaluate(() => { window.__cafe.speed = 1; const st = window.__cafe.st; st.found = {}; });
   for (let i = 0; i < 6; i++) { await tapWorld(page, 18, 70); await sleep(60); }
