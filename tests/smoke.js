@@ -149,7 +149,9 @@ async function playMini(page, kind, itemId) {
   const coins0 = await page.evaluate(() => window.__cafe.st.coins);
   // aspetta un cliente al bancone e servilo col pulsante
   for (let i = 0; i < 200; i++) { const q = await page.evaluate(() => { const q = window.__cafe.queue[0]; return q && q.state === 'order' && !q.special; }); if (q) break; await sleep(100); }
-  for (let i = 0; i < 30; i++) { await page.locator('#serve').dispatchEvent('pointerdown'); await sleep(40); }
+  const noSpecial = () => page.evaluate(() => { const C = window.__cafe; C.queue.forEach(q => { q.special = false; q.req = null; }); if (C.mini) { C.mini.done = true; C.finishMini(); } });
+  for (let i = 0; i < 30; i++) { await noSpecial(); await page.locator('#serve').dispatchEvent('pointerdown'); await sleep(40); }
+  await noSpecial();
   ok(await page.evaluate(c => window.__cafe.st.coins > c, coins0), 'il pulsante Servi serve i clienti');
   const pts = await page.evaluate(() => {
     const C = window.__cafe, cv = document.querySelector('#c'), r = cv.getBoundingClientRect();
