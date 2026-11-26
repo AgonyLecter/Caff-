@@ -252,10 +252,7 @@ function miniEnd(q) {
   $('#mmeter').hidden = true;
   $('#mopts').hidden = true;
   $('#mbtn').hidden = false;
-  if (m.k === 'latte') {
-    $('#mcan').hidden = false;
-    drawArt(q);
-  }
+  startResult(m); // animazione di quello che hai preparato
   $('#mtxt').innerHTML = pxText(q === 2 ? '★★★ ' : q === 1 ? '★★☆ ' : '★☆☆ ') + ' ' + esc(MGEND[m.k][q]);
   $('#mbtn').textContent = 'Servi';
 }
@@ -338,6 +335,7 @@ function vetrinaPick(i) {
 }
 function finishMini() {
   const m = mini;
+  stopResult();
   mini = null;
   miniLast = 0;
   $('#mini').hidden = true;
@@ -345,41 +343,6 @@ function finishMini() {
   if (m.c && queue[0] === m.c) {
     m.c.prog = m.c.order.t;
     serve(m.c, m.q);
-  }
-}
-function drawArt(q) {
-  const c = $('#mcan').getContext('2d');
-  c.clearRect(0, 0, 24, 24);
-  c.fillStyle = '#f4f1de';
-  c.beginPath();
-  c.arc(12, 12, 11, 0, 7);
-  c.fill();
-  c.fillStyle = '#7a4a2a';
-  c.beginPath();
-  c.arc(12, 12, 9, 0, 7);
-  c.fill();
-  c.fillStyle = '#f6e8d4';
-  if (q === 2) {
-    [
-      [9, 8, 3, 2],
-      [13, 8, 3, 2],
-      [8, 9, 9, 3],
-      [9, 12, 7, 2],
-      [10, 14, 5, 1],
-      [11, 15, 3, 1],
-      [12, 16, 1, 1]
-    ].forEach(r => c.fillRect(...r));
-  } else if (q === 1) {
-    c.fillRect(12, 6, 1, 12);
-    for (let i = 0; i < 5; i++) {
-      c.fillRect(9 - (i % 2), 7 + i * 2, 3, 1);
-      c.fillRect(13 + (i % 2), 7 + i * 2, 3, 1);
-    }
-  } else {
-    c.beginPath();
-    c.arc(11, 13, 3, 0, 7);
-    c.fill();
-    c.fillRect(13, 9, 3, 2);
   }
 }
 // solo il pulsante del minigioco (o i dolci della vetrina) accetta i tocchi: niente errori per un tocco a caso sullo schermo

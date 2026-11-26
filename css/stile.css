@@ -184,20 +184,32 @@ button .pxi {
   text-shadow: 0 0 8px #ff4fa366;
   font-weight: 700;
 }
+/* schede su più righe: si vedono tutte, senza scorrere di lato */
 #tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
-  overflow-x: auto;
   padding: 0 12px 8px;
   border-bottom: 1px solid var(--line);
   flex: none;
 }
 #tabs button {
-  min-height: 34px;
+  min-height: 32px;
   font-size: 14px;
-  padding: 0 10px;
-  flex: none;
+  padding: 0 6px;
   background: #1b1030;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-height: 420px) {
+  #tabs button {
+    min-height: 28px;
+    font-size: 13px;
+  }
 }
 #tabs button.on {
   border-color: var(--cyan);
@@ -877,8 +889,9 @@ input {
   box-shadow: 0 4px 0 #06030c;
 }
 #mcan {
-  width: 120px;
-  height: 120px;
+  position: static; /* la regola generale delle tele le mette a schermo intero */
+  width: 128px;
+  height: 128px;
   image-rendering: pixelated;
   margin: 6px auto;
   display: block;
@@ -1116,5 +1129,12 @@ input {
 @media (max-width: 620px) {
   .clockc #clock {
     display: none;
+  }
+}
+@media (max-height: 420px) {
+  #mcan {
+    width: 96px;
+    height: 96px;
+    margin: 2px auto;
   }
 }
