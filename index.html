@@ -82,6 +82,14 @@ input{font:inherit;font-size:16px;color:var(--ink);background:#120a20;border:2px
 .choice{display:flex;flex-direction:column;gap:8px;margin-top:10px}
 .choice button{min-height:48px;font-size:16px}
 #mini .meter{position:relative;height:34px;background:#120a20;border:2px solid var(--line);border-radius:10px;margin:14px 0;overflow:hidden}
+#mfill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#6ad1ff,#c77dff,#ff4fa3);opacity:.5}
+#mmeter.cook{background:linear-gradient(90deg,#f4f1de,#ffd166 50%,#c9902a 72%,#5a2a10 88%,#1a0d08)}
+#mmeter.heat #mfill{background:linear-gradient(90deg,#6ad1ff,#ffd166,#ff3b3b)}
+.mopts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:12px}
+.mopts button{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:26px;min-height:66px;padding:4px 2px;line-height:1.1}
+.mopts small{font-size:11px;color:var(--dim)}
+.big-ic{font-size:34px;vertical-align:middle;margin-right:6px}
+.savebox{width:100%;height:90px;font:12px ui-monospace,monospace;color:var(--ink);background:#120a20;border:2px solid var(--line);border-radius:8px;padding:6px;resize:none;user-select:text;-webkit-user-select:text}
 #mzone{position:absolute;top:0;bottom:0;background:linear-gradient(#7bd389,#3f9a5c);opacity:.85}
 #mneedle{position:absolute;top:-2px;bottom:-2px;width:4px;background:#fff;box-shadow:0 0 8px #fff;left:0}
 #mdots{display:flex;gap:8px;justify-content:center}#mdots i{width:14px;height:14px;border-radius:50%;background:#2a1844;border:2px solid var(--line)}#mdots i.ok{background:var(--gold)}#mdots i.mid{background:#c77dff}
@@ -96,6 +104,8 @@ input{font:inherit;font-size:16px;color:var(--ink);background:#120a20;border:2px
 #serve.on{border-color:var(--pink);box-shadow:0 4px 0 #06030c,0 0 18px #ff4fa3aa}
 #serve.on span{color:var(--ink)}
 #serve.idle{opacity:.55}
+#serve.rush{border-color:#ff3b3b;box-shadow:0 4px 0 #06030c,0 0 18px #ff3b3baa}
+#serve span{white-space:nowrap;max-width:68px;overflow:hidden;text-overflow:ellipsis}
 #serve .ring{position:absolute;inset:-3px;border-radius:50%;pointer-events:none;background:conic-gradient(var(--gold) var(--p,0%),transparent 0);-webkit-mask:radial-gradient(circle,transparent 34px,#000 35px);mask:radial-gradient(circle,transparent 34px,#000 35px)}
 #serve.pop{transform:scale(.92)}
 @media (max-height:360px){#serve{width:64px;height:64px;bottom:calc(max(6px,env(safe-area-inset-bottom)) + 56px)}#serve svg{width:28px;height:28px}#serve .ring{-webkit-mask:radial-gradient(circle,transparent 28px,#000 29px);mask:radial-gradient(circle,transparent 28px,#000 29px)}}
@@ -135,8 +145,9 @@ input{font:inherit;font-size:16px;color:var(--ink);background:#120a20;border:2px
 <div id="mini" class="ov" hidden><div class="box">
   <h2 id="mtitle">Latte art</h2>
   <p id="mtxt">Tocca quando la lancetta è nel verde. Tre versate.</p>
-  <div class="meter" id="mmeter"><div id="mzone"></div><div id="mneedle"></div></div>
+  <div class="meter" id="mmeter"><i id="mfill"></i><div id="mzone"></div><div id="mneedle"></div></div>
   <div id="mdots"><i></i><i></i><i></i></div>
+  <div id="mopts" class="mopts" hidden></div>
   <canvas id="mcan" width="24" height="24" hidden></canvas>
   <div class="btns"><button id="mbtn" class="big">Versa!</button></div>
 </div></div>
@@ -204,30 +215,31 @@ const CH={
 const ARCS=[
  {id:'pioggia',t:'Pioggia condivisa',d:"Un'illustratrice e uno studente di musica, lo stesso tavolo per caso.",who:['mia','luca'],perk:'finestra',pt:'Le coppie lasciano mance più alte',ch:[
   {t:'Posto libero?',r:0,l:[[1,'Scusa... è libero? Fuori diluvia.'],[0,'Certo. Attento al quaderno.'],[1,'Disegni la città?'],[0,'Disegno le persone che entrano qui.'],[1,'Anche me?'],[0,'...Forse.']]},
-  {t:'Lo schizzo',r:9,l:[[0,'Ti ho disegnato. Con le cuffie.'],[1,'Sembro più figo che dal vero.'],[0,"Ho barato un po'."],[1,'Allora ti scrivo una canzone.'],[1,"E baro anch'io."]]},
-  {t:'La canzone',r:24,l:[[1,"L'ho finita. Si chiama «Tavolo vicino alla finestra»."],[0,'Fammela sentire.'],[1,'*le passa un auricolare*'],[0,'...è bellissima.'],[1,'Sabato suono in un locale. Vieni?'],[0,'Solo se dopo torniamo qui.']]},
+  {t:'Lo schizzo',r:9,l:[[0,'Ti ho disegnato. Con le cuffie.'],[1,'Sembro più figo che dal vero.'],[0,"Ho barato un po'."],[1,'Allora ti scrivo una canzone.'],[1,"E baro anch'io."],{c:{q:'Mia si alza per pagare. Luca ti lancia uno sguardo disperato: «Che faccio?»',o:[{t:'«Chiedile di uscire. Adesso.»',f:'pioggia=adesso',r:[[1,'Mia! Aspetta. Sabato... ti va un caffè? Non qui. Cioè, anche qui.'],[0,'*ride* Sabato. Qui. Alle cinque.']]},{t:'«Prima finisci quella canzone.»',f:'pioggia=canzone',r:[[1,'*apre il quaderno e scrive un titolo*'],[1,'«Tavolo vicino alla finestra». Ci lavoro stanotte.']]}]}}]},
+  {t:'La canzone',r:24,l:[[0,'Sabato è stato bellissimo. Anche se hai rovesciato lo zucchero ovunque.','pioggia=adesso'],[1,'Ero nervoso. Ma stanotte ho finito una cosa.','pioggia=adesso'],[1,'Ci ho messo tre notti. Ma ho finito una cosa.','pioggia=canzone'],[0,'Tre notti per me?','pioggia=canzone'],[1,"L'ho finita. Si chiama «Tavolo vicino alla finestra»."],[0,'Fammela sentire.'],[1,'*le passa un auricolare*'],[0,'...è bellissima.'],[1,'Sabato suono in un locale. Vieni?'],[0,'Solo se dopo torniamo qui.']]},
   {t:'Un anno dopo',r:46,l:[[0,'Un anno fa ti ho detto «attento al quaderno».'],[1,'E io ci ho rovesciato sopra il caffè.'],[0,'Il disastro più bello della mia vita.'],[1,"Stesso tavolo l'anno prossimo?"],[0,'Stesso tavolo per sempre.']]}],
   rt:[[[0,'Il solito?'],[1,'Il solito. E il solito tavolo.']],[[1,'*canticchia*'],[0,'*lo disegna mentre canticchia*']],[[0,'Piove ancora.'],[1,'Meglio. Restiamo di più.']]]},
- {id:'valigie',t:'Valigie',d:"Marta e Gio, e un lavoro dall'altra parte del mondo.",who:['marta','gio'],perk:'valigie',pt:'Una cartolina da Tokyo in vetrina (+Atmosfera)',ch:[
+ {id:'valigie',t:'Valigie',d:"Marta e Gio, e un lavoro dall'altra parte del mondo.",who:['marta','gio'],perk:'valigie',pt:'Una cartolina da Tokyo in vetrina (+2 Atmosfera)',end:{'valigie=vai':{n:'Insieme a Tokyo',perk:'valigie',pt:'Una cartolina da Tokyo in vetrina (+2 Atmosfera)'},'valigie=resta':{n:'Un anno di calendario',perk:'calendario',pt:'Il calendario di Gio dietro il bancone (+3 Atmosfera)'}},ch:[
   {t:'Il litigio',r:5,l:[[0,'Mi hanno offerto il lavoro. A Tokyo.'],[1,"E me lo dici così? Tra un cappuccino e l'altro?"],[0,'Te lo sto dicendo adesso!'],[1,'Io qui ho tutto, Marta.'],[0,"Anch'io. Per questo è difficile."],[1,"...Vado a prendere un'altra cosa."]]},
   {t:'Tu cosa faresti?',r:18,l:[[1,'...'],[0,'...'],[0,'*si gira verso il bancone*'],[0,'Scusa. Tu cosa faresti, al posto nostro?'],{c:{q:'Marta ti guarda, Gio fa finta di niente. Cosa rispondi?',o:[{t:'«Partirei. Insieme.»',f:'valigie=vai',r:[[1,'...Insieme. Detto così sembra facile.'],[0,'Forse lo è.']]},{t:'«Resterei. Ma la aspetterei.»',f:'valigie=resta',r:[[1,'Aspettare. Ci ho pensato anche io.'],[0,'Un anno solo, Gio. Un anno.']]}]}},[1,"Stanotte ho cercato «caffè a Tokyo». Ce n'è uno con un gatto."],[0,'*sorride per la prima volta*']]},
-  {t:'Due biglietti',r:38,l:[[0,'Allora?'],[1,'Due biglietti. Ho chiesto il trasferimento.','valigie=vai'],[0,'Gio... sei sicuro?','valigie=vai'],[1,'No. Ma sono sicuro di te.','valigie=vai'],[1,'Un biglietto. E un calendario.','valigie=resta'],[1,'Ci ho segnato tutti i giorni fino al tuo ritorno.','valigie=resta'],[0,'Sono tantissimi.','valigie=resta'],[1,'Ognuno con un caffè qui. Te li conto io.','valigie=resta'],[0,'Promettimi che torniamo qui ogni Natale.'],[1,'Promesso. Magari ci fanno lo sconto.']]}],
+  {t:'Due biglietti',r:38,l:[[0,'Allora?'],[1,'Due biglietti. Ho chiesto il trasferimento.','valigie=vai'],[0,'Gio... sei sicuro?','valigie=vai'],[1,'No. Ma sono sicuro di te.','valigie=vai'],[1,'Un biglietto. E un calendario.','valigie=resta'],[1,'Ci ho segnato tutti i giorni fino al tuo ritorno.','valigie=resta'],[0,'Sono tantissimi.','valigie=resta'],[1,'Ognuno con un caffè qui. Te li conto io.','valigie=resta'],[0,'Promettimi che torniamo qui ogni Natale.','valigie=vai'],[1,'Promesso. Magari ci fanno lo sconto.','valigie=vai'],[0,'Promettimi che non smetti di venire qui.','valigie=resta'],[1,'Ogni mattina. Così quando torni il barista sa già tutto.','valigie=resta']]}],
   rt:[[[0,'Ultimo caffè prima del volo.'],[1,'Ultimo per ora.']],[[1,'Lì il cappuccino costa il triplo.'],[0,'Allora ne prendiamo due qui.']]]},
  {id:'romanzo',t:'Il romanzo',d:'Un vecchio professore scrive ogni notte allo stesso tavolo.',who:['bruni'],perk:'libro',pt:'Il libro sul bancone (+5 Atmosfera)',ch:[
   {t:'Pagina bianca',r:0,l:[[0,'Capitolo uno...'],[0,'No.'],[0,'*cancella*'],[0,'Capitolo uno. Pioveva.'],[0,'...Molto meglio.']]},
-  {t:'Un personaggio',r:12,l:[[0,'Mi serve un personaggio che non dorme mai.'],[0,'*guarda verso il bancone*'],[0,'Perfetto.']]},
+  {t:'Un personaggio',r:12,l:[[0,'Mi serve un personaggio che non dorme mai.'],[0,'*guarda verso il bancone*'],{c:{q:'Il professore ti indica con la penna. «Lei. Posso metterla nel romanzo?»',o:[{t:'«Solo se mi fa simpatico.»',f:'romanzo=eroe',r:[[0,'Simpatico, insonne e con un ottimo espresso. Affare fatto.']]},{t:'«Preferisco restare dietro al bancone.»',f:'romanzo=quinte',r:[[0,'Il personaggio che non si vede mai, ma tiene in piedi la storia. Ancora meglio.']]}]}},[0,'Perfetto.']]},
   {t:"L'infermiera",r:28,who:['bruni','sara'],l:[[1,'Scusi... sta scrivendo di noi clienti?'],[0,'Colpito. Lei chi sarebbe, nel romanzo?'],[1,'Quella che arriva alle tre di notte, dopo il turno.'],[0,"L'eroina, allora."],[1,'Mi metta almeno un lieto fine.']]},
-  {t:'Pubblicato',r:52,who:['bruni','sara'],l:[[0,'È uscito. «Il caffè sotto la pioggia».'],[1,"C'è il mio lieto fine?"],[0,'Legga la dedica.'],[1,'«A chi resta sveglio, e a chi gli fa il caffè.»'],[0,'Una copia la lascio sul bancone.']]}],
+  {t:'Pubblicato',r:52,who:['bruni','sara'],l:[[0,'È uscito. «Il caffè sotto la pioggia».'],[1,"C'è il mio lieto fine?"],[0,'Legga la dedica.'],[1,'«A chi resta sveglio, e a chi gli fa il caffè.»'],[0,'Il barista del romanzo, tra l\'altro, è il personaggio preferito dei lettori.','romanzo=eroe'],[1,'Lo sapevo. Ha le battute migliori.','romanzo=eroe'],[0,'Nel libro c\'è qualcuno che non compare mai. Ma senza di lui non succederebbe niente.','romanzo=quinte'],[1,'*guarda verso il bancone e sorride*','romanzo=quinte'],[0,'Una copia la lascio sul bancone.']]}],
   rt:[[[0,'Sto scrivendo il seguito.'],[1,'Stavolta voglio un cane.']],[[1,'Turno lunghissimo.'],[0,'Allora le leggo un capitolo.']]]},
- {id:'consegne',t:'Consegne',d:'Kenji porta cibo a tutta la città. Sogna di cucinarlo.',who:['kenji'],perk:'ramen',pt:'Ricetta di Nonna Rosa: il ramen vale il 50% in più',ch:[
+ {id:'consegne',t:'Consegne',d:'Kenji porta cibo a tutta la città. Sogna di cucinarlo.',who:['kenji'],perk:'ramen',pt:'Ricetta di Nonna Rosa: il ramen vale il 50% in più',end:{'consegne=qui':{n:'Ai nostri fornelli',perk:'ramen',pt:'Kenji cucina da te: il ramen vale il 50% in più'},'consegne=suo':{n:'Ramen di Nonna Rosa',perk:'kenjiShop',pt:'Il locale di Kenji ti manda clienti: +25% clienti la sera'}},ch:[
   {t:'Fradicio',r:7,l:[[0,'Ultima consegna... e sono zuppo.'],[0,'Due minuti di caffè caldo. Me li merito.'],[0,'Questo posto profuma di casa.']]},
   {t:'La signora Rosa',r:26,who:['kenji','rosa'],l:[[1,'Ragazzo, sei tutto bagnato. Mangia qualcosa.'],[0,'Grazie signora... un giorno vorrei aprire un posto mio.'],[1,'E cosa cucineresti?'],[0,'Il ramen di mia madre.'],[1,'Allora portamelo. Ti dirò se è buono.']]},
-  {t:'Il verdetto',r:48,who:['kenji','rosa'],l:[[0,'Eccolo. Il ramen.'],[1,'*assaggia in silenzio*'],[1,'...Troppo sale.'],[0,'Oh.'],[1,'Scherzo. Piangerei, se non fossi così vecchia.'],[0,'Posso chiamarlo «Ramen di Nonna Rosa»?'],[1,'Solo se il primo lo offri a me.']]}],
-  rt:[[[1,'Hai mangiato?'],[0,'Sì, nonna.'],[1,'Bugiardo.']],[[0,'Ho trovato un locale in affitto!'],[1,'Ci porto tutte le mie amiche.']]]},
- {id:'scacchi',t:'Scacco',d:'Due pensionati, una scacchiera, nessuna voglia di perdere.',who:['dario','elio'],perk:'scacchi',pt:'Una scacchiera fissa su un tavolo (+3 Atmosfera)',ch:[
+  {t:'Il verdetto',r:48,who:['kenji','rosa'],l:[[0,'Eccolo. Il ramen.'],[1,'*assaggia in silenzio*'],[1,'...Troppo sale.'],[0,'Oh.'],[1,'Scherzo. Piangerei, se non fossi così vecchia.'],[0,'Posso chiamarlo «Ramen di Nonna Rosa»?'],[1,'Solo se il primo lo offri a me.'],{c:{q:'Kenji si gira verso di te, il mestolo ancora in mano. «E adesso... dove lo cucino?»',o:[{t:'«Qui, nella nostra cucina.»',f:'consegne=qui',r:[[0,'Qui? Davvero? Con il grembiule e tutto?'],[1,'Ti presto il mio. Ha visto più brodo di te.'],[0,'Allora domani niente consegne. Domani si cucina.']]},{t:'«Nel tuo locale. È ora.»',f:'consegne=suo',r:[[0,'Il mio locale... Ho paura. Ma lo sogno da quando sono bambino.'],[1,'La paura si cura col brodo. Vengo ad aiutarti il primo giorno.'],[0,'E ai miei clienti dirò: per il caffè, in città c\'è un posto solo.']]}]}}]}],
+  rt:[[[1,'Hai mangiato?'],[0,'Sì, nonna.'],[1,'Bugiardo.']],[[0,'Stasera il brodo è venuto meglio del solito.'],[1,'Merito mio. Ti ho guardato mentre lo facevi.']]]},
+ {id:'scacchi',t:'Scacco',d:'Due pensionati, una scacchiera, nessuna voglia di perdere.',who:['dario','elio'],perk:'scacchi',pt:'Una scacchiera fissa su un tavolo (+3 Atmosfera)',end:{'scacchi=torneo':{n:'Il torneo',perk:'torneo',pt:'Torneo di scacchi ogni mese: più pensionati e +3 Atmosfera'},'scacchi=tavolo':{n:'La targhetta',perk:'targa',pt:'Il tavolo di Dario ed Elio, con la targhetta (+7 Atmosfera)'}},ch:[
   {t:'Rivali',r:14,l:[[0,'Quello è il MIO tavolo.'],[1,"Non c'è scritto il tuo nome."],[0,'...Giochi a scacchi?'],[1,'Meglio di te, sicuro.'],[0,'Vedremo.']]},
   {t:'Rivincita',r:32,l:[[1,'Scacco.'],[0,'Hai barato.'],[1,'Agli scacchi non si può barare.'],[0,'Stesso giorno, settimana prossima.'],[1,'Porta i fazzoletti.']]},
-  {t:'Martedì',r:58,l:[[0,'Martedì scorso non sei venuto.'],[1,'Ero in ospedale. Niente di grave.'],[0,'Potevi avvisare. Ho giocato da solo come un idiota.'],[1,'Ti sono mancato?'],[0,'...Muovi, vecchio.']]}],
+  {t:'Martedì',r:58,l:[[0,'Martedì scorso non sei venuto.'],[1,'Ero in ospedale. Niente di grave.'],[0,'Potevi avvisare. Ho giocato da solo come un idiota.'],[1,'Ti sono mancato?'],[0,'...Muovi, vecchio.'],{c:{q:'Dario finge di studiare la scacchiera, ma guarda te. «Diglielo tu che è un testardo.»',o:[{t:'«E se faceste un torneo qui, ogni mese?»',f:'scacchi=torneo',r:[[1,'Un torneo? Così lo batto davanti a tutti.'],[0,'Così ti batto davanti a tutti, vorrai dire.']]},{t:'«Il martedì questo tavolo è vostro. Per sempre.»',f:'scacchi=tavolo',r:[[0,'...Per sempre è tanto, alla nostra età.'],[1,'Allora sbrighiamoci a giocare.']]}]}}]},
+  {t:'Ultima mossa',r:76,l:[[0,'Primo torneo del bar. Diciotto iscritti!','scacchi=torneo'],[1,'E una bambina di nove anni che mi ha già battuto.','scacchi=torneo'],[0,'L\'ho vista. Quando vince fa la tua stessa faccia: nessuna.','scacchi=torneo'],[1,'Hai visto? Hanno messo una targhetta sul tavolo.','scacchi=tavolo'],[0,'«Riservato a Dario ed Elio. Il martedì, e quando vogliono.»','scacchi=tavolo'],[1,'Adesso è ufficiale. Non posso andarmene prima di averti battuto mille volte.','scacchi=tavolo'],[0,'Elio.'],[1,'Mh?'],[0,'Grazie di essere tornato, martedì.'],[1,'...Muovi, vecchio.']]}],
   rt:[[[0,'Cavallo in e5.'],[1,'Prevedibile.']],[[1,'Patta?'],[0,'Mai.']],[[0,'Stesso tavolo?'],[1,'Stesso tavolo.']]]},
  {id:'sposa',t:'La sposa in fuga',d:'Una notte di pioggia entra una ragazza in abito da sposa.',who:['bianca'],perk:'bianca',pt:'Bianca lavora al bancone (+1 livello barista)',ch:[
   {t:'Abito bagnato',r:6,l:[[0,'*entra fradicia, in abito da sposa*'],[0,'Un caffè. Doppio. Non fate domande.'],[0,'...'],{c:{q:'Bianca fissa la tazza. Il trucco le cola sulle guance.',o:[{t:'«Offre la casa.»',f:'sposa=gentile',r:[[0,'...Grazie. Davvero.']]},{t:'«Bel vestito.»',f:'sposa=ironia',r:[[0,'*ride tra le lacrime* Vero? Costava una fortuna.']]}]}},[0,'Ok. Una domanda potete farla.']]},
@@ -238,12 +250,13 @@ const ARCS=[
   {t:'Due caffè',r:3,l:[[0,'Due caffè, per favore. Uno lo lasci lì, di fronte a me.'],[0,'*mescola lo zucchero nella tazza vuota di fronte*'],[0,'Lei lo prendeva sempre con due cucchiaini.']]},
   {t:'Nel 1974',r:16,l:[[0,'Ci siamo conosciuti in un caffè come questo. Nel 1974.'],[0,'Lei rovesciò il latte sui miei pantaloni nuovi.'],{c:{q:'Aldo resta in silenzio, guardando la tazza di fronte.',o:[{t:'Siediti un attimo con lui',f:'tazze=siedi',r:[[0,'Grazie, ragazzo. Ti sei seduto proprio dove si sedeva lei.']]},{t:'Portagli un biscotto',f:'tazze=biscotto',r:[[0,'Il suo preferito. Come facevi a saperlo?']]}]}},[0,'Si chiamava Lidia.']]},
   {t:'Giada',r:34,who:['aldo','giada'],l:[[1,'Nonno! Ti cercavo ovunque.'],[0,"Giada. Siediti. Lì c'è posto."],[1,'...Quella era la tazza della nonna.'],[0,'Ora è tua. Te la offro io.']]},
-  {t:'Una tazza',r:54,who:['aldo','giada'],l:[[0,'Un caffè solo, oggi.'],[1,'Solo uno, nonno?'],[0,'Lidia mi ha detto di smettere di aspettarla. In sogno.'],[0,'E di venire qui con te, il giovedì.'],[1,'Ogni giovedì. Promesso.']]}],
+  {t:'Una tazza',r:54,who:['aldo','giada'],l:[[0,'Un caffè solo, oggi.'],[1,'Solo uno, nonno?'],[0,'Lidia mi ha detto di smettere di aspettarla. In sogno.'],[0,'E di venire qui con te, il giovedì.'],[1,'Ogni giovedì. Promesso.'],[1,'*verso il bancone* Nonno dice che quella sera ti sei seduto con lui. Grazie.','tazze=siedi'],[1,'*verso il bancone* Nonno dice che quel biscotto era il preferito della nonna. Ce ne porti due?','tazze=biscotto']]}],
   rt:[[[1,'Allora, nonno, com\'era il 1974?'],[0,'Pieno di latte rovesciato.']],[[0,'Due cucchiaini, come lei.'],[1,'Come lei.']]]},
  {id:'comico',t:'Una risata',d:'Un aspirante comico prova le battute sulla cliente più seria del locale.',who:['tommy','irene'],perk:'openmic',pt:'Serate comiche con Tommy (evento)',ch:[
   {t:'Prova microfono',r:10,l:[[0,'Scusa, posso provare una battuta su di te?'],[1,'No.'],[0,'Perché il caffè è andato dalla polizia?'],[1,'...'],[0,'Perché era stato... macinato.'],[1,'*beve in silenzio*']]},
   {t:'Il pubblico peggiore',r:30,l:[[0,'Ok, nuova battuta.'],[1,'Ti prego, no.'],[0,'Cosa dice un chicco di caffè innamorato?'],[1,'...Cosa?'],[0,'«Sei la mia tazza preferita.»'],[1,'*sbuffa una risata*'],[0,'HA RISO! HA RISO!'],[1,'Era un colpo di tosse.']]},
-  {t:'Open mic',r:50,l:[[1,'Ho prenotato la sala per venerdì. Serata comica.'],[0,'Per... me?'],[1,'Se fai schifo, almeno lo fai qui.'],[0,'È la cosa più dolce che mi abbiano mai detto.']]}],
+  {t:'Open mic',r:50,l:[[1,'Ho prenotato la sala per venerdì. Serata comica.'],[0,'Per... me?'],[1,'Se fai schifo, almeno lo fai qui.'],[0,'È la cosa più dolce che mi abbiano mai detto.'],{c:{q:'Tommy ti raggiunge al bancone, nel panico. «Con quale battuta chiudo venerdì?»',o:[{t:'«Dedica l\'ultima a Irene.»',f:'comico=irene',r:[[0,'A lei? E se non ride?'],[1,'*dal tavolo, senza alzare gli occhi* Riderò. Forse.']]},{t:'«Racconta di questo bar.»',f:'comico=bar',r:[[0,'Il bar! La pioggia, i clienti strani, il gatto... Ho materiale per un\'ora.'],[1,'Stai sotto i dieci minuti. Ti prego.']]}]}}]},
+  {t:'Venerdì',r:68,l:[[0,'*al microfono* Buonasera! Il locale è pieno. Anche di gente che è qui per sbaglio.'],[0,'...e l\'ultima la dedico a una persona che non ride mai.','comico=irene'],[0,'Irene, vuoi venire a cena con me? Questa non è una battuta.','comico=irene'],[1,'*silenzio in sala*','comico=irene'],[1,'Sì. Ma se fai una battuta sul menù, me ne vado.','comico=irene'],[0,'Ragazzi, HA DETTO SÌ!','comico=irene'],[0,'...e alle tre di notte il barista mi guarda e dice: «Il caffè è finito.» In un BAR!','comico=bar'],[1,'*ride. Forte, davanti a tutti*','comico=bar'],[0,'Irene... hai riso. In pubblico.','comico=bar'],[1,'È stata la pioggia. Mi ha fatto il solletico.','comico=bar'],[1,'Comunque sei stato bravo.'],[0,'Puoi ripeterlo al microfono?'],[1,'No.']]}],
   rt:[[[0,'Nuova battuta!'],[1,'Sento già il mal di testa.'],[1,'*sorride*']],[[1,'Il pubblico di venerdì ti adorava.'],[0,'E tu?'],[1,'...Io pure. Un pochino.']]]},
  {id:'randagio',t:'Il gattino del vicolo',d:'Una veterinaria di turno di notte e un fattorino con una scatola che miagola.',who:['nora','kenji'],perk:'veterinaria',pt:'Nora visita i gatti di quartiere (+6 Atmosfera)',ch:[
   {t:'La scatola',r:20,who:['kenji','nora'],l:[[0,'Scusate... qualcuno sa curare un gatto?'],[1,'Io. Sono veterinaria. Fammi vedere.'],[0,"L'ho trovato in un vicolo, sotto la pioggia."],[1,'È solo spaventato. E affamato.'],[0,'Come me alle tre di notte.']]},
@@ -252,32 +265,38 @@ const ARCS=[
   rt:[[[1,'Come sta il micio?'],[0,'Meglio di me. Lui dorme.']],[[0,'Ti ho portato il ramen.'],[1,'Prescrizione rispettata.']]]},
  {id:'band',t:'La band del bancone',d:"Luca ha bisogno di un batterista. Tommy ha bisogno di musica per i suoi spettacoli.",who:['luca','tommy'],req:'pioggia',perk:'band',pt:'Concerti nel locale più spesso (+5 Atmosfera)',ch:[
   {t:'Audizione',r:30,l:[[0,'Cerco qualcuno che suoni la batteria.'],[1,'Io suono... le pentole. Benissimo.'],[0,'...'],[1,'*tamburella sul tavolo con due cucchiaini*'],[0,'Ok, non è male. Per niente male.']]},
-  {t:'Il nome',r:48,l:[[1,'Ci serve un nome. «I Macinati»?'],[0,'Assolutamente no.'],[1,'«Doppio Ristretto»?'],[0,'...Quello mi piace.'],[1,'Mia ha già disegnato il logo. È una tazza con gli occhiali da sole.']]},
-  {t:'Prima serata',r:70,l:[[0,'Stasera suoniamo qui. Il primo concerto.'],[1,'Io faccio le battute tra una canzone e l\'altra.'],[0,'Solo due battute.'],[1,'Tre.'],[0,'Due.'],[1,'*sorride* Grazie di avermi preso nella band.']]}],
+  {t:'Il nome',r:48,l:[[1,'Ci serve un nome. «I Macinati»?'],[0,'Assolutamente no. «Doppio Ristretto».'],[1,'Noioso.'],[0,'Elegante.'],{c:{q:'Luca e Tommy si girano verso di te. «Decidi tu. Sei imparziale.»',o:[{t:'«Doppio Ristretto.»',f:'band=doppio',r:[[0,'Visto? Elegante.'],[1,'Suona come un ordine al bancone. Ok, mi piace.']]},{t:'«I Macinati.»',f:'band=macinati',r:[[1,'HA! Il pubblico ha parlato!'],[0,'Il pubblico è una persona sola, Tommy.']]}]}},[1,'Mia ha già disegnato il logo. È una tazza con gli occhiali da sole.']]},
+  {t:'Prima serata',r:70,l:[[0,'Stasera suonano i Doppio Ristretto. Cioè noi. Primo concerto.','band=doppio'],[0,'Stasera suonano... I Macinati. Non riesco a dirlo serio.','band=macinati'],[1,'Lo dirò io al microfono. Con fierezza.','band=macinati'],[1,'Io faccio le battute tra una canzone e l\'altra.'],[0,'Solo due battute.'],[1,'Tre.'],[0,'Due.'],[1,'*sorride* Grazie di avermi preso nella band.']]}],
   rt:[[[1,'Il pubblico ha chiesto il bis!'],[0,'Era tua madre, Tommy.']],[[0,'Nuova canzone. Parla di questo bancone.'],[1,'Il bancone sarà commosso.']]]},
- {id:'lettere',t:'Lettere da Tokyo',d:'Gio aspetta Marta. Ugo, il postino, porta le lettere fin qui.',who:['gio','ugo'],req:'valigie',perk:'cartoline',pt:'Muro delle cartoline (+4 Atmosfera)',ch:[
+ {id:'lettere',t:'Lettere da Tokyo',d:'Gio aspetta Marta. Ugo, il postino, porta le lettere fin qui.',who:['gio','ugo'],req:'valigie=resta',perk:'cartoline',pt:'Muro delle cartoline (+4 Atmosfera)',ch:[
   {t:'Posta per te',r:24,l:[[1,'Gio? Mi hanno detto che ti trovavo qui. Una lettera dal Giappone.'],[0,'Da Marta!'],[1,'Ha messo il francobollo storto. Si vede che aveva fretta.'],[0,'Ha sempre fretta. È la cosa che mi manca di più.']]},
   {t:'La risposta',r:42,l:[[0,'Ugo, come si scrive una lettera d\'amore senza sembrare ridicoli?'],[1,'Non si può. Sono trent\'anni che le consegno.'],[1,'Quelle ridicole sono le più belle.'],[0,'Allora la mia sarà bellissima.']]},
   {t:'Ultima lettera',r:64,l:[[1,'Questa non ha il francobollo.'],[0,'Come...?'],[1,'L\'ha consegnata a mano. È qui fuori, sotto la pioggia.'],[0,'*corre fuori senza giacca*'],[1,'*rivolto al bancone* Due cappuccini caldi. Tra poco saranno in tre.']]}],
   rt:[[[1,'Niente lettere oggi.'],[0,'Non servono più. È tornata!']],[[0,'Un caffè anche per te, Ugo.'],[1,'Lo accetto. Ho camminato tanto.']]]},
+ {id:'tokyo',t:'Cartoline da Tokyo',d:'Marta e Gio sono partiti. Ugo, il postino, porta le loro cartoline al bancone.',who:['ugo'],req:'valigie=vai',perk:'cartoline',pt:'Muro delle cartoline (+4 Atmosfera)',ch:[
+  {t:'Francobollo storto',r:24,l:[[0,'Posta per il bancone! Una cartolina dal Giappone.'],[0,'«Qui piove sempre, come da voi. Ci sentiamo a casa.»'],[0,'«Gio ha già sbagliato treno tre volte. Marta.»'],[0,'*ride* La appendo qui, vicino alla macchina del caffè?']]},
+  {t:'Il caffè col gatto',r:42,l:[[0,"Un'altra! Questa l'ha scritta Gio."],[0,'«Abbiamo trovato il caffè col gatto. Il gatto mi odia.»'],[0,'«Marta dice che il vostro cappuccino è più buono. Io dico che è uguale. Mento: è più buono.»'],[0,"Trent'anni che consegno posta. Le cartoline felici si riconoscono dal peso."]]},
+  {t:'A Natale',r:64,who:['marta','gio'],l:[[0,"*entra scrollando l'ombrello* Sorpresa!"],[1,'Ugo ci ha detto che hai appeso tutte le cartoline.'],[0,'Sono ancora lì. Anche quella del gatto che ti odia.'],[1,'Mi odia ancora. Ci sono tornato tutte le settimane.'],[0,'Due cappuccini. Come la prima volta, ma senza litigare.'],[1,'...Quasi senza litigare.']]}],
+  rt:[[[0,'Siamo tornati per le feste.'],[1,'E per il cappuccino. Soprattutto.']],[[1,'Il gatto di Tokyo ti saluta.'],[0,'Bugiardo. Ti ha graffiato.']]]},
  {id:'rivale',t:'Il caffè di fronte',d:'Vittoria ha aperto un locale elegante dall\'altra parte della strada. Viene a spiare.',who:['vittoria'],perk:'alleanza',pt:'Alleanza con Vittoria: tutti i prezzi +10%',ch:[
   {t:'Ispezione',r:16,l:[[0,'*occhiali da sole, anche se piove*'],[0,'Un espresso. E il nome del vostro fornitore.'],[0,'...Non si dice? Peccato.'],[0,'*scrive qualcosa su un taccuino*']]},
   {t:'Confessione',r:38,l:[[0,'Ok. Lo ammetto. Il vostro caffè è più buono del mio.'],[0,'Il mio locale è bellissimo. Ed è vuoto.'],{c:{q:'Vittoria fissa la tazza, nervosa.',o:[{t:'«Il segreto è la gente, non le tazze.»',f:'rivale=gente',r:[[0,'...La gente. Non ci avevo mai pensato.']]},{t:'«Il segreto è la pioggia.»',f:'rivale=pioggia',r:[[0,'*ride* Allora prego per un temporale.']]}]}}]},
-  {t:'Alleanza',r:58,who:['vittoria','bianca'],l:[[0,'Ho un\'idea. Facciamo una festa di quartiere. I due locali insieme.'],[1,'Tu porti le tovaglie eleganti, noi la musica.'],[0,'E il caffè lo fate voi. È meglio.'],[1,'Sei diventata simpatica, sai?'],[0,'Non dirlo a nessuno.']]}],
+  {t:'Alleanza',r:58,who:['vittoria','bianca'],l:[[0,'Ho seguito il vostro consiglio: tavoli grandi, dove la gente si siede vicina.','rivale=gente'],[0,'Ho pregato per un temporale. È arrivato, e il mio locale si è riempito di ombrelli.','rivale=pioggia'],[0,'Ho un\'idea. Facciamo una festa di quartiere. I due locali insieme.'],[1,'Tu porti le tovaglie eleganti, noi la musica.'],[0,'E il caffè lo fate voi. È meglio.'],[1,'Sei diventata simpatica, sai?'],[0,'Non dirlo a nessuno.']]}],
   rt:[[[0,'Il mio locale si è riempito, grazie al vostro consiglio.'],[0,'Ma qui ci torno lo stesso.']]]},
- {id:'cucina',t:'Ramen e grembiule',d:'Bianca al bancone, Kenji ai fornelli. Ogni sera un po\' più vicini.',who:['bianca','kenji'],req:['sposa','consegne'],perk:'cucina',pt:'Kenji aiuta in cucina: piatti più veloci del 30%',ch:[
+ {id:'cucina',t:'Ramen e grembiule',d:'Lei al bancone, lui ai fornelli. Tra un turno e l\'altro, ogni sera un po\' più vicini.',who:['bianca','kenji'],req:['sposa','consegne'],perk:'cucina',pt:'Kenji aiuta in cucina: piatti più veloci del 30%',ch:[
   {t:'Assaggio',r:34,l:[[1,'Bianca, assaggia. È la nuova versione.'],[0,'*soffia sul cucchiaio*'],[0,'...Kenji. È buonissimo.'],[1,'Lo dici solo perché sei stanca.'],[0,'Lo dico perché è vero. E perché sono stanca.']]},
   {t:'Due minuti di pausa',r:52,l:[[0,'Ogni tanto penso a quel giorno. Al vestito.'],[1,'Ti penti?'],[0,'Mai. Se non fossi scappata non sarei qui.'],[1,'Allora sono contento che tu corra veloce.']]},
   {t:'Menu a quattro mani',r:74,l:[[1,'Ho scritto un nuovo menu. C\'è un piatto con il tuo nome.'],[0,'«Fuga di mezzanotte»?'],[1,'Ramen, uovo e un pizzico di follia.'],[0,'Sembra me.'],[1,'È per questo che l\'ho inventato.'],[0,'*gli ruba il cappello da cuoco e scappa ridendo*']]}],
   rt:[[[0,'Due ramen per il tavolo tre!'],[1,'Due ramen e un sorriso, arrivano.']]]},
  {id:'notturno',t:'Turno di notte',d:'Un ragazzo che lavora al pronto soccorso e Sara, che lo ha formato.',who:['sara','pietro'],req:'romanzo',perk:'notturni',pt:'Dopo mezzanotte i clienti lasciano mance doppie',ch:[
   {t:'Il primo turno',r:26,l:[[1,'Sara... come fai? Io tremo ancora.'],[0,'Il primo turno è il peggiore. Bevi.'],[1,'È caffè?'],[0,'È caffè. E un po\' di coraggio.']]},
-  {t:'Una notte difficile',r:46,l:[[1,'*non dice niente, fissa il tavolo*'],[0,'Non si salvano tutti, Pietro.'],[0,'Ma stanotte ne hai salvati tre. Io c\'ero.'],[1,'...Tre.'],[0,'Tre. Ricordati quelli.']]},
-  {t:'Il capitolo nuovo',r:66,who:['sara','bruni'],l:[[1,'Signora Sara! Ho saputo che forma i nuovi infermieri.'],[0,'Professore, non mi dica che ci scrive un altro libro.'],[1,'Il seguito. «Chi resta sveglio».'],[0,'Allora ci metta anche Pietro. Se lo merita.'],[1,'C\'è già. È il capitolo più bello.']]}],
+  {t:'Una notte difficile',r:46,l:[[1,'*non dice niente, fissa il tavolo*'],[0,'Non si salvano tutti, Pietro.'],[0,'Ma stanotte ne hai salvati tre. Io c\'ero.'],[1,'...Tre.'],[0,'Tre. Ricordati quelli.'],{c:{q:'Pietro stringe la tazza con le mani che tremano ancora.',o:[{t:'«Stanotte offre la casa. Resta quanto vuoi.»',f:'notturno=resta',r:[[1,'...Grazie. Solo dieci minuti.'],[0,'*mezz\'ora dopo Pietro dorme sul tavolo. Sara gli mette la sua giacca sulle spalle*']]},{t:'«Domani torni là dentro. Ce la fai.»',f:'notturno=coraggio',r:[[1,'Domani. Sì.'],[0,'Hai sentito? Lo dice anche il barista. E il barista non sbaglia mai.']]}]}}]},
+  {t:'Il capitolo nuovo',r:66,who:['sara','bruni'],l:[[1,'Signora Sara! Ho saputo che forma i nuovi infermieri.'],[0,'Professore, non mi dica che ci scrive un altro libro.'],[1,'Il seguito. «Chi resta sveglio».'],[0,'Allora ci metta il ragazzo che si è addormentato qui, quella notte. Ora è il più bravo del reparto.','notturno=resta'],[0,'Allora ci metta Pietro. È tornato in reparto il giorno dopo, e quello dopo ancora.','notturno=coraggio'],[1,'C\'è già. È il capitolo più bello.']]}],
   rt:[[[1,'Turno tranquillo, oggi.'],[0,'Non dirlo ad alta voce!']],[[0,'Caffè?'],[1,'Doppio. E coraggio.']]]}
 ];
 const arcDone=id=>{const a=ARCS.find(x=>x.id===id);return !!a&&(st.story[id]||0)>=a.ch.length};
-const arcReq=arc=>!arc.req||[].concat(arc.req).every(arcDone);
+const arcReq=arc=>!arc.req||[].concat(arc.req).every(r=>r.includes('=')?arcDone(r.split('=')[0])&&checkFlag(r):arcDone(r));
+const arcEnd=arc=>{if(arc.end){const e=Object.entries(arc.end).find(([f])=>checkFlag(f));if(e)return e[1]}return {perk:arc.perk,pt:arc.pt}};
 const REL={
  intro:[[[1,'Scusa, ti dispiace se mi siedo?'],[0,'Figurati. Io sono {A}.'],[1,'{B}. Piacere.']],[[0,'Anche tu qui tutti i giorni?'],[1,'Quasi. Il {item} qui è una droga.'],[0,'Allora ci vedremo spesso, {B}.']],[[1,'Bel libro. Letto tre volte.'],[0,'Non dirmi il finale!'],[1,'Mai. ...Il maggiordomo.'],[0,'NO.']],[[0,'Anche tu non riesci a dormire?'],[1,'Mai prima delle due.'],[0,'Club degli insonni, allora.']]],
  conoscenti:[[[0,'Ehi, {B}! Di nuovo qui?'],[1,'Non riesco a stare lontano da questo {item}.']],[[1,'Com\'è andata la giornata, {A}?'],[0,'Lunga. Ma adesso va meglio.']],[[0,'Ti ho visto passare ieri. Ti ho salutato!'],[1,'Ah, eri tu? Pensavo fosse un vigile.']]],
@@ -350,10 +369,10 @@ const DEF={v:2,name:'',coins:0,hearts:0,space:1,tables:1,chairs:0,decor:0,music:
  grinder:0,stove:0,umbr:0,vetrina:0,lav:0,served:0,earned:0,cleaned:0,tapServe:0,specials:0,last:0,ips:0,sound:1,musicOn:1,autoBuy:1,newStory:0};
 let st=JSON.parse(JSON.stringify(DEF));
 function load(){
- try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==='object'){st=Object.assign(JSON.parse(JSON.stringify(DEF)),s);return}}catch(e){}
+ for(const k of [KEY,KEY+'_bak']){try{const s=JSON.parse(localStorage.getItem(k));if(s&&typeof s==='object'&&s.name){st=Object.assign(JSON.parse(JSON.stringify(DEF)),s);return}}catch(e){}}
  try{const o=JSON.parse(localStorage.getItem(KEY1));if(o&&o.name){['name','coins','hearts','chairs','neon','barista','waiter','machine','cat'].forEach(k=>{if(o[k]!=null)st[k]=o[k]});st.space=clamp(o.space||1,1,4);st.tables=clamp(o.tables||1,1,st.space*2);st.decor=Math.min(o.decor||0,6);st.music=Math.min(o.music||0,4);st.menu=clamp(o.menu||1,1,7);st.story=o.story||{};st.migrated=1}}catch(e){}
 }
-function save(){if(!st.name)return;try{st.last=Date.now();st.ips=ips();localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+let bakT=0;function save(){if(!st.name)return;try{st.last=Date.now();st.ips=ips();const j=JSON.stringify(st);localStorage.setItem(KEY,j);if(Date.now()-bakT>120000){bakT=Date.now();localStorage.setItem(KEY+'_bak',j)}}catch(e){}}
 load();
 
 /* ================= FORMULE ================= */
@@ -364,7 +383,7 @@ const curWx=()=>(st.wx2&&st.tod>=.5)?st.wx2:st.wx;
 const rainy=()=>{const w=curWx();return w==='pioggia'||w==='temporale'};
 const blackout=()=>st.ev==='blackout'&&hour()>=19.5;
 let musicianOn=false,hypeT=0,paused=false;
-function perkAtm(){let a=0;if(st.perks.libro)a+=5;if(st.perks.scacchi)a+=3;if(st.perks.giovedi)a+=4;if(st.perks.valigie)a+=2;if(st.perks.veterinaria)a+=6;if(st.perks.band)a+=5;if(st.perks.cartoline)a+=4;return a}
+function perkAtm(){let a=0;if(st.perks.libro)a+=5;if(st.perks.scacchi)a+=3;if(st.perks.giovedi)a+=4;if(st.perks.valigie)a+=2;if(st.perks.veterinaria)a+=6;if(st.perks.band)a+=5;if(st.perks.cartoline)a+=4;if(st.perks.calendario)a+=3;if(st.perks.torneo)a+=3;if(st.perks.targa)a+=7;return a}
 function atm(){return st.chairs*4+st.decor*4+st.music*5+st.cat*8+Math.min(st.tables,14)+(st.space-1)*2+Math.min(15,st.hearts)+(st.themes.length-1)*2+st.wifi*2+st.stove*6+st.umbr*2+st.lav*3+st.vetrina*2+perkAtm()+(blackout()?10:0)+(musicianOn?5:0)}
 function rating(){const r=st.reviews;if(!r.length)return 3.5;let s=0,w=0;for(const x of r){s+=x.s*(x.w||1);w+=x.w||1}return clamp(s/w+(st.perks.giovedi?.15:0),1,5)}
 const mult=()=>(1+.04*st.hearts)*(1+.5*st.frStars);
@@ -374,7 +393,7 @@ const baristaRate=()=>{const l=baristaLv();return l?.3*l*(1+.06*st.machine):0};
 const cookRate=()=>st.cook?.4*st.cook*(st.perks.cucina?1.3:1):0;
 function arrival(){let m=(1+.18*st.neon+.1*st.music+.03*Math.min(30,st.hearts)+.02*st.decor+.25*st.frStars)*(.7+.12*rating());const e=st.ev,h=hour();
  if(e==='festival')m*=1.6;if(e==='turisti')m*=1.3;if(e==='innamorati')m*=1.2;if(e==='openmic'&&h>=20.5)m*=1.4;if(hypeT>0)m*=1.5;
- m*=({sereno:1.05,nuvoloso:1,pioggia:1.1,temporale:.8,nebbia:.9,neve:.95})[curWx()]||1;m*=h<8.5?.75:h>24.5?.6:1;return 7/m}
+ m*=({sereno:1.05,nuvoloso:1,pioggia:1.1,temporale:.8,nebbia:.9,neve:.95})[curWx()]||1;m*=h<8.5?.75:h>24.5?.6:1;if(st.perks.kenjiShop&&h>=19)m*=1.25;return 7/m}
 const availMenu=()=>MENU.slice(0,st.menu).filter(it=>it.s!=='k'||st.cook>0);
 const dailyItem=()=>{const m=availMenu();return st.lav&&m.length>1?m[(st.day*7+3)%m.length]:null};
 const priceOf=it=>{const d=dailyItem();return Math.round(it.p*mult()*(it.id==='ramen'&&st.perks.ramen?1.5:1)*(it.s==='v'?1+.15*st.vetrina:1)*(d&&d.id===it.id?1.6:1)*(st.perks.alleanza?1.1:1))};
@@ -495,13 +514,27 @@ const bubCount=()=>people.filter(p=>p.bub).length;
 function emo(c,k,t){c.emo={k,t:t||1.6}}
 function randLook(type){const old=TYPES[type]&&TYPES[type].old;
  return{s:pick(SKIN),h:old?pick(['#e8e4dc','#b8b8c8','#d0ccc4']):pick(HAIR),hs:old?pick([0,3,5,6]):ri(0,9),o:type==='critico'?4:type==='fretta'&&Math.random()<.5?4:ri(0,3),c1:type==='critico'?'#2b2d42':pick(TOPS),c2:type==='critico'?'#9a1b2a':pick(BOTS),hc:pick(['#e63946','#3a86ff','#2ec4b6','#ffd166','#8e7dff','#1b1420']),uc:pick(['#e63946','#ffd166','#3a86ff','#ff4fa3','#2ec4b6','#1b1420','#f4f1de']),ac:pick(['#e63946','#ffd166','#2ec4b6','#c77dff']),a:[type==='critico'||Math.random()<.18?'occhiali':'',Math.random()<.12?'cuffie':'',Math.random()<.1?'barba':'',Math.random()<.15?'sciarpa':'',Math.random()<.12?'orecchino':''].filter(Boolean).join(' '),tl:Math.random()<.35?1:0}}
-function pickType(){const h=hour();return wpick(Object.keys(TYPES),k=>{const t=TYPES[k];let w=t.w;if(t.h&&(h<t.h[0]||h>t.h[1]))w*=.06;const e=st.ev;if(e==='studenti'&&k==='studente')w*=5;if(e==='turisti'&&k==='turista')w*=6;if(e==='concerto'&&k==='musicista')w*=10;if(k==='studente')w*=1+st.wifi*.5;if(k==='influencer'&&rating()<3.5)w*=.3;return w})}
+function pickType(){const h=hour();return wpick(Object.keys(TYPES),k=>{const t=TYPES[k];let w=t.w;if(k==='nonno'&&st.perks.torneo)w*=2.5;if(t.h&&(h<t.h[0]||h>t.h[1]))w*=.06;const e=st.ev;if(e==='studenti'&&k==='studente')w*=5;if(e==='turisti'&&k==='turista')w*=6;if(e==='concerto'&&k==='musicista')w*=10;if(k==='studente')w*=1+st.wifi*.5;if(k==='influencer'&&rating()<3.5)w*=.3;return w})}
 function newCust(o){
  o=o||{};const type=o.type||(o.look?'normale':pickType());const T_=TYPES[type]||TYPES.normale;
  const c={id:++uid,look:o.look||randLook(type),name:o.name||pick(NAMES),type,reg:o.reg||null,x:DOORX,y:DOORY,face:1,spd:rnd(27,33)*(T_.spd||1),path:[{x:DOORX+4,y:LANE}],state:'enter',wt:0,moving:false,seat:null,order:null,prog:0,
   pat:o.group?1e9:(30+atm()*.25)*(T_.pat||1)*(st.umbr&&(rainy()||curWx()==='neve')?1.4:1),mood:60+Math.min(25,atm()*.3)+(o.reg?8:0),sitT:0,bub:null,thinkT:rnd(5,11),story:o.story||null,group:o.group||null,gi:o.gi||0,res:o.res||null,talked:false,scene:null,waitScene:false,umb:rainy()?1.3:0,emo:null,act:T_.act||pick(['','','sip','book','phone']),special:false,why:'',waited:0,sipT:rnd(2,5)};
  people.push(c);queue.push(c);doorOpen=1;sfx('door');return c;
 }
+const REQS=[
+ {k:'fretta',t:'Di corsa!',w:3,ok:c=>true,lines:['Ho un treno tra cinque minuti, velocissimo ti prego!','Sono in ritardo pazzesco. Mi salvi?','Ho dieci minuti di pausa. Ce la facciamo?']},
+ {k:'doppio',t:'Doppio',w:2,ok:c=>['caffe','capp','iced'].includes(c.order.id),lines:['Stanotte non ho dormito.','È una di quelle giornate.']},
+ {k:'schiuma',t:'Extra schiuma',w:2,mg:'monta',ok:c=>c.order.id==='capp',lines:['Con tantissima schiuma, tipo nuvola.','Il latte bello caldo, mi raccomando!']},
+ {k:'dedica',t:'Con un disegno',w:1.5,mg:'latte',ok:c=>c.order.id==='capp',lines:['Mi fai un cuoricino sopra? È per una persona speciale.','È il mio compleanno... un disegno sulla schiuma?']},
+ {k:'crema',t:'Crema perfetta',w:1.5,mg:'monta',ok:c=>c.order.id==='caffe'||c.order.id==='affo',lines:['Lo voglio con la crema perfetta, come a Napoli.','Sono di Napoli. Non deludermi.']},
+ {k:'cotto',t:'Ben cotto',w:2,mg:'padella',ok:c=>c.order.s==='k',lines:['Ben cotto e croccante, sono esigente.','Dorato, come lo faceva mia nonna.']},
+ {k:'sorpresa',t:'Sorprendimi',w:2,mg:'vetrina',ok:c=>c.order.s==='v',lines:['E aggiungi tre dolcetti misti per i colleghi. Scegli tu!','E un piattino di dolci a sorpresa, per festeggiare.']},
+ {k:'fresco',t:'Bello freddo',w:2,mg:'shaker',ok:c=>['smooth','bubble','iced'].includes(c.order.id),lines:['Bello freddo e cremoso, per favore.','Con tanto ghiaccio, mi devo svegliare.']}
+];
+function makeReq(c){const ok=REQS.filter(r=>r.ok(c));if(!ok.length)return;const r=wpick(ok,x=>x.w);c.req={k:r.k,t:r.t,mg:r.mg||null};c.reqLine=pick(r.lines);
+ if(r.k==='fretta'){c.req.len=Math.max(5,c.order.t/tapPow()*.9+3.5);c.req.dl=T+c.req.len}
+ if(r.k==='doppio')c.order=Object.assign({},c.order,{t:c.order.t*1.8,p:c.order.p*2,n:c.order.n+' doppio'});
+ if(r.mg)c.special=true}
 function pickOrder(c){const av=availMenu();if(c.reg&&Math.random()<.6){const f=av.find(i=>i.id===c.reg.fav);if(f)return f}
  const h=hour(),w=curWx();return wpick(av,it=>{let x=1+av.indexOf(it)*.12;const p=it.pr||{};if(h<11&&p.m)x*=p.m;if(h>=13&&h<18&&p.a)x*=p.a;if(h>=21&&p.n)x*=p.n;if(h<19&&p.early)x*=p.early;if(w==='sereno'&&p.sun)x*=p.sun;if(rainy()&&p.rain)x*=p.rain;if(w==='neve'&&p.snow)x*=p.snow;if(c.type==='studente'&&it.id==='caffe')x*=3;return x})}
 function moveTo(c,tx,ty,dt){const dx=tx-c.x,dy=ty-c.y,d=Math.hypot(dx,dy);if(d<.5){c.x=tx;c.y=ty;return true}const s=Math.min(d,c.spd*dt);c.x+=dx/d*s;c.y+=dy/d*s;if(Math.abs(dx)>.3)c.face=dx>0?1:-1;c.moving=true;c.wt+=dt;return false}
@@ -512,6 +545,9 @@ function serve(c,quality){
  queue.shift();const it=c.order,price=priceOf(it);addCoins(price,c.x,c.y-24);st.served++;sfx('coin');
  if(st.ds){st.ds.served++;st.ds.items[it.id]=(st.ds.items[it.id]||0)+1}qProgress('served');qProgress('item',it.id);
  c.q=quality||0;if(quality===2){c.mood+=25;emo(c,'star')}else if(quality===1)c.mood+=12;
+ if(c.req){if(c.req.k==='fretta'){if(T<=c.req.dl){c.tipx=2.5;c.mood+=18;emo(c,'star');floats.push({x:c.x,y:c.y-34,txt:'In tempo!',t:1.6,col:'#ffd166'});say(c,pick(['Mi hai salvato la vita!','Grazie, volo!','Sei un fulmine!']),2)}else{c.mood-=6;say(c,'Ok... perderò il treno.',2)}}
+  else if(c.req.mg){if(quality>=1){c.tipx=1.5;say(c,pick(['Esattamente come lo volevo!','Wow. Proprio così.','Sei bravissimo!']),2)}else say(c,'Mh. Non proprio come chiedevo.',2)}
+  else if(c.req.k==='doppio')c.mood+=6}
  if(quality>=1){st.specials++;if(st.ds)st.ds.specials++;qProgress('special')}
  for(let i=0;i<4;i++)parts.push({x:W-19+rnd(-1,1),y:84,vx:rnd(-3,3),vy:rnd(-10,-6),t:1.2,max:1.2,k:'steam'});
  let seat=null;const tp=TYPES[c.type]||{};
@@ -537,7 +573,7 @@ function makeReg(c){let n=c.name;if(st.regs.some(r=>r.n===n))n=n+' '+String.from
  toast(`${n} è diventato un habitué!`);logB(`${n} è diventato un habitué`)}
 function leaveSeat(c){
  const s=c.seat;if(s){s.occ=null;s.dirty=true}c.seat=null;
- const tp=TYPES[c.type]||{};const sm=stars(c);let tip=c.order.p*mult()*(.1+.05*st.chairs+.04*st.waiter+.02*st.decor)*(c.story?2:1)*(tp.tip||1)*(sm/3.5)*(c.q===2?3:c.q===1?1.8:1)*(c.group&&st.perks.finestra?1.5:1)*(st.perks.notturni&&hour()>=24?2:1)*(c.reg?1+c.reg.f*.05:1);
+ const tp=TYPES[c.type]||{};const sm=stars(c);let tip=c.order.p*mult()*(.1+.05*st.chairs+.04*st.waiter+.02*st.decor)*(c.story?2:1)*(tp.tip||1)*(sm/3.5)*(c.q===2?3:c.q===1?1.8:1)*(c.group&&st.perks.finestra?1.5:1)*(st.perks.notturni&&hour()>=24?2:1)*(c.reg?1+c.reg.f*.05:1)*(c.tipx||1);
  tip=Math.round(tip);if(tip>0)addCoins(tip,c.x,c.y-22);
  finishVisit(c);
  if(Math.random()<.15&&!c.story)say(c,pick(['Grazie, a domani!','Buonanotte!','Torno presto.','Ciao ciao!']),2);
@@ -605,7 +641,7 @@ function tryStory(){
   if(ch){const bonus=Math.round(30*Math.pow(1.5,Math.min(st.hearts,25))*(1+.5*st.frStars));st.story[arc.id]=o.k+1;st.hearts++;st.newStory=1;if(st.ds)st.ds.stories++;
    const m=people.find(p=>p.group===gid);addCoins(bonus,m?m.x:W/2,m?m.y-26:90);floats.push({x:m?m.x:W/2,y:(m?m.y:110)-36,txt:'♥ +1',t:1.8,col:'#ff4fa3'});
    toast(`Nuovo capitolo nel Diario · «${ch.t}»`);sfx('story');
-   if(o.k+1>=arc.ch.length&&arc.perk){st.perks[arc.perk]=1;setTimeout(()=>toast(`Storia completata! ${arc.pt}`),3600);logB(`Storia completata: ${arc.t}`)}
+   if(o.k+1>=arc.ch.length&&arc.perk){const E=arcEnd(arc);st.perks[E.perk]=1;setTimeout(()=>toast(`Storia completata${E.n?' · finale «'+E.n+'»':''}! ${E.pt}`),3600);logB(`Storia completata: ${arc.t}${E.n?' (finale: '+E.n+')':''}`)}
    save()}else st.rt[arc.id]=Date.now()+90000}};
  who.forEach((id,i)=>{seats[i].res=gid+i;timers.push({t:.1+i*1.4,fn:()=>newCust({look:CH[id].l,name:CH[id].n,group:gid,gi:i,story:arc.id,res:gid+i})})});
 }
@@ -617,8 +653,8 @@ function updCust(c,dt){
   if(c.pat<1e8){c.pat-=dt;if(c.pat<6&&!c.warned){c.warned=true;emo(c,'sweat',3)}if(c.pat<=0){queue.splice(queue.indexOf(c),1);say(c,pick(['Troppa attesa...','Uff, ripasso domani.','Niente, vado.']),2.5);emo(c,'angry');c.left=true;c.why='attesa';c.order=c.order||MENU[0];finishVisit(c);exitC(c);return}}}
  switch(c.state){
   case 'enter':if(follow(c,dt))c.state='queue';break;
-  case 'queue':{const i=queue.indexOf(c),tx=counterX-8-i*12;if(moveTo(c,tx,LANE,dt)){c.face=1;if(i===0){c.state='order';c.order=pickOrder(c);c.special=c.type==='critico'||Math.random()<(c.type==='influencer'?.5:.07);const o=c.order;
-    const line=c.reg&&c.order.id===c.reg.fav&&Math.random()<.6?pick([`Il solito: ${o.n}!`,`Ciao! Il mio ${o.n}, grazie.`]):pick([`${o.a} ${o.n}, per favore.`,`Per me ${o.a.toLowerCase()} ${o.n}.`,`${o.a} ${o.n}, grazie!`]);say(c,line,2.4,c.story||c.reg?c.name:'')}}break}
+  case 'queue':{const i=queue.indexOf(c),tx=counterX-8-i*12;if(moveTo(c,tx,LANE,dt)){c.face=1;if(i===0){c.state='order';c.order=pickOrder(c);c.special=c.type==='critico'||Math.random()<(c.type==='influencer'?.5:.07);c.req=null;if(!c.special&&!c.story&&Math.random()<.17)makeReq(c);const o=c.order;
+    const line=c.reg&&c.order.id===c.reg.fav&&Math.random()<.6?pick([`Il solito: ${o.n}!`,`Ciao! Il mio ${o.n}, grazie.`]):pick([`${o.a} ${o.n}, per favore.`,`Per me ${o.a.toLowerCase()} ${o.n}.`,`${o.a} ${o.n}, grazie!`]);say(c,c.req?line+' '+c.reqLine:line,c.req?3.6:2.4,c.story||c.reg?c.name:'')}}break}
   case 'order':break;
   case 'toSeat':if(follow(c,dt)){c.state='sit';c.face=-c.seat.side;c.sitT=rnd(13,18)*((TYPES[c.type]||{}).stay||1)+st.chairs*3+st.decor*.8+(c.type==='studente'?st.wifi*8:0);onSit(c)}break;
   case 'sit':{
@@ -805,6 +841,7 @@ function drawPerson(c){
   else if(c.act==='guitar'){g.fillStyle='#a8603a';g.fillRect(x-2,wy-3,5,3);g.fillStyle='#5a3020';g.fillRect(x+f*3,wy-6,1,4);g.fillRect(x+f*4,wy-7,1,2)}
   else if(c.act==='camera'){g.fillStyle='#222';g.fillRect(f>0?hx+5:hx-2,ey+2,3,2);if(c.flash>0){g.fillStyle='#fff';g.fillRect(f>0?hx+8:hx-4,ey+1,2,2)}}}
  if(!sit&&(c.umb>0||(c.umbOut&&c.state==='leave'))){const ux=x+f*2,uy=hy-6;g.fillStyle='#333';g.fillRect(ux,uy+2,1,ty-uy);g.fillStyle=L.uc||'#e63946';g.fillRect(ux-5,uy,11,2);g.fillRect(ux-4,uy-1,9,1);g.fillStyle=shade(L.uc||'#e63946',.7);g.fillRect(ux-5,uy+2,1,1);g.fillRect(ux-1,uy+2,1,1);g.fillRect(ux+3,uy+2,1,1)}
+ if(c.req&&c.req.dl&&c.state==='order'){const f2=clamp((c.req.dl-T)/c.req.len,0,1);g.fillStyle='#120a20';g.fillRect(x-6,hy-13,13,3);g.fillStyle=f2>.35?'#ffd166':'#ff3b3b';g.fillRect(x-5,hy-12,Math.round(11*f2),1)}
  if(c.emo){const e=c.emo.k,ex2=x-2,ey2=hy-8-Math.round(Math.abs(Math.sin(T*6))*1.5);
   if(e==='heart'){g.fillStyle='#ff4fa3';[[1,0],[3,0],[0,1],[1,1],[2,1],[3,1],[4,1],[1,2],[2,2],[3,2],[2,3]].forEach(p=>g.fillRect(ex2+p[0],ey2+p[1],1,1))}
   else if(e==='angry'){g.fillStyle='#ff3b3b';g.fillRect(ex2,ey2,1,1);g.fillRect(ex2+1,ey2+1,1,1);g.fillRect(ex2+3,ey2+1,1,1);g.fillRect(ex2+4,ey2,1,1);g.fillRect(ex2,ey2+3,1,1);g.fillRect(ex2+1,ey2+2,1,1);g.fillRect(ex2+3,ey2+2,1,1);g.fillRect(ex2+4,ey2+3,1,1)}
@@ -1035,21 +1072,72 @@ function openChoice(c,sc){choiceOpen=true;paused=true;const b=$('#mbox');b.inner
  c.o.forEach(o=>{const e=document.createElement('button');e.textContent=o.t;e.onclick=()=>{const [k,v]=o.f.split('=');st.flags[k]=v;sc.lines.splice(sc.i,0,...o.r);sc.wait=false;sc.t=.3;choiceOpen=false;hideModal();save()};w.appendChild(e)});$('#modal').hidden=false}
 // minigioco
 let mini=null;
-function openMini(c){paused=true;mini={c,round:0,score:[],pos:0,dir:1,spd:.9,zone:[0,0],raf:0,done:false};$('#mini').hidden=false;$('#mcan').hidden=true;$('#mmeter').hidden=false;$('#mtxt').textContent='Tocca quando la lancetta è nel verde. Tre versate.';$('#mtitle').textContent=c.type==='critico'?'Latte art per il critico':'Latte art';$('#mbtn').textContent='Versa!';document.querySelectorAll('#mdots i').forEach(i=>i.className='');newRound();miniLoop()}
-function newRound(){const zw=[.3,.22,.15][mini.round];const z0=rnd(.05,.95-zw);mini.zone=[z0,z0+zw];$('#mzone').style.left=(z0*100)+'%';$('#mzone').style.width=(zw*100)+'%';mini.spd=.9+mini.round*.35}
+const MGI={
+ latte:{t:'Latte art',x:'Tocca quando la lancetta è nel verde. Tre versate.',b:'Versa!'},
+ monta:{t:'Monta il latte',x:'Tieni premuto per scaldare il latte, lascia quando è nel verde. Tre lattiere.',b:'Tieni premuto'},
+ padella:{t:'Ai fornelli',x:'Tocca quando è dorato, prima che bruci. Tre pezzi.',b:'Gira!'},
+ shaker:{t:'Shakera!',x:'Tocca velocissimo per riempire, ma quando scade il tempo devi essere nel verde.',b:'Shake!'},
+ vetrina:{t:'Dalla vetrina',x:"Guarda bene l'ordine dei dolci: poi toccali nella stessa sequenza.",b:''}
+};
+const MGEND={latte:['Una macchia di latte... pazienza.','Una bella rosetta. Mancia extra.','Un cuore perfetto! Mancia tripla.'],monta:['Un po\' bruciato... pazienza.','Quasi perfetto. Mancia extra.','Perfetto! Mancia tripla.'],padella:['Un po\' bruciacchiato... si mangia lo stesso.','Ben cotto. Mancia extra.','Dorato alla perfezione! Mancia tripla.'],shaker:['Troppo poco... o troppo!','Bello cremoso. Mancia extra.','Consistenza perfetta! Mancia tripla.'],vetrina:['Hai sbagliato dolce...','Quasi tutto giusto. Mancia extra.','Memoria perfetta! Mancia tripla.']};
+const SWEETS=[['🥐','Cornetto'],['🍰','Torta'],['🍩','Ciambella'],['🧁','Muffin'],['🍪','Biscotto']];
+function mgKind(c){if(c.req&&c.req.mg)return c.req.mg;if(c.type==='critico')return 'latte';const it=c.order,s=it.s;
+ if(s==='m')return it.id==='capp'?(Math.random()<.5?'latte':'monta'):it.id==='iced'?'shaker':'monta';if(s==='v')return 'vetrina';if(s==='k')return 'padella';return 'shaker'}
+function mgInfo(k,c){const id=c.order.id;
+ if(k==='monta'&&(id==='caffe'||id==='affo'))return {t:"Estrai l'espresso",x:'Tieni premuto per estrarre, lascia quando la crema è nel verde. Tre tazzine.',b:'Tieni premuto'};
+ if(k==='shaker'){const t={matcha:'Frusta il matcha',choc:'Mescola la cioccolata',smooth:'Frulla!',iced:'Shakera il latte'}[id];if(t)return Object.assign({},MGI.shaker,{t})}
+ return MGI[k]}
+function openMini(c){const k=mgKind(c),I=mgInfo(k,c);paused=true;mini={c,k,round:0,score:[],pos:0,dir:1,spd:.9,zone:[0,0],raf:0,done:false,hold:false,lock:false};miniLast=0;
+ $('#mini').hidden=false;$('#mcan').hidden=true;$('#mopts').hidden=true;$('#mmeter').hidden=false;$('#mmeter').className='meter'+(k==='padella'?' cook':k==='monta'?' heat':'');$('#mfill').style.width='0';$('#mneedle').hidden=k==='shaker';
+ $('#mtxt').textContent=I.x;$('#mtitle').textContent=(c.type==='critico'?I.t+' per il critico':I.t)+(c.req?' · '+c.req.t:'');$('#mbtn').textContent=I.b;$('#mbtn').hidden=!I.b;
+ document.querySelectorAll('#mdots i').forEach(i=>i.className='');$('#mdots').hidden=k==='shaker';
+ if(k==='vetrina')vetrinaStart();else{newRound();miniLoop()}}
+function setZone(){const[a,b]=mini.zone;$('#mzone').style.left=(a*100)+'%';$('#mzone').style.width=((b-a)*100)+'%'}
+function newRound(){const m=mini,k=m.k;m.pos=0;m.dir=1;m.hold=false;
+ if(k==='latte'){const zw=[.3,.22,.15][m.round];const z0=rnd(.05,.95-zw);m.zone=[z0,z0+zw];m.spd=.9+m.round*.35}
+ else if(k==='monta'){const zw=[.17,.13,.1][m.round];const z0=rnd(.45,.86-zw);m.zone=[z0,z0+zw];m.spd=0}
+ else if(k==='padella'){const zw=[.17,.14,.11][m.round];const z0=rnd(.5,.7);m.zone=[z0,z0+zw];m.spd=rnd(.3,.38)+m.round*.09}
+ else if(k==='shaker'){m.zone=[.6,.8];m.tEnd=performance.now()+4000}
+ setZone()}
 let miniLast=0;
-function miniLoop(t){if(!mini||mini.done)return;const now=performance.now(),dt=Math.min(.05,(now-(miniLast||now))/1000);miniLast=now;mini.pos+=mini.dir*mini.spd*dt;if(mini.pos>1){mini.pos=1;mini.dir=-1}if(mini.pos<0){mini.pos=0;mini.dir=1}$('#mneedle').style.left=`calc(${mini.pos*100}% - 2px)`;mini.raf=requestAnimationFrame(miniLoop)}
-function miniTap(){if(!mini)return;initAudio();if(mini.done){finishMini();return}
- const p=mini.pos,[a,b]=mini.zone,sc=p>=a&&p<=b?2:(p>=a-.07&&p<=b+.07)?1:0;mini.score.push(sc);const dot=document.querySelectorAll('#mdots i')[mini.round];dot.className=sc===2?'ok':sc===1?'mid':'';sfx(sc===2?'good':sc?'tap':'meh');mini.round++;
- if(mini.round<3){newRound();return}
- mini.done=true;cancelAnimationFrame(mini.raf);const tot=mini.score.reduce((x,y)=>x+y,0);mini.q=tot>=5?2:tot>=3?1:0;
- $('#mmeter').hidden=true;$('#mcan').hidden=false;drawArt(mini.q);$('#mtxt').textContent=mini.q===2?'Un cuore perfetto! Mancia tripla.':mini.q===1?'Una bella rosetta. Mancia extra.':'Una macchia di latte... pazienza.';$('#mbtn').textContent='Servi';}
+function miniLoop(){const m=mini;if(!m||m.done)return;const now=performance.now(),dt=Math.min(.05,(now-(miniLast||now))/1000);miniLast=now;
+ if(m.k==='latte'){m.pos+=m.dir*m.spd*dt;if(m.pos>1){m.pos=1;m.dir=-1}if(m.pos<0){m.pos=0;m.dir=1}}
+ else if(m.k==='monta'){if(m.hold&&!m.lock){m.spd+=dt*.55;m.pos+=(.16+m.spd)*dt;if(m.pos>=1){m.pos=1;m.hold=false;miniScore(0,'Troppo! È bruciato.')}}}
+ else if(m.k==='padella'){if(!m.lock){m.pos+=m.spd*dt;if(m.pos>=1){m.pos=1;miniScore(0,'Bruciato!')}}}
+ else if(m.k==='shaker'){m.pos=Math.max(0,m.pos-dt*.22);const left=(m.tEnd-now)/1000;
+  if(left>0)$('#mbtn').textContent=`Shake! ${left.toFixed(1).replace('.',',')}s`;else{const p=m.pos,[a,b]=m.zone;miniEnd(p>=a&&p<=b?2:(p>=a-.1&&p<=b+.1)?1:0);return}}
+ if(mini!==m||m.done)return;
+ $('#mneedle').style.left=`calc(${m.pos*100}% - 2px)`;$('#mfill').style.width=(m.k==='padella'||m.k==='latte'?0:Math.min(100,m.pos*100))+'%';
+ m.raf=requestAnimationFrame(miniLoop)}
+function miniScore(sc,msg){const m=mini;m.score.push(sc);const dot=document.querySelectorAll('#mdots i')[m.round];if(dot)dot.className=sc===2?'ok':sc===1?'mid':'';sfx(sc===2?'good':sc?'tap':'meh');if(msg)$('#mtxt').textContent=msg;m.round++;
+ if(m.round<3){if(m.k==='latte')newRound();else{m.lock=true;setTimeout(()=>{if(mini===m&&!m.done){m.lock=false;newRound();$('#mtxt').textContent=mgInfo(m.k,m.c).x}},500)}return}
+ const tot=m.score.reduce((x,y)=>x+y,0);miniEnd(tot>=5?2:tot>=3?1:0)}
+function miniEnd(q){const m=mini;m.done=true;m.q=q;m.endT=performance.now();cancelAnimationFrame(m.raf);$('#mmeter').hidden=true;$('#mopts').hidden=true;$('#mbtn').hidden=false;
+ if(m.k==='latte'){$('#mcan').hidden=false;drawArt(q)}
+ $('#mtxt').textContent=(q===2?'★★★ ':q===1?'★★☆ ':'★☆☆ ')+MGEND[m.k][q];$('#mbtn').textContent='Servi'}
+function miniDown(e){const m=mini;if(!m)return;initAudio();
+ if(m.done){if(performance.now()-m.endT>450)finishMini();return}
+ if(m.lock)return;const p=m.pos,[a,b]=m.zone;
+ if(m.k==='latte')miniScore(p>=a&&p<=b?2:(p>=a-.07&&p<=b+.07)?1:0);
+ else if(m.k==='monta'){m.hold=true;m.spd=0}
+ else if(m.k==='padella'){const sc=p>=a&&p<=b?2:(p>=a-.08&&p<=b+.05)?1:0;miniScore(sc,sc===2?'Perfetto!':sc?'Quasi!':p<a?'Ancora crudo...':'Troppo cotto...')}
+ else if(m.k==='shaker'){m.pos=Math.min(1.05,m.pos+.075);if(Math.random()<.4)sfx('tap')}
+ else if(m.k==='vetrina'){const bt=e.target.closest&&e.target.closest('#mopts button');if(bt&&m.phase==='pick')vetrinaPick(+bt.dataset.i)}}
+function miniUp(){const m=mini;if(!m||m.done||m.k!=='monta'||!m.hold||m.lock)return;m.hold=false;const p=m.pos,[a,b]=m.zone;
+ const sc=p>=a&&p<=b?2:(p>=a-.07&&p<=b+.07)?1:0;miniScore(sc,sc===2?'Perfetto!':sc?'Quasi!':p<a?'Troppo presto...':'Troppo tardi...')}
+function vetrinaStart(){const m=mini;$('#mmeter').hidden=true;m.seq=[];while(m.seq.length<3){const i=ri(0,SWEETS.length-1);if(i!==m.seq[m.seq.length-1])m.seq.push(i)}m.phase='show';m.pi=0;
+ const o=$('#mopts');o.innerHTML=SWEETS.map((x,i)=>`<button data-i="${i}">${x[0]}<small>${x[1]}</small></button>`).join('');
+ let i=0;const step=()=>{if(mini!==m)return;if(i<m.seq.length){const x=SWEETS[m.seq[i]];$('#mtxt').innerHTML=`<span class="big-ic">${x[0]}</span>${i+1}/3 · ${x[1]}`;sfx('tap');i++;setTimeout(step,950)}
+  else{m.phase='pick';$('#mtxt').textContent='Ora tocca i dolci nello stesso ordine.';o.hidden=false}};setTimeout(step,700)}
+function vetrinaPick(i){const m=mini,ok=m.seq[m.pi]===i;const dot=document.querySelectorAll('#mdots i')[m.pi];if(dot)dot.className=ok?'ok':'';sfx(ok?'good':'meh');m.score.push(ok?1:0);m.pi++;
+ if(!ok||m.pi>=3){const n=m.score.filter(x=>x).length;miniEnd(n>=3?2:n>=2?1:0)}}
 function finishMini(){const m=mini;mini=null;miniLast=0;$('#mini').hidden=true;paused=false;if(m.c&&queue[0]===m.c){m.c.prog=m.c.order.t;serve(m.c,m.q)}}
 function drawArt(q){const c=$('#mcan').getContext('2d');c.clearRect(0,0,24,24);c.fillStyle='#f4f1de';c.beginPath();c.arc(12,12,11,0,7);c.fill();c.fillStyle='#7a4a2a';c.beginPath();c.arc(12,12,9,0,7);c.fill();c.fillStyle='#f6e8d4';
  if(q===2){[[9,8,3,2],[13,8,3,2],[8,9,9,3],[9,12,7,2],[10,14,5,1],[11,15,3,1],[12,16,1,1]].forEach(r=>c.fillRect(...r))}
  else if(q===1){c.fillRect(12,6,1,12);for(let i=0;i<5;i++){c.fillRect(9-i%2,7+i*2,3,1);c.fillRect(13+i%2,7+i*2,3,1)}}
  else{c.beginPath();c.arc(11,13,3,0,7);c.fill();c.fillRect(13,9,3,2)}}
-$('#mini').addEventListener('pointerdown',e=>{e.preventDefault();miniTap()});
+$('#mini').addEventListener('pointerdown',e=>{e.preventDefault();miniDown(e)});
+['pointerup','pointercancel'].forEach(ev=>window.addEventListener(ev,miniUp));
 
 /* ----- pannelli ----- */
 const UP=[
@@ -1089,10 +1177,10 @@ function tabHTML(){
 function cliHTML(){
  const a=atm();
  if(tab==='Storie')return `<p class="note">Atmosfera attuale: <b>${a}</b>. Più è alta, più storie si sbloccano. Ogni capitolo vale ♥ e monete; ogni storia finita dà un bonus.</p>`+ARCS.map(arc=>{const k=st.story[arc.id]||0;
-  if(!arcReq(arc)){const need=[].concat(arc.req).map(id=>'«'+ARCS.find(x=>x.id===id).t+'»').join(' e ');return `<div class="card2"><h3>???<small>bloccata</small></h3><p class="ad">Completa prima ${need}.</p></div>`}
+  if(!arcReq(arc)){const need=[].concat(arc.req).map(r=>{const [id,v]=r.split('=');return '«'+ARCS.find(x=>x.id===id).t+'»'+(v?' con un certo finale':'')}).join(' e ');return `<div class="card2"><h3>???<small>bloccata</small></h3><p class="ad">Completa prima ${need}.</p></div>`}
   return `<div class="card2"><h3>${arc.t}<small>${k}/${arc.ch.length}</small></h3><p class="ad">${arc.d}</p>`+arc.ch.map((ch,i)=>{
    if(i<k){const who=ch.who||arc.who;return `<details><summary>${i+1}. ${ch.t}</summary>${ch.l.filter(l=>Array.isArray(l)&&(!l[2]||checkFlag(l[2]))).map(([w,t])=>`<p><b>${CH[who[w]].n}</b>${esc(t)}</p>`).join('')}</details>`}
-   if(i===k)return `<div class="lock"><span>${i+1}. ???</span><small>${a>=ch.r?'Succederà presto…':'Atmosfera '+ch.r}</small></div>`;return `<div class="lock"><span>${i+1}. ???</span></div>`}).join('')+(k>=arc.ch.length?`<div class="done">Completata · ${arc.pt}</div>`:`<div class="note" style="margin:6px 0 0;font-size:12px">Premio finale: ${arc.pt}</div>`)+'</div>'}).join('');
+   if(i===k)return `<div class="lock"><span>${i+1}. ???</span><small>${a>=ch.r?'Succederà presto…':'Atmosfera '+ch.r}</small></div>`;return `<div class="lock"><span>${i+1}. ???</span></div>`}).join('')+(k>=arc.ch.length?(()=>{const E=arcEnd(arc);return `<div class="done">Completata${E.n?' · finale «'+E.n+'»':''} · ${E.pt}</div>`})():`<div class="note" style="margin:6px 0 0;font-size:12px">Premio finale: ${arc.end?'dipende dalle tue scelte ('+Object.keys(arc.end).length+' finali)':arc.pt}</div>`)+'</div>'}).join('');
  if(tab==='Habitué'){if(!st.regs.length)return '<p class="note">Ancora nessun habitué. I clienti molto soddisfatti a volte decidono di tornare sempre: qui vedrai chi sono, cosa ordinano e quanto si sono affezionati.</p>';
   return `<p class="note">${st.regs.length} habitué. Si siedono vicini, si conoscono, diventano amici, rivali o coppie.</p>`+st.regs.slice().sort((x,y)=>y.f-x.f).map(r=>{const fav=MENU.find(m=>m.id===r.fav);const rels=Object.entries(st.rel).filter(([k])=>k.includes(r.id)).length;
    return `<div class="card2"><h3>${esc(r.n)}<small>${r.v} visite</small></h3><p class="ad">${TYPES[r.type]?TYPES[r.type].n:'Cliente'} · ordina ${fav?fav.n:'caffè'} · ${rels} legami</p>${r.tr.map(t=>`<span class="tag">${t}</span>`).join('')}<div class="bar"><i style="width:${r.f*10}%"></i></div></div>`}).join('')}
@@ -1110,8 +1198,8 @@ function dayHTML(){const h=hour(),hh=Math.floor(h)%24,mm=Math.floor((h%1)*60);
  (st.ds?`<div class="card2"><h3>Finora oggi</h3><p class="ad">${st.ds.served} clienti · ${fmt(st.ds.earned)} monete · ${st.ds.couples} coppie · ${st.ds.stars.length} recensioni</p></div>`:'');}
 function setHTML(){return `<div class="set"><label class="note" for="rn">Nome della caffetteria</label><div class="line"><input id="rn" maxlength="22"><button id="rnb">Salva</button></div>
  <button id="snd">Suoni: ${st.sound?'sì':'no'}</button><button id="mus">Musica: ${st.musicOn?'sì':'no'}${st.music?'':' (serve il giradischi)'}</button>
- <button id="fsb">Schermo intero</button><button id="rst">Ricomincia da capo</button>
- <p class="note">Clienti serviti: ${st.served} · Monete totali: ${fmt(st.earned)} · Giornate perfette: ${st.perfect}<br>Trascina la sala a destra e a sinistra quando diventa grande.<br>Il gioco si salva da solo su questo dispositivo.<br>Creato da GlitchCraft</p></div>`}
+ <button id="fsb">Schermo intero</button><div class="line"><button id="exp" style="flex:1">Esporta salvataggio</button><button id="imp" style="flex:1">Importa salvataggio</button></div><button id="rst">Ricomincia da capo</button>
+ <p class="note">Clienti serviti: ${st.served} · Monete totali: ${fmt(st.earned)} · Giornate perfette: ${st.perfect}<br>Trascina la sala a destra e a sinistra quando diventa grande.<br>Il gioco si salva da solo su questo dispositivo (con una copia di riserva). Esporta il salvataggio per non perderlo se cambi telefono o cancelli i dati del browser.<br>Creato da GlitchCraft</p></div>`}
 function renderPanel(){const b=$('#pbody'),h=$('#ptitle'),tb=$('#tabs');const sc=b.scrollTop;
  const T2={up:'Migliora',cli:'Clienti',day:'La giornata',set:'Impostazioni'};h.textContent=T2[panel]||'';
  tb.innerHTML=(TABS[panel]||[]).map(t=>`<button data-tab="${t}" class="${t===tab?'on':''}">${t}</button>`).join('');tb.hidden=!TABS[panel];
@@ -1132,12 +1220,14 @@ $('#pbody').addEventListener('click',e=>{
  if(bt.id==='snd'){st.sound=st.sound?0:1;if(master)master.gain.value=st.sound?1:0;renderPanel()}
  if(bt.id==='mus'){st.musicOn=st.musicOn?0:1;renderPanel()}
  if(bt.id==='fsb')goFS();
+ if(bt.id==='exp'){save();const code=btoa(unescape(encodeURIComponent(JSON.stringify(st))));showModal(`<h2>Esporta salvataggio</h2><p>Copia questo codice e conservalo. Per riprendere la partita: Impostazioni → Importa.</p><textarea class="savebox" id="savecode" readonly>${code}</textarea>`,[{t:'Chiudi',fn:hideModal},{t:'Copia',big:1,fn:()=>{const ta=$('#savecode');ta.select();let ok=false;try{ok=document.execCommand('copy')}catch(err){}if(navigator.clipboard)navigator.clipboard.writeText(code).then(()=>toast('Codice copiato'),()=>{});else if(ok)toast('Codice copiato')}}]);return}
+ if(bt.id==='imp'){showModal(`<h2>Importa salvataggio</h2><p>Incolla qui il codice esportato. La partita attuale verrà sostituita.</p><textarea class="savebox" id="savein"></textarea>`,[{t:'Annulla',fn:hideModal},{t:'Carica',big:1,fn:()=>{try{const o=JSON.parse(decodeURIComponent(escape(atob($('#savein').value.trim()))));if(!o||typeof o!=='object'||!o.name||typeof o.coins!=='number')throw 0;localStorage.setItem(KEY+'_bak',localStorage.getItem(KEY)||'');localStorage.setItem(KEY,JSON.stringify(o));st.name='';location.reload()}catch(err){toast('Codice non valido')}}}]);return}
  if(bt.id==='rst'){if(Date.now()-rstArm<3000){try{localStorage.removeItem(KEY);localStorage.removeItem(KEY1)}catch(err){}location.reload()}else{rstArm=Date.now();bt.textContent='Tocca ancora per cancellare tutto'}}
  save();
 });
 function franchise(d){const stars=Math.max(1,Math.floor(Math.sqrt(st.runEarned/250000)));
  showModal(`<h2>Nuovo locale: ${DIST[d].n}</h2><p>Lasci questo locale in buone mani e ne apri uno nuovo. Tieni cuori, storie, habitué, legami e stili. Guadagni <b>${stars} ★</b> di franchising.</p>`,[{t:'Annulla',fn:hideModal},{t:'Apri il nuovo locale',big:1,fn:()=>{
-  Object.assign(st,{coins:0,space:1,tables:1,chairs:0,decor:0,music:0,neon:0,wifi:0,cat:0,barista:0,waiter:0,cook:0,manager:0,machine:0,menu:1,runEarned:0,reviews:[],district:d});st.frStars+=stars;
+  Object.assign(st,{coins:0,space:1,tables:1,chairs:0,decor:0,music:0,neon:0,wifi:0,cat:0,barista:0,waiter:0,cook:0,manager:0,machine:0,menu:1,grinder:0,stove:0,umbr:0,vetrina:0,lav:0,runEarned:0,reviews:[],district:d});st.frStars+=stars;
   people=[];queue=[];scenes=[];timers=[];groups={};activeArcs.clear();baristas=[];waiters=[];managerS=null;slots.forEach(s=>s.seats.forEach(q=>{q.occ=null;q.dirty=false;q.res=null;q.tgt=null}));
   hideModal();closePanel();st.day++;layout();startDay();save();toast(`Benvenuto a ${DIST[d].n}! ★ ${st.frStars}`)}}])}
 $('#pclose').addEventListener('click',closePanel);
@@ -1175,7 +1265,7 @@ function tapCounter(){initAudio();const q=queue[0];if(!q||q.state!=='order')retu
 const sBtn=$('#serve');
 sBtn.addEventListener('pointerdown',e=>{e.preventDefault();if(!started||paused)return;if(tapCounter()){sBtn.classList.add('pop');setTimeout(()=>sBtn.classList.remove('pop'),70)}});
 sBtn.addEventListener('contextmenu',e=>e.preventDefault());
-let lastSrv='';function serveUI(){const q=queue[0];const on=!!(q&&q.state==='order');const p=on?Math.min(100,Math.round(q.prog/q.order.t*100)):0;const k=on+'|'+p+'|'+(on&&q.special);if(k===lastSrv)return;lastSrv=k;sBtn.classList.toggle('on',on);sBtn.classList.toggle('idle',!on);sBtn.style.setProperty('--p',p+'%');sBtn.querySelector('span').textContent=on&&q.special?'Latte art':'Servi'}
+let lastSrv='';function serveUI(){const q=queue[0];const on=!!(q&&q.state==='order');const p=on?Math.min(100,Math.round(q.prog/q.order.t*100)):0;const rush=on&&q.req&&q.req.dl?Math.max(0,Math.ceil(q.req.dl-T)):-1;const lab=!on?'Servi':rush>=0?'⏱ '+rush+'s':q.special?(q.req?q.req.t:'Speciale'):'Servi';const k=on+'|'+p+'|'+lab;if(k===lastSrv)return;lastSrv=k;sBtn.classList.toggle('on',on);sBtn.classList.toggle('idle',!on);sBtn.classList.toggle('rush',rush>=0);sBtn.style.setProperty('--p',p+'%');sBtn.querySelector('span').textContent=lab}
 
 /* ================= AVVIO ================= */
 function goFS(){const d=document.documentElement,rq=d.requestFullscreen||d.webkitRequestFullscreen;if(rq&&!document.fullscreenElement&&!document.webkitFullscreenElement){try{const p=rq.call(d,{navigationUI:'hide'});if(p&&p.then)p.then(lockO).catch(()=>{})}catch(e){}}else lockO()}
@@ -1186,7 +1276,7 @@ function begin(){
  if(!st.ds)startDay();else toast(`Bentornato · Giorno ${st.day}`);
  if(st.migrated){st.migrated=0;setTimeout(()=>toast('Ho portato qui la tua partita precedente'),1500)}
  offline();save();hud();
- if(st.served===0)setTimeout(()=>toast('Tocca il pulsante ☕ (o il bancone) per servire. Trascina per guardarti intorno.'),4200);
+ if(st.served===0)setTimeout(()=>toast('Tocca il pulsante Servi (o il bancone) per servire. Trascina per guardarti intorno.'),4200);
 }
 function showNaming(){$('#intro').hidden=true;$('#naming').hidden=false;$('#chips').innerHTML='';SUGG.forEach(n=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>{$('#nameIn').value=n};$('#chips').appendChild(b)})}
 $('#start').addEventListener('click',()=>{if(!$('#intro').hidden){goFS();initAudio();if(st.name)begin();else showNaming()}});
@@ -1197,7 +1287,7 @@ if(st.name)$('#go').textContent='Continua';
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();if(AC)AC.suspend().catch(()=>{})}else if(AC&&started)AC.resume().catch(()=>{})});
 addEventListener('pagehide',save);addEventListener('resize',layout);
 layout();
-window.__cafe={get st(){return st},speed:1};
+window.__cafe={get st(){return st},speed:1,ARCS,CH,MENU,UP,slots,get cols(){return cols},get counterX(){return counterX},get camX(){return camX},set camX(v){camX=v},get S(){return S},get DPR(){return DPR},get queue(){return queue},get mini(){return mini},openMini,miniDown,miniUp,finishMini,checkFlag,arcEnd,arcReq};
 let last=performance.now();
 function frame(now){let dt=Math.min(.05,(now-last)/1000);last=now;const sp=window.__cafe.speed||1;for(let i=0;i<sp;i++){T+=dt;if(started)update(dt);else ambient(dt)}render();if(started)serveUI();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
