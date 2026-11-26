@@ -702,6 +702,8 @@ function chapterWho(arc, ch) {
   return ch.who || arc.who;
 }
 function storyNote(arc) {
+  // aspetta che non ci siano altre finestre aperte (una scelta, la fine della giornata, un minigioco): non le deve coprire
+  if (!$('#modal').hidden || choiceOpen || mini || !$('#reader').hidden) return setTimeout(() => storyNote(arc), 1000);
   showModal(`<h2>${esc(arc.t)}</h2><p>${esc(arc.nota)}</p>`, [{ t: 'Ho capito', big: 1, fn: hideModal }]);
 }
 function tryStory() {

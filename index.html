@@ -13,7 +13,7 @@
 #splash::before{content:'';position:absolute;inset:-40px;background:repeating-linear-gradient(105deg,transparent 0 14px,rgba(160,190,255,.07) 14px 15px);animation:sp-rain .6s linear infinite}
 @keyframes sp-rain{to{transform:translate(-8px,40px)}}
 .sp-box{position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px}
-.sp-neon{font-family:'Pixelify Sans',ui-monospace,monospace;font-weight:700;font-size:clamp(34px,9vmin,64px);color:#ffe3f1;letter-spacing:1px;text-shadow:0 0 4px #fff,0 0 10px #ff4fa3,0 0 22px #ff4fa3,0 0 44px #ff3d9a;animation:sp-flick 4s infinite}
+.sp-neon{font-family:'Pixelify Sans',ui-monospace,monospace;font-weight:700;font-size:clamp(28px,8vmin,58px);max-width:92vw;line-height:1.1;color:#ffe3f1;letter-spacing:1px;text-shadow:0 0 4px #fff,0 0 10px #ff4fa3,0 0 22px #ff4fa3,0 0 44px #ff3d9a;animation:sp-flick 4s infinite}
 @keyframes sp-flick{0%,18%,22%,62%,64%,100%{opacity:1}20%,63%{opacity:.35}}
 .sp-cup{position:relative;width:96px;height:80px}
 .sp-cup svg{position:absolute;left:0;bottom:0;width:96px;height:72px;image-rendering:pixelated;animation:sp-bob 2.4s ease-in-out infinite}
@@ -33,7 +33,7 @@
 <body>
 <div id="splash" aria-label="Caricamento">
   <div class="sp-box">
-    <div class="sp-neon">Caffè Notturno</div>
+    <div class="sp-neon">Caffè sotto la pioggia</div>
     <div class="sp-cup">
       <svg viewBox="0 0 16 12" shape-rendering="crispEdges" aria-hidden="true">
         <rect x="1" y="10" width="14" height="1" fill="#e8dcf0"/><rect x="2" y="11" width="12" height="1" fill="#b8a8c8"/>
