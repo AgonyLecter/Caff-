@@ -16,7 +16,10 @@ cv.addEventListener('pointerdown', e => {
 cv.addEventListener('pointermove', e => {
   if (!ptr) return;
   const dx = e.clientX - ptr.x;
-  if (Math.abs(dx) > 10) ptr.drag = true;
+  if (Math.abs(dx) > 10 && !ptr.drag) {
+    ptr.drag = true;
+    st.dragged = 1;
+  }
   if (ptr.drag) camX = clamp(ptr.cx - (dx * DPR) / S, 0, W - VW);
 });
 cv.addEventListener('pointerup', e => {
@@ -174,7 +177,7 @@ function begin() {
   offline();
   save();
   hud();
-  if (st.served === 0) setTimeout(() => toast('Tocca il pulsante Servi (o il bancone) per servire. Trascina per guardarti intorno.'), 4200);
+  guideForOldSaves();
 }
 function showNaming() {
   $('#intro').hidden = true;
