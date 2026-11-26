@@ -73,7 +73,7 @@ function startFilo(c) {
         r.f = Math.min(10, r.f + 1);
         r.ns = (r.ns || 0) + 1;
         st.hearts++;
-        const b = Math.round(20 * Math.pow(1.45, Math.min(st.hearts, 25)) * (1 + 0.5 * st.frStars));
+        const b = reward(75);
         addCoins(b, c.x, c.y - 26);
         floats.push({ x: c.x, y: c.y - 36, txt: '♥ +1', t: 1.8, col: '#ff4fa3' });
         toast(`Storia di ${r.n} conclusa: ${E}`);
@@ -168,7 +168,7 @@ function playXS(mem, x) {
     onEnd: () => {
       st.hearts++;
       const c = ord[0],
-        b = Math.round(15 * Math.pow(1.4, Math.min(st.hearts, 25)) * (1 + 0.5 * st.frStars));
+        b = reward(60);
       addCoins(b, c.x, c.y - 26);
       floats.push({ x: c.x, y: c.y - 36, txt: '♥ +1', t: 1.8, col: '#ff4fa3' });
       st.xlog = st.xlog || [];
@@ -435,7 +435,7 @@ function startDuo(a, b) {
           A.reg.petR = 1;
         }
         st.hearts++;
-        const bb = Math.round(25 * Math.pow(1.45, Math.min(st.hearts, 25)) * (1 + 0.5 * st.frStars));
+        const bb = reward(90);
         addCoins(bb, A.x, A.y - 26);
         floats.push({ x: A.x, y: A.y - 36, txt: '♥ +1', t: 1.8, col: '#ff4fa3' });
         toast(`${A.name} e ${B.name} ${E}`);

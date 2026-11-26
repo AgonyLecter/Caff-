@@ -1138,3 +1138,44 @@ input {
     margin: 2px auto;
   }
 }
+
+/* ora di punta: banner in alto a sinistra con tempo e combo */
+#rush {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: calc(max(6px, env(safe-area-inset-bottom)) + 156px);
+  flex-direction: column;
+  gap: 2px !important;
+  text-align: center;
+  z-index: 6;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: rgba(23, 13, 41, 0.92);
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+  padding: 6px 12px;
+  box-shadow: 0 0 16px #ffd16666;
+  font-size: 15px;
+  pointer-events: none;
+}
+#rush b {
+  color: var(--gold);
+}
+#rush span {
+  color: var(--dim);
+}
+#rush .combo {
+  font-style: normal;
+  color: var(--cyan);
+}
+#rush .combo.hot {
+  color: var(--pink);
+  text-shadow: 0 0 8px #ff4fa3;
+}
+@media (max-height: 360px) {
+  #rush {
+    bottom: calc(max(6px, env(safe-area-inset-bottom)) + 126px);
+    font-size: 13px;
+  }
+}

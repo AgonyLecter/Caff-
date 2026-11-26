@@ -231,7 +231,8 @@ function arrival() {
   m *= { sereno: 1.05, nuvoloso: 1, pioggia: 1.1, temporale: 0.8, nebbia: 0.9, neve: 0.95 }[curWx()] || 1;
   m *= h < 8.5 ? 0.75 : h > 24.5 ? 0.6 : 1;
   if (st.perks.kenjiShop && h >= 19) m *= 1.25;
-  return 7 / m;
+  if (st.served < 60) m *= 1.5; // i primi clienti arrivano più spesso: l'inizio non deve essere lento
+  return 5.5 / rushArrival(m);
 }
 const availMenu = () => MENU.slice(0, st.menu).filter(it => it.s !== 'k' || st.cook > 0);
 const dailyItem = () => {
