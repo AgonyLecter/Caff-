@@ -800,7 +800,8 @@ function drawPerson(c) {
     g.fillStyle = f2 > 0.35 ? '#ffd166' : '#ff3b3b';
     g.fillRect(x - 5, ey - 12, Math.round(11 * f2), 1);
   }
-  if (c.need && (c.need.t > 8 || Math.floor(T * 4) % 2))
+  if (c.invite) drawInvite(x - 2, ey - 15);
+  else if (c.need && (c.need.t > 8 || Math.floor(T * 4) % 2))
     drawEmote(x - 2, ey - 13 - Math.round(Math.abs(Math.sin(T * 6)) * 2), 'n_' + c.need.k);
   else if (c.emo) drawEmote(x - 2, ey - 12 - Math.round(Math.abs(Math.sin(T * 5)) * 1.5), c.emo.k);
   else if (c.state === 'order' && c.order && !c.bub) {

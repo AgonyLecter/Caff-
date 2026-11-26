@@ -45,6 +45,7 @@ function tap(e) {
     }
     return;
   }
+  if (regiaTap(x, y)) return;
   if (tapIncident(x, y)) return;
   if (tapNeed(x, y)) return;
   if (tapNeon(x, y)) return;
@@ -243,6 +244,11 @@ $('#pclose').innerHTML = ICO.close;
 $('#dice').innerHTML = ICO.dice;
 window.__cafe = {
   tryStory,
+  regia,
+  regiaReset,
+  regiaFree,
+  regiaTap,
+  regiaNext,
   storyDayOk,
   chapterWho,
   ritual,

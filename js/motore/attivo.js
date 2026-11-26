@@ -14,7 +14,7 @@ function rushPlan() {
 }
 function rushTick(dt) {
   rushPlan();
-  if (!rush && st.ds && st.ds.rushPlan && st.ds.rushPlan.length && st.tod >= st.ds.rushPlan[0] && hour() < 25) {
+  if (!rush && !regia.live && st.ds && st.ds.rushPlan && st.ds.rushPlan.length && st.tod >= st.ds.rushPlan[0] && hour() < 25) {
     st.ds.rushPlan.shift();
     startRush();
   }
@@ -152,7 +152,7 @@ function needsTick(dt) {
       c.need = null;
     }
   }
-  needT -= dt;
+  if (!regia.live) needT -= dt;
   if (needT > 0) return;
   needT = rnd(6, 12);
   if (seated.filter(c => c.need).length >= 3) return;
@@ -232,7 +232,7 @@ function incidentTick(dt) {
   if (machTilt) {
     if (Math.random() < dt * 2) parts.push({ x: W - 20 + rnd(-6, 6), y: 82, vx: rnd(-8, 8), vy: rnd(-14, -6), t: 1, max: 1, k: 'steam' });
   }
-  incT -= dt;
+  if (!regia.live) incT -= dt;
   if (incT > 0 || incid.length >= 2 || rush || st.served < 40) return;
   incT = rnd(45, 90);
   const r = Math.random();

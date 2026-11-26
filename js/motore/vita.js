@@ -13,21 +13,44 @@ function filoLines(lines, r) {
 function filoReady(r) {
   if (r.f < 3) return false;
   if (r.fl) return r.fl.day !== st.day || r.fl.s === 0;
-  return (r.fn || 0) <= st.day;
+  return (r.fn || 0) <= st.day && filoLibero(r);
+}
+// Ogni vita (FILI e FILI2) la vive una persona sola (o una coppia sola): così non capita mai di leggere
+// la stessa storia, con le stesse parole, per due persone diverse. st.fU e st.f2U sono le vite già prese.
+function vitePrese() {
+  if (!st.fU) {
+    // salvataggi vecchi: raccoglie le vite già vissute o in corso
+    const a = new Set(),
+      b = new Set();
+    st.regs.forEach(r => {
+      (r.fd || []).forEach(id => a.add(id));
+      if (r.fl) a.add(r.fl.id);
+    });
+    Object.values(st.rel || {}).forEach(R => {
+      (R.fd || []).forEach(id => b.add(id));
+      if (R.fl) b.add(R.fl.id);
+    });
+    st.fU = [...a];
+    st.f2U = [...b];
+  }
+  st.f2U = st.f2U || [];
+  return st;
+}
+const filoPreso = id => vitePrese().fU.includes(id);
+const duoPreso = id => vitePrese().f2U.includes(id);
+function filoLibero(r) {
+  return FILI.some(f => !filoPreso(f.id) && (f.ok(r) || (!f.p && !(r.type === 'nonno' && ['bici', 'compleanno'].includes(f.id)))));
 }
 function startFilo(c) {
   const r = c.reg;
   if (!r.fl) {
-    const used = r.fd || [];
-    const opts = FILI.filter(f => !used.includes(f.id) && f.ok(r)),
+    const opts = FILI.filter(f => !filoPreso(f.id) && f.ok(r)),
       pri = opts.filter(f => f.p);
-    const any = FILI.filter(f => !f.p && !used.includes(f.id) && !(r.type === 'nonno' && ['bici', 'compleanno'].includes(f.id)));
-    if (!opts.length && !any.length) {
-      r.fd = [];
-      return false;
-    }
+    const any = FILI.filter(f => !f.p && !filoPreso(f.id) && !(r.type === 'nonno' && ['bici', 'compleanno'].includes(f.id)));
+    if (!opts.length && !any.length) return false;
     const F = pick(pri.length ? pri : opts.length ? opts : any);
     r.fl = { id: F.id, s: 0, day: -1, log: [] };
+    st.fU.push(F.id);
   }
   const F = FILI.find(f => f.id === r.fl.id);
   if (!F) {
@@ -36,6 +59,7 @@ function startFilo(c) {
   }
   const step = r.fl.s,
     lines = fillT(filoLines(F.b[step], r), c, null);
+  momCount('vita');
   startScene([c], lines, {
     story: 'filo',
     onEnd: () => {
@@ -67,7 +91,6 @@ function startFilo(c) {
         st.fdone.unshift({ n: r.n, rid: r.id, t: F.t, e: E, d: st.day, log: r.fl.log, look: r.look });
         if (st.fdone.length > 60) st.fdone.pop();
         (r.fd = r.fd || []).push(F.id);
-        if (!FILI.some(f => !f.p && !r.fd.includes(f.id))) r.fd = r.fd.filter(id => FILI.find(f => f.id === id && f.p));
         r.fl = null;
         r.fn = st.day + 2;
         r.f = Math.min(10, r.f + 1);
@@ -161,6 +184,7 @@ function xsFor(mem) {
 }
 function playXS(mem, x) {
   st.xs[x.id] = 1;
+  momCount('incontro');
   const ord = x.w.map(k => mem.find(c => c.reg.key === k));
   startScene(ord, x.l, {
     story: 'filo',
@@ -181,6 +205,7 @@ function playXS(mem, x) {
   });
 }
 function tryCross() {
+  if (!regiaFree() || !momOk('incontro')) return false;
   st.xs = st.xs || {};
   const L = XS.filter(
     x =>
@@ -360,16 +385,17 @@ function duoLines(lines, k, A, B) {
 function duoReady(r) {
   if (!r || r.prop === 1 || r.peace) return false;
   if (r.fl) return r.fl.day !== st.day;
-  return (r.fn || 0) <= st.day && FILI2.some(F => F.k.includes(r.k) && !(r.fd || []).includes(F.id));
+  return (r.fn || 0) <= st.day && FILI2.some(F => F.k.includes(r.k) && !duoPreso(F.id));
 }
 function startDuo(a, b) {
   const R = st.rel[relKey(a.reg, b.reg)];
   if (!R) return false;
   const key = 'f2_' + relKey(a.reg, b.reg);
   if (!R.fl) {
-    const opts = FILI2.filter(F => F.k.includes(R.k) && !(R.fd || []).includes(F.id));
+    const opts = FILI2.filter(F => F.k.includes(R.k) && !duoPreso(F.id));
     if (!opts.length) return false;
     R.fl = { id: pick(opts).id, s: 0, day: -1, log: [], a: a.reg.id };
+    st.f2U.push(R.fl.id);
   }
   const F = FILI2.find(f => f.id === R.fl.id);
   if (!F) {
@@ -379,6 +405,7 @@ function startDuo(a, b) {
   const A = R.fl.a === a.reg.id ? a : b,
     B = A === a ? b : a,
     step = R.fl.s;
+  momCount('vita');
   startScene([A, B], duoLines(F.b[step], key, A, B), {
     story: 'filo',
     mood: ['coppia', 'fidanzati', 'sposati', 'cotta'].includes(R.k) ? 'love' : 'chat',

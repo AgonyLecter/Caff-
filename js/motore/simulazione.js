@@ -443,6 +443,7 @@ function startScene(mem, lines, o) {
     t: 0.9,
     onEnd: o.onEnd,
     story: o.story,
+    big: !!o.story, // un momento importante: passa dalla regia
     mood: o.mood || ''
   };
   mem.forEach(m => {
@@ -461,13 +462,13 @@ function relScene(a, b) {
   let r = st.rel[k];
   let lines,
     mood = 'chat';
-  const x = xsFor([a, b]);
+  const x = regiaFree() && momOk('incontro') ? xsFor([a, b]) : null;
   if (x) {
     if (!r) advanceRel(a.reg, b.reg);
     playXS([a, b], x);
     return;
   }
-  if (r && duoReady(r) && Math.random() < 0.55 && startDuo(a, b)) return;
+  if (r && duoReady(r) && regiaFree() && momOk('vita') && Math.random() < 0.55 && startDuo(a, b)) return;
   if (r && a.reg.key && b.reg.key && Math.random() < 0.5) {
     const kr = keyRt(a, b);
     if (kr) {
@@ -606,14 +607,14 @@ function onSit(c) {
     if (o.state === 'sit' && !o.scene && !o.dead && o.reg && slotOf(o.seat) === slotOf(c.seat)) relScene(o, c);
     return;
   }
-  if (c.reg && c.reg.key) {
+  if (c.reg && c.reg.key && regiaFree() && momOk('incontro')) {
     const x = xsFor([c]);
     if (x && Math.random() < 0.85) {
       playXS([c], x);
       return;
     }
   }
-  if (c.reg && !c.story && filoReady(c.reg) && Math.random() < 0.65 && startFilo(c)) return;
+  if (c.reg && !c.story && filoReady(c.reg) && regiaFree() && momOk('vita') && Math.random() < 0.65 && startFilo(c)) return;
   if (c.reg && (c.reg.hn || 0) >= 4 && Math.random() < 0.25) {
     const ft = favTable(c.reg),
       cur = slots.indexOf(slotOf(c.seat));
@@ -656,6 +657,7 @@ function present(r) {
 }
 function trySpawn() {
   if (intro) return; // il locale resta vuoto mentre parla Nonna Rosa
+  if (regia.live) return; // mentre qualcuno racconta non entra nessuno
   if (queue.length >= 5) return;
   if (!freeSeats().length && queue.length >= 2) return;
   if (st.regs.length && Math.random() < Math.min(0.4, 0.1 + st.regs.length * 0.02)) {
@@ -716,6 +718,7 @@ function storyNote(arc) {
 }
 function tryStory() {
   if (intro) return; // il locale resta vuoto mentre parla Nonna Rosa
+  if (!regiaFree() || !capTurno()) return; // un momento alla volta, e a turno con le vite
   const a = atm(),
     c = [];
   for (const arc of ARCS) {
@@ -747,6 +750,7 @@ function tryStory() {
   }
   const gid = 's' + ++uid;
   activeArcs.add(arc.id);
+  regiaTake();
   groups[gid] = {
     n: who.length,
     story: true,
@@ -790,7 +794,7 @@ function tryStory() {
 }
 function updCust(c, dt) {
   c.moving = false;
-  if (c.bub) {
+  if (c.bub && !(panel && c.scene && c.scene === regia.live)) {
     c.bub.t -= dt;
     if (c.bub.t <= 0) c.bub = null;
   }
@@ -800,7 +804,7 @@ function updCust(c, dt) {
   }
   if (c.umb > 0) c.umb -= dt;
   const inQ = c.state === 'queue' || c.state === 'order';
-  if (inQ) {
+  if (inQ && !regia.live) {
     c.waited += dt;
     if (c.waited > 6) c.mood -= dt * (1 / ((TYPES[c.type] || {}).pat || 1));
     if (c.waited > 20) c.why = 'attesa';
@@ -963,10 +967,16 @@ function updCust(c, dt) {
 function updScene(sc, dt) {
   if (sc.mem.some(m => m.dead || m.state !== 'sit')) {
     sc.done = true;
-    sc.mem.forEach(m => (m.scene = null));
+    sc.mem.forEach(m => {
+      m.scene = null;
+      m.invite = 0;
+    });
     return;
   }
   if (sc.wait) return;
+  if (sc.big && !sc.on) {
+    if (!regiaStart(sc, dt)) return;
+  } else if (sc === regia.live && panel) return; // il racconto aspetta mentre guardi un pannello else if (!sc.big && regia.live) return; // le chiacchiere aspettano che finisca il momento
   sc.t -= dt;
   if (sc.t > 0) return;
   if (sc.i < sc.lines.length) {
@@ -977,7 +987,7 @@ function updScene(sc, dt) {
       return;
     }
     const sp = sc.mem[ln[0]] || sc.mem[0],
-      d = sayDur(ln[1]);
+      d = regiaDur(sc, sayDur(ln[1]));
     say(sp, ln[1], d, sc.story || sp.reg ? sp.name : '');
     sc.t = d + 0.35;
     if (sc.mood === 'angry' && Math.random() < 0.5) emo(sp, 'angry');
@@ -1277,8 +1287,8 @@ function endDay() {
   const best = st.reviews.filter(r => r.d === st.day && r.s >= 4).slice(-1)[0];
   if (st.manager) st.quests.forEach(claimQ);
   let n = 12;
-  const html = `<h2>Fine del giorno ${st.day}</h2><div class="sum"><div><b>${ds.served}</b><span>clienti serviti</span></div><div><b>${fmt(ds.earned)}</b><span>monete</span></div><div><b>${avg ? avg.toFixed(1).replace('.', ',') : '–'} ★</b><span>recensioni</span></div><div><b>${ds.couples}</b><span>coppie</span></div><div><b>${ds.stories}</b><span>capitoli</span></div><div><b>${st.quests.filter(q => q.done).length}/3</b><span>obiettivi</span></div></div>
- ${best ? `<p>«${esc(best.t)}» <small>— ${esc(best.n)}</small></p>` : ''}<p>Domani: <b>${WXN[st.nwx]}</b>${st.nev ? ' · ' + EVENTS[st.nev].n : ''}</p>${st.quests.some(q => q.done && !q.cl) ? '<p>Hai obiettivi da riscuotere nel pannello Giorno: li riscuoto io per te.</p>' : ''}`;
+  const html = `<h2>Fine del giorno ${st.day}</h2><div class="sum"><div><b>${ds.served}</b><span>clienti serviti</span></div><div><b>${fmt(ds.earned)}</b><span>monete</span></div><div><b>${avg ? avg.toFixed(1).replace('.', ',') : '–'} ★</b><span>recensioni</span></div><div><b>${ds.couples}</b><span>coppie</span></div><div><b>${ds.stories}</b><span>racconti</span></div><div><b>${st.quests.filter(q => q.done).length}/3</b><span>obiettivi</span></div></div>
+ ${ds.mlog && ds.mlog.length ? `<p class="note">Stasera ti hanno raccontato qualcosa: <b>${esc(ds.mlog.slice(0, -1).join(', ') + (ds.mlog.length > 1 ? ' e ' : '') + ds.mlog[ds.mlog.length - 1])}</b>.</p>` : ''}${best ? `<p>«${esc(best.t)}» <small>— ${esc(best.n)}</small></p>` : ''}<p>Domani: <b>${WXN[st.nwx]}</b>${st.nev ? ' · ' + EVENTS[st.nev].n : ''}</p>${st.quests.some(q => q.done && !q.cl) ? '<p>Hai obiettivi da riscuotere nel pannello Giorno: li riscuoto io per te.</p>' : ''}`;
   st.quests.forEach(claimQ);
   showModal(html, [{ t: `Apri il giorno ${st.day + 1}`, id: 'nd', big: 1, fn: next }]);
   const iv = setInterval(() => {
@@ -1330,7 +1340,7 @@ function ambient(dt) {
 function update(dt) {
   ambient(dt);
   if (paused) return;
-  st.tod += dt / DAYLEN;
+  if (!regia.live) st.tod += dt / DAYLEN; // mentre qualcuno racconta, l'orologio aspetta
   if (st.wx2 && st.tod >= 0.5 && !st.wxShown) {
     st.wxShown = 1;
     toast(
@@ -1401,6 +1411,7 @@ function update(dt) {
   people = people.filter(c => !c.dead);
   musicianOn = people.some(p => p.state === 'sit' && p.act === 'guitar');
   scenes.forEach(s => updScene(s, dt));
+  regiaTick(dt);
   scenes = scenes.filter(s => !s.done);
   for (const k in groups) if (!people.some(p => p.group === k) && !timers.length) delete groups[k];
   syncStaff();

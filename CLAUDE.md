@@ -20,7 +20,7 @@ Script classici (non moduli ES) che condividono lo scope globale: funziona da `f
 
 1. `js/motore/base.js`
 2. `js/dati/`: personaggi, storie, mondo, frasi, animali, vite, intrecci, segreti (solo contenuti)
-3. `js/motore/`: stato, citta, audio, simulazione, disegno-persone, disegno-locale, animali, vita, attivo, atmosfera, interfaccia, risultati, guida, avvio
+3. `js/motore/`: stato, citta, audio, simulazione, disegno-persone, disegno-locale, animali, vita, regia, attivo, atmosfera, interfaccia, risultati, guida, avvio
 
 Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `icone/`, `docs/come-aggiungere-contenuti.md` (guida per aggiungere personaggi/storie/vite/incroci/frasi), `README.md`, `tools/` (simulazione del ritmo).
 
@@ -39,6 +39,9 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 - Nomi globali: evitare collisioni con `window` (es. `moveTo` è stato rinominato `walkTo`).
 - Nei test il salvataggio include `tutOff:1, introDone:1` e `incT=1e12; machTilt=0`, altrimenti guida, intro e incidenti casuali interferiscono. Lo splash viene saltato con `navigator.webdriver` (a meno di `?splash`).
 - `CHAP_PER_DAY=3`: massimo 3 capitoli al giorno, uno per storia. Nei test azzerare `st.ds.chap`. Per l'ora di punta, azzerare `st.ds.rushPlan=[]`.
+- **Regia nei test**: `startGame` mette `regia.off = true` (altrimenti un racconto in corso mette in pausa ciò che si prova). La regia si accende solo nel suo test e nel gioco accelerato. `clear()` chiama `regiaReset()`. Se un test svuota `scenes`, la regia lo capisce da sola (`!scenes.includes(regia.live)`).
+- Durante un racconto (`regia.live`): niente nuovi clienti, la fila non perde pazienza, niente ora di punta, bisogni o imprevisti, l'orologio si ferma, le altre scene aspettano. Con un pannello aperto il racconto si ferma.
+- **Vite uniche**: `st.fU` / `st.f2U` sono le vite (FILI / FILI2) già prese da qualcuno; una vita non si ripete mai per un'altra persona. Quando finiscono, servono vite nuove.
 - `storyNote` deve aspettare che non ci siano finestre di scelta aperte.
 - `present()` deve ignorare le persone morte.
 - `offsetParent` è null per gli elementi fixed: usare `getClientRects`.
@@ -50,6 +53,7 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 
 - **Storie** (`js/dati/storie.js`, ARCS): capitoli con `req` (anche `'a|b'`), flag `end`, `rand:{from,p}` (inizio in un giorno casuale), `gap` (giorni tra capitoli), `calc:{flag,values,fn}` (finale calcolato da più scelte), `whoBy` (chi compare in base a un flag), `nota` (finestra di aiuto alla fine). Ricompensa con `reward(sec)` basata su `incomeRef()`.
 - **Personaggi chiave** (`intrecci.js`): KEYS/KSEED diventano clienti abituali speciali (`ensureKeyRegs`). Ci sono gli incroci XS (`tryCross`) e gli epiloghi XEPI. Le vite autonome sono FILI e FILI2 (coppie, `startDuo`), più `socialAI`, `ritual()` e gli amici reciproci.
+- **Regia** (`regia.js`): un momento importante alla volta (scene con `story`, cioè `big`). Chi aspetta mostra la stellina (`invite`, `drawInvite`); parte se lo tocchi (`regiaTap`), se il bancone è libero o dopo `REGIA_WAIT`. Testo grande in alto (`#regia`, tocca per avanzare: `regiaNext`), luce abbassata intorno (`regiaDraw`), respiro `REGIA_REST`, limiti al giorno `MOM_DAY` (vite 4 visite, incontri 2), capitoli e vite a turno (`capTurno`, `regiaVita`). Fine giornata: «Stasera ti hanno raccontato qualcosa: …» (`st.ds.mlog`).
 - **Gioco attivo** (`attivo.js`):
   - ora di punta (`rush`, moltiplicatore fino a x3);
   - bisogni ai tavoli (`NEEDS`, `tapNeed`);
@@ -71,9 +75,9 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 
 22 personaggi, 24 storie (79 capitoli), 31 vite, 9 vite di coppia, 24 incroci, 13 epiloghi, 12 ricette, 14 insegne al neon.
 
-Ritmo dopo il ribilanciamento: le storie durano circa 2 ore, i potenziamenti circa 3 ore. Il gioco avanzato si regge su vite infinite e relazioni; il calendario (fase 2) serve a dargli più struttura.
+Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline): circa 2 capitoli al giorno, 40 capitoli verso i 160 minuti (prima a 57), le vite partono verso l'ora di gioco; i potenziamenti arrivano ancora fino a circa 3 ore. Le storie ora durano di più apposta, per gustarle; se sembra troppo lento, alzare `MOM_DAY` o abbassare `REGIA_REST`/`REGIA_WAIT`. Il gioco avanzato si regge su vite infinite e relazioni; il calendario (fase 2) serve a dargli più struttura.
 
-## Fatto finora (PR #6 → #21)
+## Fatto finora (PR #6 → #23)
 
 - Minigiochi solo dal pulsante.
 - Grafica più curata.
@@ -92,6 +96,7 @@ Ritmo dopo il ribilanciamento: le storie durano circa 2 ore, i potenziamenti cir
 - Laboratorio ricette.
 - PWA.
 - Guida e intro con Nonna Rosa.
+- Vite uniche (niente testi uguali per persone diverse) e regia dei racconti (un momento alla volta).
 
 ## Prossimi passi (in ordine)
 

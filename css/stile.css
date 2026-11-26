@@ -1354,3 +1354,65 @@ input {
 .ingr button.on small {
   color: var(--gold);
 }
+
+/* Regia: il testo del momento in corso, grande e leggibile in basso */
+#regia {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(env(safe-area-inset-top) + 8px);
+  z-index: 6;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: min(560px, calc(100vw - 200px));
+  min-width: 260px;
+  background: rgba(27, 20, 32, 0.92);
+  color: #fffaf2;
+  border: 2px solid #ffd166;
+  border-radius: 12px;
+  padding: 8px 14px 8px 8px;
+  box-shadow: 0 6px 20px #0008;
+  cursor: pointer;
+  user-select: none;
+  animation: rin 0.3s ease;
+}
+@keyframes rin {
+  from {
+    transform: translate(-50%, -10px);
+    opacity: 0;
+  }
+}
+#regia[hidden] {
+  display: none;
+}
+#regia img {
+  width: 34px;
+  height: 62px;
+  image-rendering: pixelated;
+  flex: none;
+}
+#regia b {
+  color: #ffd166;
+  font-size: 14px;
+}
+#regia p {
+  margin: 2px 0 2px;
+  font-size: 16px;
+  line-height: 1.35;
+}
+#regia small {
+  display: block;
+  text-align: right;
+  font-size: 11px;
+  opacity: 0.6;
+}
+@media (max-height: 420px) {
+  #regia p {
+    font-size: 14px;
+  }
+  #regia img {
+    width: 26px;
+    height: 48px;
+  }
+}

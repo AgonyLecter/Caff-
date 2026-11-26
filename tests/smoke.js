@@ -55,6 +55,8 @@ async function startGame(page, save) {
   await page.evaluate(() => {
     incT = 1e12;
     machTilt = 0;
+    // la regia (un racconto alla volta) ha i suoi test: negli altri non deve mettere in pausa ciò che si sta provando
+    window.__cafe.regia.off = true;
   });
 }
 
@@ -719,6 +721,7 @@ async function playMini(page, kind, itemId) {
         });
         C.queue.length = 0;
         C.scenes.length = 0;
+        C.regiaReset(); // ogni prova parte con la regia libera
       });
     await clear();
     const k1 = await page.evaluate(() => {
@@ -744,7 +747,7 @@ async function playMini(page, kind, itemId) {
     );
     // incontro tra storie diverse: Nonna Rosa e Mia allo stesso tavolo
     await page.evaluate(
-      `(() => { const C = window.__cafe; const [a, b] = (${seatPair})(C, C.keyReg('rosa'), C.keyReg('mia'), 4); C.relScene(a, b); })()`
+      `(() => { const C = window.__cafe; C.regiaReset(); const [a, b] = (${seatPair})(C, C.keyReg('rosa'), C.keyReg('mia'), 4); C.relScene(a, b); })()`
     );
     for (let i = 0; i < 200; i++) {
       const busy = await page.evaluate(() => window.__cafe.scenes.length > 0);
@@ -769,7 +772,7 @@ async function playMini(page, kind, itemId) {
     });
     for (let step = 0; step < 3; step++) {
       await page.evaluate(
-        `(() => { const C = window.__cafe, R = C.st.rel['ra|rb']; if (R.fl) R.fl.day = -9; R.fn = 0; const [a, b] = (${seatPair})(C, C.st.regs.find(r => r.id === 'ra'), C.st.regs.find(r => r.id === 'rb'), 4); C.startDuo(a, b); })()`
+        `(() => { const C = window.__cafe, R = C.st.rel['ra|rb']; C.regiaReset(); if (R.fl) R.fl.day = -9; R.fn = 0; const [a, b] = (${seatPair})(C, C.st.regs.find(r => r.id === 'ra'), C.st.regs.find(r => r.id === 'rb'), 4); C.startDuo(a, b); })()`
       );
       for (let i = 0; i < 200; i++) {
         if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
@@ -785,12 +788,84 @@ async function playMini(page, kind, itemId) {
       return { fl: R.fl, e: e && e.e, n: e && e.n, log: e && e.log.length };
     });
     ok(!duo.fl && duo.e && duo.log === 3, `vita a due completa: ${duo.n} ${duo.e}`);
+    // vite uniche e regia: un momento alla volta, chi aspetta fa segno, il locale si calma, il testo va avanti col tocco
+    await clear();
+    await page.evaluate(() => (window.__cafe.regia.off = false));
+    const rg = await page.evaluate(`(() => { const C = window.__cafe, st = C.st;
+      st.regs.push({ id: 'rc', n: 'Carla', look: C.CH.irene.l, type: 'normale', fav: 'caffe', v: 5, f: 5, tr: [], petR: 1 },
+        { id: 'rd', n: 'Dario', look: C.CH.gio.l, type: 'normale', fav: 'caffe', v: 5, f: 5, tr: [], petR: 1 });
+      const rc = st.regs.find(r => r.id === 'rc'), rd = st.regs.find(r => r.id === 'rd');
+      const [a] = (${seatPair})(C, rc, rc, 0); C.people.filter(p => p.reg === rc && p !== a).forEach(p => { p.dead = true; if (p.seat) p.seat.occ = null; });
+      const [b] = (${seatPair})(C, rd, rd, 4); C.people.filter(p => p.reg === rd && p !== b).forEach(p => { p.dead = true; if (p.seat) p.seat.occ = null; });
+      C.startFilo(a); C.startFilo(b);
+      return { ia: rc.fl && rc.fl.id, ib: rd.fl && rd.fl.id, n: C.scenes.filter(s => s.big).length };
+    })()`);
+    ok(rg.ia && rg.ib && rg.ia !== rg.ib && rg.n === 2, `vite uniche: due habitué non vivono mai la stessa storia (${rg.ia} / ${rg.ib})`);
+    let r1 = null;
+    for (let i = 0; i < 100 && !r1; i++) {
+      r1 = await page.evaluate(() => {
+        const C = window.__cafe,
+          big = C.scenes.filter(s => s.big);
+        if (!C.regia.live) return null;
+        const wait = big.find(s => s !== C.regia.live);
+        return {
+          on: big.filter(s => s.on).length,
+          inv: !!(wait && wait.mem.every(m => m.invite)),
+          n: C.people.filter(p => !p.dead).length
+        };
+      });
+      if (!r1) await sleep(60);
+    }
+    await sleep(700);
+    const r2 = await page.evaluate(() => ({
+      n: window.__cafe.people.filter(p => !p.dead).length,
+      cap: !document.querySelector('#regia').hidden && document.querySelector('#regia').textContent
+    }));
+    ok(
+      r1 && r1.on === 1 && r1.inv && r2.n <= r1.n && r2.cap,
+      'regia: un solo racconto alla volta, l’altro fa segno con la stellina, non entra nessuno e il testo compare in basso'
+    );
+    const t0 = await page.evaluate(() => window.__cafe.regia.live && window.__cafe.regia.live.i);
+    await page.click('#regia');
+    await sleep(350);
+    const t1 = await page.evaluate(() => window.__cafe.regia.live && window.__cafe.regia.live.i);
+    ok(t1 > t0, `regia: toccando il testo si va avanti (battuta ${t0} → ${t1})`);
+    let r3 = null;
+    for (let i = 0; i < 300 && !r3; i++) {
+      r3 = await page.evaluate(() => {
+        const C = window.__cafe;
+        if (C.regia.live) {
+          C.regiaNext();
+          return null;
+        }
+        const w = C.scenes.find(s => s.big && !s.done);
+        return w ? { rest: C.regia.rest > 0, on: !!w.on } : null;
+      });
+      if (!r3) await sleep(60);
+    }
+    ok(r3 && r3.rest && !r3.on, 'regia: dopo un racconto c’è un respiro prima del successivo');
+    const r4 = await page.evaluate(() => {
+      const C = window.__cafe,
+        w = C.scenes.find(s => s.big && !s.done);
+      C.regia.rest = 0;
+      w.inv = 0.5;
+      const m = w.mem[0];
+      return C.regiaTap(m.x, m.y - 10);
+    });
+    let r5 = false;
+    for (let i = 0; i < 30 && !r5; i++) {
+      r5 = await page.evaluate(() => !!window.__cafe.regia.live);
+      if (!r5) await sleep(60);
+    }
+    ok(r4 && r5, 'regia: toccando chi fa segno, comincia a raccontare');
+    await clear();
+    await page.evaluate(() => (window.__cafe.regia.off = true));
     await page.evaluate(() => (window.__cafe.speed = 1));
     // vita autonoma: chi è seduto da solo va a sedersi vicino a un amico
     const moved =
       await page.evaluate(`(() => { const C = window.__cafe; const ra = C.st.regs.find(r => r.id === 'ra'), rb = C.st.regs.find(r => r.id === 'rb');
-      const [a] = (${seatPair})(C, ra, ra, 0); C.people.filter(p => p.reg === ra && p !== a).forEach(p => { p.dead = true; p.seat.occ = null; });
-      const [b] = (${seatPair})(C, rb, rb, 4); C.people.filter(p => p.reg === rb && p !== b).forEach(p => { p.dead = true; p.seat.occ = null; });
+      const [a] = (${seatPair})(C, ra, ra, 0); C.people.filter(p => p.reg === ra && p !== a).forEach(p => { p.dead = true; if (p.seat) p.seat.occ = null; });
+      const [b] = (${seatPair})(C, rb, rb, 4); C.people.filter(p => p.reg === rb && p !== b).forEach(p => { p.dead = true; if (p.seat) p.seat.occ = null; });
       a.sitT = b.sitT = 60; let n = 0; for (let i = 0; i < 60 && !n; i++) { C.socialAI(10); n = C.people.filter(p => !p.dead && p.join).length; } return n; })()`);
     ok(moved > 0, 'vita autonoma: un habitué si alza e va a sedersi vicino al suo amore');
     await clear();
@@ -1158,6 +1233,8 @@ async function playMini(page, kind, itemId) {
         C.slots.forEach(sl => sl.seats.forEach(q => Object.assign(q, { occ: null, dirty: false, res: null })));
         st.rolls.davide = { d: st.day, v: true };
         if (st.ds) st.ds.chap = 0;
+        C.scenes.length = 0;
+        C.regiaReset();
         if (k) st.arcDay.davide = st.day - 5;
         // solo la storia di Davide è disponibile in questo momento
         C.ARCS.forEach(a => {
@@ -1307,6 +1384,7 @@ async function playMini(page, kind, itemId) {
     st.chairs = 6;
     st.music = 4;
     window.__cafe.speed = 6;
+    window.__cafe.regia.off = false; // qui si gioca davvero, con la regia accesa
   });
   const t0 = Date.now();
   let choices = 0,
