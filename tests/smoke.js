@@ -50,6 +50,11 @@ async function startGame(page, save) {
   await page.waitForTimeout(400);
   await page.click('#go');
   await page.waitForTimeout(800);
+  // gli imprevisti casuali (macchina in tilt, cocci...) hanno il loro test: qui non devono capitare a caso
+  await page.evaluate(() => {
+    incT = 1e12;
+    machTilt = 0;
+  });
 }
 
 function validateData(D) {
@@ -961,6 +966,37 @@ async function playMini(page, kind, itemId) {
       return !c.need && c.mood < m0;
     });
     ok(expired, 'un bisogno ignorato passa, ma il cliente è meno contento');
+  }
+
+  console.log('Imprevisti');
+  {
+    const r = await page.evaluate(() => {
+      const out = {};
+      // macchina in tilt: lo staff si ferma finché non le dai cinque colpetti
+      machTilt = 5;
+      out.ferma = rushStaff(1) === 0;
+      for (let i = 0; i < 5; i++) tapIncident(W - 20, 88);
+      out.riparte = machTilt === 0 && rushStaff(1) > 0;
+      // cocci: chi ci passa sopra ci resta male, toccandoli si raccolgono
+      newIncident('cocci', 200, LANE);
+      const c = window.__cafe.newCust({ type: 'normale' });
+      Object.assign(c, { x: 200, y: LANE, moving: true, mood: 60 });
+      incidentTick(0.1);
+      out.lamenta = c.mood < 60 && c.hurt;
+      out.raccolti = tapIncident(200, LANE - 3) && !incid.some(i => i.k === 'cocci');
+      // ombrello dimenticato da un habitué: glielo ridai quando torna
+      const reg = { id: 'rumb', n: 'Pia', look: window.__cafe.CH.mia.l, type: 'normale', fav: 'caffe', v: 3, f: 3, tr: [], petR: 1 };
+      st.regs.push(reg);
+      newIncident('ombrello', 300, 120, { col: '#ffd166', owner: 'rumb', name: 'Pia' });
+      tapIncident(300, 115);
+      out.messo = (st.lost || []).some(l => l.owner === 'rumb');
+      window.__cafe.newCust({ look: reg.look, name: reg.n, reg, type: 'normale' });
+      out.ridato = !(st.lost || []).some(l => l.owner === 'rumb') && reg.f === 4;
+      return out;
+    });
+    ok(r.ferma && r.riparte, 'macchina in tilt: i baristi si fermano e ripartono dopo i colpetti');
+    ok(r.lamenta && r.raccolti, 'cocci per terra: chi passa si lamenta, toccandoli si raccolgono');
+    ok(r.messo && r.ridato, "ombrello dimenticato: lo metti da parte e l'habitué lo ritrova (affetto +1)");
   }
 
   console.log('Davide e Yusuf');
