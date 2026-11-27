@@ -2,6 +2,8 @@
 
 let AC = null,
   master,
+  sfxG, // effetti (tazzine, porta, monete...)
+  ambG, // ambiente (pioggia, voci in sala, uccellini)
   musG,
   rainG,
   chatG = null,
@@ -31,6 +33,11 @@ function initAudio() {
     d[i] = l * 3 + w * 0.12;
   }
   noiseBuf = b;
+  sfxG = AC.createGain();
+  sfxG.connect(master);
+  ambG = AC.createGain();
+  ambG.connect(master);
+  applyVol(true);
   const n = AC.createBufferSource();
   n.buffer = b;
   n.loop = true;
@@ -39,7 +46,7 @@ function initAudio() {
   f.frequency.value = 1500;
   rainG = AC.createGain();
   rainG.gain.value = 0;
-  n.connect(f).connect(rainG).connect(master);
+  n.connect(f).connect(rainG).connect(ambG);
   n.start();
   const cn = AC.createBufferSource();
   cn.buffer = b;
@@ -50,7 +57,7 @@ function initAudio() {
   cf.Q.value = 0.9;
   chatG = AC.createGain();
   chatG.gain.value = 0;
-  cn.connect(cf).connect(chatG).connect(master);
+  cn.connect(cf).connect(chatG).connect(ambG);
   cn.start(0, 1.3);
   musG = AC.createGain();
   musG.gain.value = 0;
@@ -59,6 +66,21 @@ function initAudio() {
   mf.frequency.value = 2300;
   musG.connect(mf).connect(master);
   nextBar = AC.currentTime + 0.5;
+}
+// volumi da 0 a 100, scelti nelle Impostazioni (musica, effetti, ambiente)
+const VOL0 = { m: 70, s: 80, a: 80 };
+const vol = k => ((st.vol && st.vol[k] != null ? st.vol[k] : VOL0[k]) / 100) * (st.sound ? 1 : 0);
+function applyVol(now) {
+  if (!AC) return;
+  const t0 = AC.currentTime;
+  master.gain.value = st.sound ? 1 : 0;
+  if (now) {
+    sfxG.gain.value = vol('s');
+    ambG.gain.value = vol('a');
+  } else {
+    sfxG.gain.setTargetAtTime(vol('s'), t0, 0.05);
+    ambG.gain.setTargetAtTime(vol('a'), t0, 0.1);
+  }
 }
 const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 function tone(dest, freq, t, dur, vol, type) {
@@ -122,17 +144,24 @@ function audioTick() {
   if (!AC) return;
   const w = curWx(),
     t0 = AC.currentTime;
-  rainG.gain.setTargetAtTime(st.sound ? (cine ? 0.3 : { pioggia: 0.3, temporale: 0.45, nebbia: 0.04, neve: 0.03 }[w] || 0) : 0, t0, 0.8);
+  applyVol();
+  // la pioggia respira: raffiche lente, e ogni tanto una goccia che batte sul vetro
+  const rb = cine ? 0.3 : { pioggia: 0.3, temporale: 0.45, nebbia: 0.04, neve: 0.03 }[w] || 0;
+  rainG.gain.setTargetAtTime(rb * (0.82 + 0.13 * Math.sin(t0 * 0.21) + 0.07 * Math.sin(t0 * 0.57)), t0, 0.8);
+  if (st.sound && (w === 'pioggia' || w === 'temporale' || cine)) {
+    const n = (w === 'temporale' ? 2.6 : 1.3) * Math.random();
+    for (let i = 0; i < n; i++) drip(t0 + rnd(0, 0.2), w === 'temporale' ? 1.3 : 1);
+  }
   if (chatG) {
     const seated = people.filter(p => p.state === 'sit').length;
     chatG.gain.setTargetAtTime(st.sound && started && !cine && !blackout() ? Math.min(0.07, seated * 0.007) : 0, t0, 1.5);
   }
   const on = st.music > 0 && st.musicOn && st.sound && !blackout() && !cine;
-  musG.gain.setTargetAtTime(on ? 0.3 : 0, t0, 0.6);
+  musG.gain.setTargetAtTime(on ? 0.3 * vol('m') * 1.25 : 0, t0, 0.6);
   if (st.sound && w === 'sereno' && hour() < 11 && Math.random() < 0.12) {
     const f = rnd(2600, 3600);
-    tone(master, f, t0, 0.12, 0.012, 'sine');
-    tone(master, f * 1.12, t0 + 0.1, 0.1, 0.01, 'sine');
+    tone(ambG, f, t0, 0.12, 0.012, 'sine');
+    tone(ambG, f * 1.12, t0 + 0.1, 0.1, 0.01, 'sine');
   }
   if (!on) {
     nextBar = t0 + 0.3;
@@ -171,16 +200,31 @@ function sfx(k) {
   if (!AC || !st.sound) return;
   const t = AC.currentTime;
   if (k === 'door') {
-    tone(master, 1568, t, 0.5, 0.04, 'sine');
-    tone(master, 1318, t + 0.12, 0.6, 0.04, 'sine');
+    // il campanello sopra la porta: tre colpetti metallici che si spengono, e la porta di legno che si chiude
+    [0, 0.11, 0.2].forEach((dt, j) => bell(t + dt, 0.034 * (1 - j * 0.3)));
+    thud(t + 0.02, 0.07);
+  } else if (k === 'cup') {
+    // la tazzina appoggiata sul piattino: ceramica, due tocchi
+    clink(t, 1, 0.032);
+    clink(t + 0.075, 0.82, 0.016);
+  } else if (k === 'piatti') {
+    // tazze e piattini impilati quando si pulisce il tavolo
+    clink(t, 0.9, 0.022);
+    clink(t + 0.09, 1.05, 0.018);
+    clink(t + 0.16, 0.78, 0.014);
+    noiseHit(t + 0.05, 'bandpass', 2400, 0.03, 0.25);
+  } else if (k === 'crash') {
+    // una tazza che cade e si rompe
+    noiseHit(t, 'highpass', 1800, 0.13, 0.28);
+    for (let j = 0; j < 6; j++) clink(t + 0.03 + j * rnd(0.02, 0.05), rnd(0.8, 1.6), 0.02 * (1 - j * 0.12));
   } else if (k === 'coin') {
     if (t - lastCoin < 0.08) return;
     lastCoin = t;
-    tone(master, 1320, t, 0.12, 0.035, 'square');
-    tone(master, 1760, t + 0.06, 0.18, 0.03, 'square');
-  } else if (k === 'tap') tone(master, rnd(500, 640), t, 0.08, 0.05, 'triangle');
-  else if (k === 'buy') [660, 880, 1100].forEach((f, i) => tone(master, f, t + i * 0.07, 0.25, 0.05, 'triangle'));
-  else if (k === 'story') [523, 659, 784, 1047].forEach((f, i) => tone(master, f, t + i * 0.12, 0.8, 0.05, 'sine'));
+    tone(sfxG, 1320, t, 0.12, 0.035, 'square');
+    tone(sfxG, 1760, t + 0.06, 0.18, 0.03, 'square');
+  } else if (k === 'tap') tone(sfxG, rnd(500, 640), t, 0.08, 0.05, 'triangle');
+  else if (k === 'buy') [660, 880, 1100].forEach((f, i) => tone(sfxG, f, t + i * 0.07, 0.25, 0.05, 'triangle'));
+  else if (k === 'story') [523, 659, 784, 1047].forEach((f, i) => tone(sfxG, f, t + i * 0.12, 0.8, 0.05, 'sine'));
   else if (k === 'meow') {
     const o = AC.createOscillator(),
       gg = AC.createGain();
@@ -194,7 +238,7 @@ function sfx(k) {
     gg.gain.setValueAtTime(0, t);
     gg.gain.linearRampToValueAtTime(0.06, t + 0.05);
     gg.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-    o.connect(f).connect(gg).connect(master);
+    o.connect(f).connect(gg).connect(sfxG);
     o.start(t);
     o.stop(t + 0.45);
   } else if (k === 'thunder') {
@@ -207,20 +251,20 @@ function sfx(k) {
     gg.gain.setValueAtTime(0, t);
     gg.gain.linearRampToValueAtTime(0.7, t + 0.3);
     gg.gain.exponentialRampToValueAtTime(0.001, t + 3);
-    s.connect(f).connect(gg).connect(master);
+    s.connect(f).connect(gg).connect(sfxG);
     s.start(t);
     s.stop(t + 3.1);
-  } else if (k === 'good') [784, 988, 1175].forEach((f, i) => tone(master, f, t + i * 0.06, 0.3, 0.05, 'triangle'));
-  else if (k === 'meh') tone(master, 330, t, 0.3, 0.05, 'triangle');
-  else if (k === 'secret') [1047, 1319, 1568, 2093, 2637].forEach((f, i) => tone(master, f, t + i * 0.07, 0.5, 0.03, 'sine'));
+  } else if (k === 'good') [784, 988, 1175].forEach((f, i) => tone(sfxG, f, t + i * 0.06, 0.3, 0.05, 'triangle'));
+  else if (k === 'meh') tone(sfxG, 330, t, 0.3, 0.05, 'triangle');
+  else if (k === 'secret') [1047, 1319, 1568, 2093, 2637].forEach((f, i) => tone(sfxG, f, t + i * 0.07, 0.5, 0.03, 'sine'));
   else if (k === 'buzz') {
-    tone(master, 120, t, 0.25, 0.035, 'sawtooth');
-    tone(master, 180, t + 0.05, 0.15, 0.02, 'square');
+    tone(sfxG, 120, t, 0.25, 0.035, 'sawtooth');
+    tone(sfxG, 180, t + 0.05, 0.15, 0.02, 'square');
   } else if (k === 'knock') {
-    tone(master, 190, t, 0.06, 0.09, 'triangle');
-    tone(master, 170, t + 0.13, 0.06, 0.09, 'triangle');
-  } else if (k === 'bells') [1568, 1760, 1976, 2093, 2349, 2637, 3136].forEach((f, i) => tone(master, f, t + i * 0.09, 0.6, 0.03, 'sine'));
-  else if (k === 'pop') tone(master, 880, t, 0.08, 0.05, 'square');
+    tone(sfxG, 190, t, 0.06, 0.09, 'triangle');
+    tone(sfxG, 170, t + 0.13, 0.06, 0.09, 'triangle');
+  } else if (k === 'bells') [1568, 1760, 1976, 2093, 2349, 2637, 3136].forEach((f, i) => tone(sfxG, f, t + i * 0.09, 0.6, 0.03, 'sine'));
+  else if (k === 'pop') tone(sfxG, 880, t, 0.08, 0.05, 'square');
   else if (k === 'soffio') {
     const s = AC.createBufferSource();
     s.buffer = noiseBuf;
@@ -232,14 +276,14 @@ function sfx(k) {
     gg.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
     s.connect(f);
     f.connect(gg);
-    gg.connect(master);
+    gg.connect(sfxG);
     s.start(t);
     s.stop(t + 0.5);
   } else if (k === 'woof') {
-    tone(master, 320, t, 0.09, 0.06, 'square');
-    tone(master, 260, t + 0.12, 0.12, 0.06, 'square');
-  } else if (k === 'water') [900, 700, 820, 760].forEach((f, i) => tone(master, f, t + i * 0.06, 0.08, 0.02, 'sine'));
-  else if (k === 'chime') [784, 1047, 1319].forEach((f, i) => tone(master, f, t + i * 0.28, 1.6, 0.04, 'sine'));
+    tone(sfxG, 320, t, 0.09, 0.06, 'square');
+    tone(sfxG, 260, t + 0.12, 0.12, 0.06, 'square');
+  } else if (k === 'water') [900, 700, 820, 760].forEach((f, i) => tone(sfxG, f, t + i * 0.06, 0.08, 0.02, 'sine'));
+  else if (k === 'chime') [784, 1047, 1319].forEach((f, i) => tone(sfxG, f, t + i * 0.28, 1.6, 0.04, 'sine'));
   else if (k === 'hiss') {
     const s = AC.createBufferSource();
     s.buffer = noiseBuf;
@@ -249,8 +293,59 @@ function sfx(k) {
     const gg = AC.createGain();
     gg.gain.setValueAtTime(0.05, t);
     gg.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
-    s.connect(f).connect(gg).connect(master);
+    s.connect(f).connect(gg).connect(sfxG);
     s.start(t, rnd(0, 2));
     s.stop(t + 0.65);
   }
+}
+
+// una goccia che batte sul vetro (nell'ambiente, con la pioggia)
+function drip(t, v) {
+  const src = AC.createBufferSource();
+  src.buffer = noiseBuf;
+  const f = AC.createBiquadFilter();
+  f.type = 'bandpass';
+  f.frequency.value = rnd(1800, 4200);
+  f.Q.value = 9;
+  const gg = AC.createGain();
+  gg.gain.setValueAtTime(0.05 * v * rnd(0.4, 1), t);
+  gg.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+  src.connect(f).connect(gg).connect(ambG);
+  src.start(t, rnd(0, 2.5));
+  src.stop(t + 0.07);
+}
+// un colpo di rumore filtrato (cocci, panno, fruscio)
+function noiseHit(t, type, freq, v, dur) {
+  const src = AC.createBufferSource();
+  src.buffer = noiseBuf;
+  const f = AC.createBiquadFilter();
+  f.type = type;
+  f.frequency.value = freq;
+  const gg = AC.createGain();
+  gg.gain.setValueAtTime(v, t);
+  gg.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  src.connect(f).connect(gg).connect(sfxG);
+  src.start(t, rnd(0, 2));
+  src.stop(t + dur + 0.02);
+}
+// ceramica: parziali non armoniche che si spengono in fretta
+function clink(t, p, v) {
+  [2350, 3720, 5240].forEach((f, i) => tone(sfxG, f * p * rnd(0.985, 1.015), t + i * 0.002, 0.22 - i * 0.06, v * (1 - i * 0.3), 'sine'));
+}
+// campanello di ottone
+function bell(t, v) {
+  [2093, 2660, 3530, 4210].forEach((f, i) => tone(sfxG, f * rnd(0.995, 1.005), t, 1 - i * 0.2, v * (1 - i * 0.22), 'sine'));
+}
+// legno che si chiude
+function thud(t, v) {
+  const o = AC.createOscillator(),
+    gg = AC.createGain();
+  o.frequency.setValueAtTime(140, t);
+  o.frequency.exponentialRampToValueAtTime(60, t + 0.12);
+  gg.gain.setValueAtTime(v, t);
+  gg.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+  o.connect(gg).connect(sfxG);
+  o.start(t);
+  o.stop(t + 0.2);
+  noiseHit(t, 'lowpass', 300, v * 0.8, 0.12);
 }

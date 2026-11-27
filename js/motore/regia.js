@@ -124,6 +124,7 @@ function regiaCaption() {
   const sp = sc && !sc.wait && sc.mem.find(m => m.bub && m.bub.t > 0);
   const show = sp && !panel && $('#modal').hidden && $('#reader').hidden && !mini;
   regia.capOn = !!show;
+  document.body.classList.toggle('racconto', !!show); // gli avvisi si spostano in basso, per non coprire il testo
   if (!show) {
     if (!el.hidden) el.hidden = true;
     return;
@@ -139,6 +140,7 @@ function regiaCaption() {
 function regiaNext() {
   const sc = regia.live;
   if (!sc || sc.wait) return;
+  sc.waitTap = 0;
   sc.mem.forEach(m => {
     if (m.bub) m.bub.t = Math.min(m.bub.t, 0.15);
   });

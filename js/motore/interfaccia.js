@@ -1197,7 +1197,21 @@ document.addEventListener('change', e => {
 });
 function setHTML() {
   return `<div class="set"><label class="note" for="rn">Nome della caffetteria</label><div class="line"><input id="rn" maxlength="22"><button id="rnb">Salva</button></div>
- <button id="snd">Suoni: ${st.sound ? 'sì' : 'no'}</button><button id="mus">Musica: ${st.musicOn ? 'sì' : 'no'}${st.music ? '' : ' (serve il giradischi)'}</button>
+ <div class="card2"><h3>Suoni</h3><div class="line"><button id="snd" style="flex:1">Suoni: ${st.sound ? 'sì' : 'no'}</button><button id="mus" style="flex:1">Musica: ${st.musicOn ? 'sì' : 'no'}${st.music ? '' : ' (serve il giradischi)'}</button></div>
+ ${[
+   ['m', 'Musica'],
+   ['s', 'Effetti'],
+   ['a', 'Pioggia e voci']
+ ]
+   .map(
+     ([k, n]) =>
+       `<label class="vol">${n}<input type="range" min="0" max="100" step="5" data-vol="${k}" value="${st.vol && st.vol[k] != null ? st.vol[k] : VOL0[k]}"><b>${st.vol && st.vol[k] != null ? st.vol[k] : VOL0[k]}</b></label>`
+   )
+   .join('')}</div>
+ <div class="card2"><h3>Lettura</h3><div class="seg"><span>Velocità del testo</span>${['lenta', 'normale', 'veloce']
+   .map(v => `<button data-tv="${v}" class="${(st.txtV || 'normale') === v ? 'on' : ''}">${v[0].toUpperCase() + v.slice(1)}</button>`)
+   .join('')}</div>
+ <button id="ttap">I racconti vanno avanti: ${st.txtTap ? 'quando tocco io' : 'da soli'}</button><button id="bigt">Testo grande: ${st.bigTxt ? 'sì' : 'no'}</button></div>
  ${isApp() ? '' : `<button id="inst" class="big">Installa il gioco sul telefono</button>`}
  <div class="line"><button id="gtog" style="flex:1">Consigli di Nonna Rosa: ${st.tutOff ? 'no' : 'sì'}</button><button id="grst" style="flex:1">Rivedi i consigli</button></div>
  <button id="fsb">Schermo intero</button><div class="line"><button id="pho" style="flex:1">Scatta una foto</button><button id="cin" style="flex:1">Rivedi l'introduzione</button></div><div class="line"><button id="exp" style="flex:1">Esporta salvataggio</button><button id="imp" style="flex:1">Importa salvataggio</button></div><button id="rst">Ricomincia da capo</button>
@@ -1446,8 +1460,28 @@ $('#pbody').addEventListener('click', e => {
   }
   if (bt.id === 'snd') {
     st.sound = st.sound ? 0 : 1;
-    if (master) master.gain.value = st.sound ? 1 : 0;
+    applyVol();
     renderPanel();
+  }
+  if (bt.dataset.tv) {
+    st.txtV = bt.dataset.tv;
+    toast(
+      st.txtV === 'lenta' ? 'Testo lento: le battute restano di più' : st.txtV === 'veloce' ? 'Testo veloce' : 'Testo a velocità normale'
+    );
+    renderPanel();
+    save();
+  }
+  if (bt.id === 'ttap') {
+    st.txtTap = st.txtTap ? 0 : 1;
+    toast(st.txtTap ? 'I racconti aspettano il tuo tocco per andare avanti' : 'I racconti vanno avanti da soli (un tocco li accelera)');
+    renderPanel();
+    save();
+  }
+  if (bt.id === 'bigt') {
+    st.bigTxt = st.bigTxt ? 0 : 1;
+    applyBig();
+    renderPanel();
+    save();
   }
   if (bt.id === 'mus') {
     st.musicOn = st.musicOn ? 0 : 1;
@@ -1704,3 +1738,26 @@ $('#pbody').addEventListener('change', e => {
   renderPanel();
   save();
 });
+
+// volumi: si sentono mentre trascini, si salvano quando lasci
+document.addEventListener('input', e => {
+  const k = e.target.dataset && e.target.dataset.vol;
+  if (!k) return;
+  st.vol = st.vol || {};
+  st.vol[k] = +e.target.value;
+  const b = e.target.nextElementSibling;
+  if (b) b.textContent = e.target.value;
+  initAudio();
+  applyVol();
+});
+document.addEventListener('change', e => {
+  const k = e.target.dataset && e.target.dataset.vol;
+  if (!k) return;
+  if (k === 's') sfx('cup');
+  if (k === 'a') sfx('door');
+  save();
+});
+// testo grande: pannelli, finestre, racconti, consigli e fumetti
+function applyBig() {
+  document.documentElement.classList.toggle('grande', !!st.bigTxt);
+}

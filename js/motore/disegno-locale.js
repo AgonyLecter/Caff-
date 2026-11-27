@@ -1672,7 +1672,8 @@ function hiRes() {
     const ls = wrap(st.chalk, (b.w - 4) * S).slice(0, 3);
     ls.forEach((l, i) => ctx.fillText(l, SX(b.x + b.w / 2), SY(b.y + b.h / 2) + (i - (ls.length - 1) / 2) * 3.9 * S));
   }
-  const fs = Math.round(12 * DPR),
+  const big = st.bigTxt ? 1.3 : 1, // testo grande
+    fs = Math.round(12 * DPR * big),
     lh = fs * 1.22,
     pad = 6 * DPR,
     list = [];
@@ -1681,7 +1682,7 @@ function hiRes() {
     if (!c.bub) continue;
     if (regia.live && (regia.capOn || !regia.live.mem.includes(c))) continue; // durante un momento parlano solo loro, nel riquadro grande
     ctx.font = `500 ${fs}px ${FONT}`;
-    const maxW = Math.min(175 * DPR, cv.width * 0.3),
+    const maxW = Math.min(175 * DPR * big, cv.width * 0.3 * big),
       lines = wrap(c.bub.txt, maxW);
     let lw = Math.max(...lines.map(l => ctx.measureText(l).width));
     if (c.bub.name) {

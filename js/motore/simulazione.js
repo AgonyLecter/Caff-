@@ -50,7 +50,9 @@ function findSeat(c) {
   const solo = f.filter(s => slotOf(s).seats.every(q => !q.occ && !q.res));
   return pick(solo.length ? solo : f);
 }
-const sayDur = t => clamp(1.8 + t.length * 0.055, 2.2, 5.5);
+// velocità del testo scelta nelle Impostazioni: lenta, normale, veloce
+const TXTV = { lenta: 1.45, normale: 1, veloce: 0.7 };
+const sayDur = t => clamp(1.8 + t.length * 0.055, 2.2, 5.5) * (TXTV[st.txtV] || 1);
 function say(c, txt, d, name) {
   c.bub = { txt, t: d || sayDur(txt), max: d || sayDur(txt), name: name || '' };
 }
@@ -265,6 +267,7 @@ function serve(c, quality) {
   rushServe(c, price);
   st.served++;
   sfx('coin');
+  sfx('cup');
   if (st.ds) {
     st.ds.served++;
     st.ds.items[it.id] = (st.ds.items[it.id] || 0) + 1;
@@ -798,7 +801,7 @@ function tryStory() {
 }
 function updCust(c, dt) {
   c.moving = false;
-  if (c.bub && !(panel && c.scene && c.scene === regia.live)) {
+  if (c.bub && !(c.scene && c.scene === regia.live && (panel || c.scene.waitTap))) {
     c.bub.t -= dt;
     if (c.bub.t <= 0) c.bub = null;
   }
@@ -984,7 +987,7 @@ function updScene(sc, dt) {
     });
     return;
   }
-  if (sc.wait) return;
+  if (sc.wait || sc.waitTap) return;
   if (sc.big && !sc.on) {
     if (!regiaStart(sc, dt)) return;
   } else if (sc === regia.live && panel) return; // il racconto aspetta mentre guardi un pannello else if (!sc.big && regia.live) return; // le chiacchiere aspettano che finisca il momento
@@ -1001,6 +1004,7 @@ function updScene(sc, dt) {
       d = regiaDur(sc, sayDur(ln[1]));
     say(sp, ln[1], d, sc.story || sp.reg ? sp.name : '');
     sc.t = d + 0.35;
+    if (sc === regia.live && st.txtTap) sc.waitTap = 1; // i racconti vanno avanti solo quando tocchi
     if (sc.mood === 'angry' && Math.random() < 0.5) emo(sp, 'angry');
     if (sc.mood === 'love' && Math.random() < 0.35) emo(sp, 'heart');
     if (sc.mood === 'chat' && /!|\?/.test(ln[1]) && Math.random() < 0.3) emo(sp, 'note');

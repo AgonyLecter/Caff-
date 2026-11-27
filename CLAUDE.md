@@ -36,7 +36,7 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 
 - La regola CSS `canvas{position:fixed;inset:0;...}` vale per tutti i canvas: quelli dentro i pannelli (`#mcan`, `#mdraw`) devono avere `position:static`.
 - **Ogni nuovo file** va aggiunto anche alla lista `FILE` di `sw.js` (il test lo controlla), e quando cambia molto conviene aumentare `VERSIONE`.
-- Nomi globali: evitare collisioni con `window` (es. `moveTo` è stato rinominato `walkTo`).
+- Nomi globali: evitare collisioni con `window` (es. `moveTo` è stato rinominato `walkTo`) e tra file (tutti gli script condividono lo stesso spazio: un `const` ripetuto blocca tutto il gioco all'avvio; es. `burst` esiste in atmosfera.js, in audio.js si usa `noiseHit`). Dopo aver aggiunto funzioni globali, aprire la pagina e controllare che non ci siano errori.
 - Nei test il salvataggio include `tutOff:1, introDone:1` e `incT=1e12; machTilt=0`, altrimenti guida, intro e incidenti casuali interferiscono. Lo splash viene saltato con `navigator.webdriver` (a meno di `?splash`).
 - `CHAP_PER_DAY=3`: massimo 3 capitoli al giorno, uno per storia. Nei test azzerare `st.ds.chap`. Per l'ora di punta, azzerare `st.ds.rushPlan=[]`.
 - **Regia nei test**: `startGame` mette `regia.off = true` (altrimenti un racconto in corso mette in pausa ciò che si prova). La regia si accende solo nel suo test e nel gioco accelerato. `clear()` chiama `regiaReset()`. Se un test svuota `scenes`, la regia lo capisce da sola (`!scenes.includes(regia.live)`).
@@ -72,6 +72,7 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
   - scena d'introduzione (`INTRO`): Nonna Rosa spiega che contano le storie, non solo le monete;
   - **tutorial a passi** (`TUT`, stato `tut`): Nonna Rosa resta nel locale (`TUT_STAY`) e fa provare tutto: primo cliente, toccare chi è seduto, un bisogno, un ordine speciale, cocci, tavolo sporco, monete, barista, macchina in tilt, il primo racconto (Gino, il garzone del vecchio forno, `GINO`, scena `noAuto` che parte solo toccando la stellina; poi diventa l'habitué `r_gino` con la storia «Il garzone del forno» nel Diario; non usare nomi dei personaggi chiave, es. Aldo esiste già), Diario, Atmosfera, saluto. I clienti di prova hanno `c.tut` (pazienza infinita, si siedono sempre, `forceSpecial`, `noDirty`). Durante `tut` niente clienti normali, storie, imprevisti casuali, e l'orologio è fermo. «Salta il tutorial» chiude tutto (`tutEnd(true)`). Parte solo nelle partite nuove (giorno 1, meno di 10 serviti);
   - consigli sulle novità (`GUIDA`, anello `#gring`), che scattano quando serve dopo il tutorial.
+- **Comodità e suoni**: tre volumi separati (`st.vol = {m, s, a}` 0–100: musica `musG`, effetti `sfxG`, ambiente `ambG` con pioggia e voci; `applyVol`, `VOL0`), velocità del testo (`st.txtV` lenta/normale/veloce → `TXTV` in `sayDur`), «i racconti vanno avanti quando tocco io» (`st.txtTap` → `sc.waitTap`, sblocca `regiaNext`), testo grande (`st.bigTxt` → classe `grande` su `<html>`, `applyBig`; fumetti ×1.3). Suoni nuovi in `audio.js`: campanello della porta (`bell` + `thud`), tazzina (`cup`), piatti (`piatti`, pulizia), cocci (`crash`), gocce sul vetro e raffiche di pioggia (`drip`). Durante un racconto gli avvisi vanno in basso (`body.racconto`).
 - **PWA**: installabile; il service worker legge prima dalla rete e usa la cache se manca la connessione.
 
 ## Contenuti attuali
@@ -80,7 +81,7 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 
 Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline): circa 2 capitoli al giorno, 40 capitoli verso i 160 minuti (prima a 57), le vite partono verso l'ora di gioco; i potenziamenti arrivano ancora fino a circa 3 ore. Le storie ora durano di più apposta, per gustarle; se sembra troppo lento, alzare `MOM_DAY` o abbassare `REGIA_REST`/`REGIA_WAIT`. Il gioco avanzato si regge su vite infinite e relazioni; il calendario (fase 2) serve a dargli più struttura.
 
-## Fatto finora (PR #6 → #26)
+## Fatto finora (PR #6 → #27)
 
 - Minigiochi solo dal pulsante.
 - Grafica più curata.
@@ -101,18 +102,14 @@ Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline)
 - Guida e intro con Nonna Rosa.
 - Tutorial vero con Nonna Rosa (16 passi, il primo racconto di Gino).
 - Vite uniche (niente testi uguali per persone diverse) e regia dei racconti (un momento alla volta).
+- Comodità e suoni: volumi separati, velocità del testo, racconti a tocco, testo grande, suoni nuovi (porta, tazzine, piatti, cocci, pioggia).
 - Calendario: stagioni, 13 feste, compleanni, anniversari, riepilogo di fine anno, foglie/petali/lucciole.
 - 25 vite nuove e 10 vite a due nuove (anche temi forti: un genitore che dimentica, solitudine, bullismo, mamma sola, separazione, coming out, lutto per un animale, panico, esaurimento).
 
 ## Prossimi passi (in ordine)
 
-1. **Comodità e suoni** — da fare per primo:
-   - volume separato per musica ed effetti;
-   - velocità del testo;
-   - testo grande;
-   - qualche suono più bello (pioggia, tazzine, porta).
-
-   **NON** fare l'opzione «grafica leggera» per telefoni: l'utente non la vuole.
+1. Comodità e suoni: fatto. **NON** fare l'opzione «grafica leggera» per telefoni: l'utente non la vuole.
+   Prossimo blocco concordato: **nuovi personaggi con storie lunghe** (3-4, ognuno 4-5 capitoli intrecciati con quelli esistenti; temi proposti: un rider che manda soldi a casa, una ragazza che ricomincia dopo una malattia, un uomo appena uscito di prigione, un'insegnante vicina alla pensione). Poi un **finale per chi completa tutto** (serata con tutti i personaggi e lettera di Nonna Rosa).
 2. Calendario: fatto. Idee per dopo: un richiamo alla data reale (Natale, Capodanno…), decorazioni stagionali dentro il locale, ricette di stagione.
 3. Altre idee già discusse:
    - versione in inglese;

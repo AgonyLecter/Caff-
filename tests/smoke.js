@@ -963,6 +963,20 @@ async function playMini(page, kind, itemId) {
       if (!r5) await sleep(60);
     }
     ok(r4 && r5, 'regia: toccando chi fa segno, comincia a raccontare');
+    // «i racconti vanno avanti quando tocco io»: la battuta resta finché non tocchi
+    await page.evaluate(() => (window.__cafe.st.txtTap = 1));
+    await sleep(1500);
+    const tp0 = await page.evaluate(() => window.__cafe.regia.live && window.__cafe.regia.live.i);
+    await sleep(2500);
+    const tp1 = await page.evaluate(() => window.__cafe.regia.live && window.__cafe.regia.live.i);
+    await page.evaluate(() => window.__cafe.regiaNext());
+    await sleep(700);
+    const tp2 = await page.evaluate(() => window.__cafe.regia.live && window.__cafe.regia.live.i);
+    await page.evaluate(() => (window.__cafe.st.txtTap = 0));
+    ok(
+      tp0 && tp0 === tp1 && tp2 > tp1,
+      `lettura: con «quando tocco io» il racconto aspetta (battuta ${tp0} → ${tp1} → ${tp2} dopo il tocco)`
+    );
     await clear();
     await page.evaluate(() => (window.__cafe.regia.off = true));
     await page.evaluate(() => (window.__cafe.speed = 1));
@@ -1612,6 +1626,58 @@ async function playMini(page, kind, itemId) {
     if (await b.count()) await b.click();
   }
   await page.evaluate(() => (window.__cafe.speed = 1));
+
+  console.log('Comodità e suoni');
+  {
+    await page.evaluate(() => (window.__cafe.st.coins += 0));
+    await page.click('#hud button[data-p="set"]');
+    await sleep(200);
+    const n = await page.locator('#pbody input[data-vol]').count();
+    await page.locator('#pbody input[data-vol="m"]').fill('30');
+    await page.locator('#pbody input[data-vol="s"]').fill('55');
+    await page.click('#pbody button[data-tv="lenta"]');
+    await sleep(100);
+    const d1 = await page.evaluate(() => ({ vol: window.__cafe.st.vol, dur: sayDur('Una frase di prova per misurare.') }));
+    await page.click('#pbody button[data-tv="normale"]');
+    const d0 = await page.evaluate(() => sayDur('Una frase di prova per misurare.'));
+    ok(
+      n === 3 && d1.vol.m === 30 && d1.vol.s === 55 && d1.dur > d0 * 1.3,
+      `impostazioni: tre volumi separati (musica ${d1.vol.m}, effetti ${d1.vol.s}) e velocità del testo (lenta ${d1.dur.toFixed(1)}s, normale ${d0.toFixed(1)}s)`
+    );
+    await page.click('#pbody #bigt');
+    await sleep(150);
+    const big = await page.evaluate(() => ({
+      cls: document.documentElement.classList.contains('grande'),
+      z: getComputedStyle(document.querySelector('#pbody')).zoom
+    }));
+    await page.click('#pbody #bigt');
+    await sleep(100);
+    const small = await page.evaluate(() => document.documentElement.classList.contains('grande'));
+    ok(big.cls && String(big.z) !== '1' && !small, 'testo grande: si accende e si spegne dalle impostazioni');
+    const snd = await page.evaluate(() => {
+      initAudio();
+      const err = [];
+      ['door', 'cup', 'piatti', 'crash', 'coin', 'story'].forEach(k => {
+        try {
+          sfx(k);
+        } catch (e) {
+          err.push(k + ': ' + e.message);
+        }
+      });
+      try {
+        audioTick();
+      } catch (e) {
+        err.push('pioggia: ' + e.message);
+      }
+      return { err, ok: !!(typeof sfxG !== 'undefined' && sfxG && ambG) };
+    });
+    ok(
+      snd.ok && !snd.err.length,
+      `suoni nuovi (porta, tazzina, piatti, cocci, gocce di pioggia) senza errori${snd.err.length ? ': ' + snd.err.join(', ') : ''}`
+    );
+    await page.click('#pclose');
+    await sleep(200);
+  }
 
   console.log('Salvataggio');
   await page.click('#hud button[data-p="set"]');
