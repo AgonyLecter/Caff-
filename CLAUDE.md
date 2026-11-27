@@ -20,8 +20,8 @@ Preferenze dell'utente:
 Script classici (non moduli ES) che condividono lo scope globale: funziona da `file://` e su GitHub Pages. Ordine di caricamento in `index.html`:
 
 1. `js/motore/base.js` (e `js/motore/icone.js`, che però si carica dopo base e prima dei dati)
-2. `js/dati/`: personaggi, storie, mondo, frasi, animali, vite, vite-nuove, calendario, novita, intrecci, segreti (solo contenuti)
-3. `js/motore/`: icone (subito dopo base.js), stato, citta, audio, simulazione, disegno-persone, disegno-locale, animali, vita, regia, calendario, attivo, atmosfera, interfaccia, risultati, guida, ritorno, avvio
+2. `js/dati/`: personaggi, storie, mondo, frasi, animali, vite, vite-nuove, calendario, novita, intrecci, segreti, voci (solo contenuti)
+3. `js/motore/`: icone (subito dopo base.js), stato, citta, audio, simulazione, disegno-persone, disegno-locale, animali, vita, mente, regia, calendario, attivo, atmosfera, interfaccia, risultati, guida, ritorno, avvio
 
 Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `icone/`, `docs/come-aggiungere-contenuti.md` (guida per aggiungere personaggi/storie/vite/incroci/frasi), `README.md`, `tools/` (simulazione del ritmo).
 
@@ -50,9 +50,20 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 - Ricominciare usa `location.replace(location.pathname+'?nuova=1')` più il flag `resetting` (corsa di scrittura di localStorage in Chromium).
 - Le modifiche con sostituzioni di testo possono fallire in silenzio su codice formattato: verificare sempre che siano avvenute. Succede anche copiando un test da un altro (es. il test di Leo ricavato da quello di Alice): dopo la copia cercare con grep che non resti niente del vecchio.
 - Nel tutorial il primo cliente resta seduto finché non arriva il passo dei cocci (altrimenti, con un giocatore lento, il passo veniva saltato).
+- Mente: nelle frasi a due `{B}` è sempre «l'altra persona rispetto a chi parla in quella riga»; `{o}` è il genere di chi parla, `{X:o}` quello di `{X}`. Mai lui/lei per l'altra persona. Nei test con `page.evaluate` su stringa, mai commenti `//` su una riga che continua (usare `/* */`).
 - Storia di Davide (depressione): approccio di messaggistica sicura. Niente dettagli sui metodi, finale con speranza possibile, `nota` finale con aiuto concreto (numeri di supporto). Mantenere questo approccio per tutti i temi forti.
 
 ## Mappa dei sistemi
+
+- **Mente dei personaggi** (`motore/mente.js` + `dati/voci.js`): il cuore di come i clienti parlano e si legano.
+  - Carattere: 8 manopole 0–1 (`pers(o)`: soc, cal, iro, sens, ape, rom, bro, ene) da tratti (`TRATTI_P`), tipo (`TIPO_P`) e personaggi chiave (`MENTI_K`, obbligatorio per ogni KEYS: il test lo controlla), più uno scarto fisso per persona. Ne viene lo stile di risposta (`stileDi`: caldo, ironico, timido, brontolone, entusiasta) e gli interessi (`interessi` → argomenti di `TEMI`). Anche i clienti di passaggio hanno un tratto (`c.tr`, `menteArrivo`), che passa all'habitué in `makeReg`.
+  - Umore e memoria nel salvataggio: `reg.mn = { u, mem[24], k[] }` (`memo`, `ricordoDi`, `umoreOra`). `menteArrivo`/`menteCongedo` all'ingresso e all'uscita (`reg.vd` ultimo giorno, `reg.gap`).
+  - Legami: `st.rel[k]` ha anche `a` affetto, `fi` fiducia, `at` attrazione, `te` tensione, `n`, `ld`, `top` (argomenti recenti), `lit` (1 = litigheranno, 2 = arrabbiati). `rv(R)` inizializza i vecchi salvataggi. `advanceRel(A, B, es)` gestisce proposta e pace, poi `relCresce` fa crescere i numeri (con l'esito `es` della conversazione) e decide i passaggi (conoscenti → amici/cotta/rivali, amici → migliori o cotta, cotta → coppia, coppia → proposta, rivali → pace, litigio → chiarimento).
+  - Conversazioni: `relScene` → a volte una scenetta di `REL` (con `scegli` per coppia), di solito `conversa(a, b, R)` (saluto `APRI`/`APRI_R`, argomenti scelti per voglia: interessi, ricordi, notizie, chi è giù si confida, futuro; `CHIUDI`). Prima volta: `REL.intro` o `primaConv`. Litigi `LITE` e chiarimenti `CHIARO`.
+  - Notizie: `st.news` (max 40), `notizia(k, A, B)`, chi sa cosa in `mn.k`; si raccontano in conversazione (`notiziaPer`) se chi ascolta conosce uno dei due.
+  - Pensieri: `pensiero(c)` (attesa, tavolo sporco, caffè perfetto, ritorno dopo giorni, traguardi, umore, ricordi, interessi, tratti, chi c'è nel locale, ora e tempo, frasi dei personaggi chiave). Saluti tra tavoli `salutaTavoli`. Reazioni dei presenti `evento(k, A, B)` (fidanzati, coppia, pace, litigio, cocci). Tocco `tocco(c)` per affetto e stile.
+  - **Niente ripetizioni**: `scegli(pool, chiave, chi)` ricorda le frasi sentite nel locale (`st.vu`) e quelle dette da ognuno (`.ud`); `fresco()` fa preferire gli argomenti con frasi ancora nuove. Usare sempre `scegli` al posto di `pick` per le frasi.
+  - Diario: carattere, umore e ricordo nella scheda Habitué (`carattereN`, `umoreN`, `ricordoN`); stato del legame in Legami (`relN`).
 
 - **Storie** (`js/dati/storie.js`, ARCS): capitoli con `req` (anche `'a|b'`), flag `end`, `rand:{from,p}` (inizio in un giorno casuale), `gap` (giorni tra capitoli), `calc:{flag,values,fn}` (finale calcolato da più scelte), `whoBy` (chi compare in base a un flag), `nota` (finestra di aiuto alla fine). Ricompensa con `reward(sec)` basata su `incomeRef()`.
 - **Personaggi chiave** (`intrecci.js`): KEYS/KSEED diventano clienti abituali speciali (`ensureKeyRegs`). Ci sono gli incroci XS (`tryCross`) e gli epiloghi XEPI. Le vite autonome sono FILI e FILI2 (coppie, `startDuo`), più `socialAI`, `ritual()` e gli amici reciproci.
@@ -81,7 +92,7 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 
 ## Contenuti attuali
 
-24 personaggi, 26 storie (89 capitoli), 58 vite, 19 vite di coppia, 13 feste, 22 compleanni, 26 incroci, 15 epiloghi, 12 ricette, 14 insegne al neon.
+24 personaggi, 26 storie (89 capitoli), 58 vite, 19 vite di coppia, 13 feste, 22 compleanni, 26 incroci, 15 epiloghi, 12 ricette, 14 insegne al neon, 15 argomenti di conversazione e circa 670 frasi della mente.
 
 Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline): circa 2 capitoli al giorno, 40 capitoli verso i 160 minuti (prima a 57), le vite partono verso l'ora di gioco; i potenziamenti arrivano ancora fino a circa 3 ore. Le storie ora durano di più apposta, per gustarle; se sembra troppo lento, alzare `MOM_DAY` o abbassare `REGIA_REST`/`REGIA_WAIT`. Il gioco avanzato si regge su vite infinite e relazioni; il calendario (fase 2) serve a dargli più struttura.
 
@@ -113,10 +124,12 @@ Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline)
 - Tutto a tema: icone pixel per miglioramenti e schede, frecce disegnate, cursore a tazzina, volume a chicco di caffè, barre di scorrimento.
 - Comodità e suoni: volumi separati, velocità del testo, racconti a tocco, testo grande, suoni nuovi (porta, tazzine, piatti, cocci, pioggia).
 - Calendario: stagioni, 13 feste, compleanni, anniversari, riepilogo di fine anno, foglie/petali/lucciole.
+- Mente dei personaggi: carattere, umore, memoria, legami con affetto/fiducia/attrazione/tensione, conversazioni costruite sul momento, notizie che girano, litigi e chiarimenti, saluti tra tavoli, reazioni, niente frasi ripetute.
 - 25 vite nuove e 10 vite a due nuove (anche temi forti: un genitore che dimentica, solitudine, bullismo, mamma sola, separazione, coming out, lutto per un animale, panico, esaurimento).
 
 ## Prossimi passi (in ordine)
 
+0. Mente dei personaggi: fatto (prima base). Idee per dopo: più frasi per ogni stile e argomento (più ce ne sono, più sembrano vivi), argomenti nuovi, gelosia e triangoli delicati, amici che presentano amici ad altri amici, i personaggi chiave che raccontano le loro storie agli altri.
 1. Comodità e suoni: fatto. **NON** fare l'opzione «grafica leggera» per telefoni: l'utente non la vuole.
    **Prossimo blocco chiesto dall'utente: versione inglese completa** (scelta della lingua nel menu e nella schermata d'avvio) **e pacchetto per itch.io**. Piano: dizionario EN con chiavi = hash del testo italiano, traduzione dei dati all'avvio, `L()` per i testi del codice, test di copertura che segnala le frasi senza traduzione.
    Blocco precedente: **nuovi personaggi con storie lunghe**, uno alla volta (ognuno 4-5 capitoli intrecciati con quelli esistenti). Fatto: Alice (dopo una malattia), Leo (lutto per il nonno, con Aldo nonno acquisito). Da fare: un rider che manda soldi a casa, un uomo appena uscito di prigione, un'insegnante vicina alla pensione. Per ogni personaggio: `CH`, arco in `ARCS` (con `nota` se il tema è forte), `KEYS`, `KSEED`, un `XS` e un `XEPI`, `COMPLEANNI` + `COMPL_L` (i test lo pretendono, mai in un giorno di festa), vita personale `k_<id>` in `vite-nuove.js`, eventuale `perkAtm`, e un test nel browser che gioca tutta la storia (nel test abbassare `rand.from` e far uscire i personaggi già seduti: le storie aspettano se uno dei loro personaggi è nel locale). Poi un **finale per chi completa tutto** (serata con tutti i personaggi e lettera di Nonna Rosa).

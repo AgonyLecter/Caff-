@@ -149,6 +149,7 @@ function newCust(o) {
   c.key = o.key || (o.reg && o.reg.key) || null;
   incidentOnArrive(c);
   if (o.reg) learnRoutine(o.reg);
+  menteArrivo(c, o);
   c.pet = petOf(c);
   people.push(c);
   queue.push(c);
@@ -355,6 +356,7 @@ function finishVisit(c) {
     hypeT = 60;
     toast(`${c.name} ha postato il locale: arrivano più clienti!`);
   }
+  menteCongedo(c, s);
   if (c.reg) {
     c.reg.v++;
     if (s >= 3) c.reg.f = Math.min(10, c.reg.f + 1);
@@ -378,7 +380,9 @@ function makeReg(c) {
     fav: (c.order || MENU[0]).id,
     v: 1,
     f: 1,
-    tr: [pick(TRAITS), pick(TRAITS)].filter((x, i, a) => a.indexOf(x) === i)
+    tr: (c.tr && c.tr.length ? c.tr.concat(Math.random() < 0.6 ? [pick(TRAITS)] : []) : [pick(TRAITS), pick(TRAITS)]).filter(
+      (x, i, a) => a.indexOf(x) === i
+    )
   };
   st.regs.push(r);
   c.reg = r;
@@ -487,41 +491,89 @@ function relScene(a, b) {
   }
   const M = !r && mutual(a.reg, b.reg);
   if (M) {
-    const L = pick(RELM).map(l => [l[0], l[1].replace(/\{M\}/g, M.n)]);
+    const L = scegli(RELM, 'relm').map(l => [l[0], l[1].replace(/\{M\}/g, M.n)]);
     startScene([a, b], fillT(L, a, b), {
       mood: 'chat',
       onEnd: () => {
-        advanceRel(a.reg, b.reg);
+        advanceRel(a.reg, b.reg, { a: 8, fi: 6 }); // l'amico in comune garantisce
         logB(`${a.reg.n} e ${b.reg.n} si sono conosciuti grazie a ${M.n}`);
         if (Math.random() < 0.5) toast(`${a.reg.n} e ${b.reg.n} si conoscono grazie a ${M.n}`);
       }
     });
     return;
   }
+  const end = es => () => advanceRel(a.reg, b.reg, es);
   if (!r) {
-    lines = pick(REL.intro);
-    mood = 'chat';
-  } else if (r.prop === 1) {
-    lines = REL.proposta[0];
-    mood = 'love';
-  } else if (r.peace) {
-    lines = REL.pace[0];
-    mood = 'chat';
-  } else {
-    lines = pick(REL[r.k] || REL.conoscenti);
-    mood = ['cotta', 'coppia', 'fidanzati', 'sposati'].includes(r.k) ? 'love' : r.k === 'rivali' ? 'angry' : 'chat';
-  }
-  startScene([a, b], fillT(lines, a, b), { mood, onEnd: () => advanceRel(a.reg, b.reg) });
-}
-function advanceRel(A, B) {
-  const k = [A.id, B.id].sort().join('|');
-  let r = st.rel[k];
-  if (!r) {
-    r = st.rel[k] = { k: 'conoscenti', lv: 0, d: st.day };
-    logB(`${A.n} e ${B.n} si sono conosciuti`);
+    // la prima volta: una scenetta scritta, o due parole secondo il carattere di ognuno
+    if (Math.random() < 0.5) startScene([a, b], fillT(scegli(REL.intro, 'rel:intro'), a, b), { mood: 'chat', onEnd: end() });
+    else startScene([a, b], primaConv(a, b), { mood: 'chat', onEnd: end() });
     return;
   }
+  rv(r);
   if (r.prop === 1) {
+    startScene([a, b], fillT(REL.proposta[0], a, b), { mood: 'love', onEnd: end() });
+    return;
+  }
+  if (r.peace) {
+    startScene([a, b], fillT(REL.pace[0], a, b), { mood: 'chat', onEnd: end() });
+    return;
+  }
+  // un piccolo litigio tra chi si vuole bene...
+  if (r.lit === 1) {
+    const [x, y] = Math.random() < 0.5 ? [a, b] : [b, a];
+    startScene([x, y], scenaDue(scegli(LITE, 'lite', r), x, y, r), {
+      mood: 'angry',
+      onEnd: () => {
+        r.lit = 2;
+        r.ld = st.day;
+        r.te = clamp(r.te + 10, 0, 100);
+        r.a = clamp(r.a - 6, 0, 100);
+        memo(a.reg, 'litigio', { w: b.reg.id, v: -1 });
+        memo(b.reg, 'litigio', { w: a.reg.id, v: -1 });
+        notizia('litigio', a.reg, b.reg);
+        evento('litigio', a.reg, b.reg);
+        logB(`${a.reg.n} e ${b.reg.n} hanno litigato`);
+      }
+    });
+    return;
+  }
+  // ...e la volta dopo si chiarisce: il legame esce più forte
+  if (r.lit === 2) {
+    const [x, y] = Math.random() < 0.5 ? [a, b] : [b, a];
+    startScene([x, y], scenaDue(scegli(CHIARO, 'chiaro', r), x, y, r), {
+      mood: ['coppia', 'fidanzati', 'sposati'].includes(r.k) ? 'love' : 'chat',
+      onEnd: () => {
+        r.lit = 0;
+        r.te = r.te * 0.3;
+        memo(a.reg, 'chiarito', { w: b.reg.id, v: 1.5 });
+        memo(b.reg, 'chiarito', { w: a.reg.id, v: 1.5 });
+        logB(`${a.reg.n} e ${b.reg.n} hanno chiarito`);
+        advanceRel(a.reg, b.reg, { a: 10, fi: 12 });
+      }
+    });
+    return;
+  }
+  // a volte una delle scenette scritte (ognuna una volta sola per coppia, finché ce ne sono di nuove),
+  // di solito una conversazione costruita sul momento: argomenti, ricordi, notizie, chi si confida
+  if (REL[r.k] && Math.random() < 0.3) {
+    lines = scegli(REL[r.k], 'rel:' + r.k, r);
+    mood = AMORE.includes(r.k) ? 'love' : r.k === 'rivali' ? 'angry' : 'chat';
+    startScene([a, b], fillT(lines, a, b), { mood, onEnd: end() });
+    return;
+  }
+  const cv = conversa(a, b, r);
+  startScene([a, b], cv.L, {
+    mood: cv.mood,
+    onEnd: () => {
+      cv.dopo.forEach(f => f());
+      advanceRel(a.reg, b.reg, cv.es);
+    }
+  });
+}
+function advanceRel(A, B, es) {
+  const k = [A.id, B.id].sort().join('|');
+  let r = st.rel[k];
+  if (r && r.prop === 1) {
     r.k = 'fidanzati';
     r.prop = 2;
     r.lv = 0;
@@ -529,47 +581,29 @@ function advanceRel(A, B) {
     logB(`${A.n} e ${B.n} si sono fidanzati qui! ♥`);
     toast(`${A.n} e ${B.n} si sono fidanzati nel tuo locale! ♥ +1`);
     sfx('story');
+    rv(r);
+    memo(A, 'fidanzati', { w: B.id, v: 2 });
+    memo(B, 'fidanzati', { w: A.id, v: 2 });
+    notizia('fidanzati', A, B);
+    evento('fidanzati', A, B);
     return;
   }
-  if (r.peace) {
+  if (r && r.peace) {
     r.peace = 0;
     r.k = 'amici';
     r.lv = 1;
     logB(`${A.n} e ${B.n}: da rivali ad amici`);
     toast(`${A.n} e ${B.n} hanno fatto pace`);
+    rv(r);
+    r.te = 15;
+    r.a = Math.max(r.a, 45);
+    memo(A, 'pace', { w: B.id, v: 1 });
+    memo(B, 'pace', { w: A.id, v: 1 });
+    notizia('pace', A, B);
+    evento('pace', A, B);
     return;
   }
-  r.lv++;
-  if (r.k === 'conoscenti' && r.lv >= 2) {
-    const rom = A.tr.includes('romantico') || B.tr.includes('romantico') ? 0.55 : 0.22,
-      gr = A.tr.includes('brontolone') || B.tr.includes('brontolone') ? 0.35 : 0.08,
-      x = Math.random();
-    if (x < rom) {
-      r.k = 'cotta';
-      r.lv = 0;
-      logB(`${A.n} ha una cotta per ${B.n}`);
-      toast(`Qualcosa nasce tra ${A.n} e ${B.n}...`);
-    } else if (x < rom + gr) {
-      r.k = 'rivali';
-      r.lv = 0;
-      logB(`${A.n} e ${B.n} non si sopportano`);
-    } else {
-      r.k = 'amici';
-      r.lv = 0;
-      logB(`${A.n} e ${B.n} sono diventati amici`);
-      toast(`${A.n} e ${B.n} sono diventati amici`);
-    }
-  } else if (r.k === 'amici' && r.lv >= 4) {
-    r.k = 'migliori';
-    r.lv = 0;
-    logB(`${A.n} e ${B.n} sono migliori amici`);
-  } else if (r.k === 'cotta' && r.lv >= 2) {
-    r.k = 'coppia';
-    r.lv = 0;
-    logB(`${A.n} e ${B.n} si sono messi insieme ♥`);
-    toast(`${A.n} e ${B.n} si sono messi insieme ♥`);
-  } else if (r.k === 'coppia' && r.lv >= 5 && !r.prop) r.prop = 1;
-  else if (r.k === 'rivali' && r.lv >= 3) r.peace = 1;
+  relCresce(A, B, es);
 }
 function logB(t) {
   st.log.unshift({ d: st.day, t });
@@ -643,10 +677,13 @@ function onSit(c) {
         }
       });
   }
+  // appena seduto, saluta chi conosce agli altri tavoli
+  if (c.reg && !c.story)
+    timers.push({ t: rnd(1.4, 3), fn: () => c.state === 'sit' && !c.dead && !c.scene && !c.bub && Math.random() < 0.6 && salutaTavoli(c) });
   const other = slotOf(c.seat).seats.find(s => s !== c.seat).occ;
   if (other && other.state === 'sit' && !other.scene && !other.group && !other.talked) {
     if (c.reg && other.reg) relScene(other, c);
-    else if (Math.random() < 0.55) startScene([other, c], fillT(pick(REL.intro), other, c));
+    else if (Math.random() < 0.55) startScene([other, c], fillT(scegli(REL.intro, 'rel:intro'), other, c));
   }
 }
 function spawnGroup(a, b, o) {
@@ -672,7 +709,7 @@ function trySpawn() {
     if (Math.random() < 0.3 && queue.length <= 2 && tryCross()) return;
     const r = pickReg();
     if (r) {
-      const rels = Object.entries(st.rel).filter(([k, v]) => k.includes(r.id) && CLOSE.includes(v.k));
+      const rels = Object.entries(st.rel).filter(([k, v]) => k.includes(r.id) && CLOSE.includes(v.k) && v.lit !== 2); // dopo un litigio vengono da soli
       if (rels.length && Math.random() < 0.55 && queue.length <= 2) {
         const [k] = pick(rels);
         const oid = k.split('|').find(x => x !== r.id);
@@ -690,7 +727,11 @@ function trySpawn() {
     }
   }
   const gc = st.ev === 'innamorati' ? 0.55 : 0.3;
-  if (Math.random() < gc && queue.length <= 2 && spawnGroup({}, {}, { lines: pick(PAIRS), mood: Math.random() < 0.4 ? 'love' : 'chat' }))
+  if (
+    Math.random() < gc &&
+    queue.length <= 2 &&
+    spawnGroup({}, {}, { lines: scegli(PAIRS, 'pairs'), mood: Math.random() < 0.4 ? 'love' : 'chat' })
+  )
     return;
   newCust();
 }
@@ -908,13 +949,6 @@ function updCust(c, dt) {
       if (!c.scene && !c.waitScene) {
         c.sitT -= dt;
         c.thinkT -= dt;
-        if (c.thinkT <= 0 && c.reg && c.reg.key && bubCount() < 4 && Math.random() < 0.65) {
-          const kl = keyLine(c);
-          if (kl) {
-            c.thinkT = rnd(9, 16);
-            say(c, kl, sayDur(kl) + 0.6, c.name);
-          }
-        }
         if (c.thinkT <= 0 && !c.story && !c.tut) {
           const fl = calLine(c); // nei giorni di festa se ne parla
           if (fl) {
@@ -922,40 +956,16 @@ function updCust(c, dt) {
             say(c, fl, sayDur(fl), c.reg ? c.name : '');
           }
         }
-        if (c.thinkT <= 0 && c.reg && !c.reg.key && (c.reg.hn || 0) >= 3 && bubCount() < 4 && Math.random() < 0.22) {
-          c.thinkT = rnd(10, 18);
-          say(c, pick(REGL).replace('{item}', (c.order || MENU[0]).n), 3, c.name);
-        }
         if (c.thinkT <= 0 && c.pet && Math.random() < 0.3 && bubCount() < 4) {
           c.thinkT = rnd(10, 20);
-          say(c, pick(PETL).replace(/\{P\}/g, c.pet.n), 3, c.reg ? c.name : '');
+          say(c, scegli(PETL, 'petl', c.reg || c).replace(/\{P\}/g, c.pet.n), 3, c.reg ? c.name : '');
         }
+        // la mente: saluta chi conosce, o pensa ad alta voce secondo carattere, umore, ricordi e chi c'è intorno
         if (c.thinkT <= 0) {
-          c.thinkT = rnd(10, 20);
-          if (bubCount() < 4 && Math.random() < 0.55) {
-            const h = hour(),
-              w = curWx();
-            let pool = SOLO;
-            const r = Math.random();
-            if (r < 0.35) {
-              if (h < 10) pool = SOLOH.m;
-              else if (h > 22) pool = SOLOH.n;
-              else if (rainy()) pool = SOLOH.r;
-              else if (w === 'sereno') pool = SOLOH.s;
-              else if (w === 'neve') pool = SOLOH.w;
-              else if (w === 'nebbia') pool = SOLOH.f;
-            }
-            say(
-              c,
-              st.chalk && Math.random() < 0.12
-                ? pick([
-                    `«${st.chalk}». Bella frase.`,
-                    'Chi ha scritto sulla lavagna? Mi ha fatto sorridere.',
-                    'Quella frase sulla lavagna è proprio vera.'
-                  ])
-                : pick(pool),
-              3
-            );
+          c.thinkT = rnd(10, 20) * (c.reg && c.reg.key ? 0.8 : 1);
+          if (bubCount() < 4 && !c.tut && Math.random() < parlaP(c) && !salutaTavoli(c)) {
+            const t = pensiero(c);
+            if (t) say(c, t, sayDur(t) + (c.reg && c.reg.key ? 0.6 : 0), c.reg ? c.name : '');
           }
         }
         if (Math.random() < dt * 0.4)

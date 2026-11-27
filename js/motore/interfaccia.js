@@ -1070,7 +1070,7 @@ function cliHTML() {
           ]
             .filter(Boolean)
             .join(' · ');
-          return `<div class="card2"><h3><span class="who"><img alt="" src="${portrait(r.look)}">${esc(r.n)}${r.key ? ' <span class="tag">storia</span>' : ''}</span><small>${r.v} visite</small></h3>${rout ? `<p class="ad">${rout}</p>` : ''}<p class="ad">${TYPES[r.type] ? TYPES[r.type].n : 'Cliente'} · ordina ${fav ? fav.n : 'caffè'}${r.pet ? ' · con ' + PETA[r.pet.k] + ' ' + esc(r.pet.n) : ''} · ${rels} legami</p>${r.tr.map(t => `<span class="tag">${t}</span>`).join('')}<div class="bar"><i style="width:${r.f * 10}%"></i></div></div>`;
+          return `<div class="card2"><h3><span class="who"><img alt="" src="${portrait(r.look)}">${esc(r.n)}${r.key ? ' <span class="tag">storia</span>' : ''}</span><small>${r.v} visite</small></h3>${rout ? `<p class="ad">${rout}</p>` : ''}<p class="ad">${TYPES[r.type] ? TYPES[r.type].n : 'Cliente'} · ordina ${fav ? fav.n : 'caffè'}${r.pet ? ' · con ' + PETA[r.pet.k] + ' ' + esc(r.pet.n) : ''} · ${rels} legami</p>${r.tr.map(t => `<span class="tag">${t}</span>`).join('')}<p class="ad">${esc(carattereN(r))} · umore ${esc(umoreN(r))}${(m => (m ? ' · ricorda ' + esc(m) : ''))(ricordoN(r))}</p><div class="bar"><i style="width:${r.f * 10}%"></i></div></div>`;
         })
         .join('')
     );
@@ -1097,7 +1097,7 @@ function cliHTML() {
       (L.length
         ? L.map(([k, v]) => {
             const [a, b] = k.split('|');
-            return `<div class="row"><b>${nm(a)} e ${nm(b)}</b><span>${IC[v.k] || v.k} · dal giorno ${v.d}</span></div>`;
+            return `<div class="row"><b>${nm(a)} e ${nm(b)}</b><span>${IC[v.k] || v.k} · ${relN(v)} · dal giorno ${v.d}</span></div>`;
           }).join('')
         : '<p class="note">Nessun legame per ora.</p>') +
       (() => {

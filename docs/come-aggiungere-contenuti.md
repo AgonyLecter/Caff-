@@ -24,6 +24,7 @@ node tests/smoke.js    # qualche minuto: gioca davvero nel browser (serve Playwr
 | `js/dati/animali.js` | colori, nomi e frasi degli animali da compagnia |
 | `js/dati/mondo.js` | menu, stili, quartieri, meteo, eventi, richieste speciali, radio, minigiochi |
 | `js/dati/segreti.js` | `EGGS` segreti, `RARE` visitatori rari |
+| `js/dati/voci.js` | la «mente» dei personaggi: carattere, interessi, argomenti di conversazione, risposte per stile, notizie, litigi, pensieri, saluti, reazioni (il motore è `js/motore/mente.js`) |
 
 ## Le battute
 
@@ -114,6 +115,12 @@ lina: {
 }
 ```
 
+**Ogni personaggio che resta va aggiunto anche a `MENTI_K` in `js/dati/voci.js`** (il controllo lo pretende): di cosa ama parlare e, se serve, il carattere.
+
+```js
+lina: { int: ['arte', 'animali', 'viaggi'], p: { cal: 0.8 } }   // int: argomenti di TEMI; p: manopole da 0 a 1 (facoltativo)
+```
+
 Legami già esistenti tra personaggi che restano (`KSEED`):
 
 ```js
@@ -184,3 +191,22 @@ L'anno del caffè dura 40 giorni: primavera (`s: 0`), estate (`1`), autunno (`2`
 ```
 
 Due feste non possono cadere nello stesso giorno, e i compleanni dei personaggi (`COMPLEANNI: { mia: [0, 2] }`, con la frase in `COMPL_L`) non cadono nei giorni di festa: il controllo `node tests/dati.js` lo verifica.
+
+## La mente dei personaggi (`js/dati/voci.js`)
+
+Ogni persona (habitué, personaggio chiave, e anche chi passa una volta sola) ha:
+
+- un **carattere**: 8 manopole da 0 a 1 (`soc` socievolezza, `cal` calore, `iro` ironia, `sens` sensibilità, `ape` curiosità, `rom` romanticismo, `bro` brontolio, `ene` energia). Vengono dai tratti (`TRATTI_P`) e dal tipo di cliente (`TIPO_P`), più un piccolo scarto personale fisso. Dal carattere viene lo **stile** con cui risponde: `caldo`, `ironico`, `timido`, `brontolone`, `entusiasta`;
+- degli **interessi** (`TRATTI_INT`, `TIPO_INT`, `MENTI_K`): gli argomenti di `TEMI` di cui ama parlare;
+- un **umore** che dura nei giorni e una **memoria** (gli ultimi 24 ricordi: chi ha conosciuto, litigi, fidanzamenti visti, notizie sapute, un caffè perfetto…);
+- le **notizie** che conosce: quando succede qualcosa (una coppia, un fidanzamento, una pace, un litigio), lo sanno i due e chi era presente; poi lo raccontano agli amici.
+
+Ogni legame ha affetto, fiducia, attrazione e tensione (da 0 a 100). Crescono a ogni incontro secondo quanto i due vanno d'accordo (carattere, ironia, interessi in comune, `AFF_TR`) e secondo com'è andata la conversazione. Da lì nascono amicizie, cotte, rivalità, coppie; e ogni tanto un piccolo litigio (`LITE`), che la volta dopo si chiarisce (`CHIARO`) e rende il legame più forte.
+
+Le conversazioni si costruiscono sul momento: un saluto (`APRI`, secondo da quanto non si vedono), la risposta (`APRI_R`), uno o due argomenti scelti tra interessi, ricordi in comune, notizie, chi è giù e si confida, progetti per il futuro, e a volte una chiusura (`CHIUDI`). Le scenette scritte di `REL` restano, ogni tanto.
+
+**Aggiungere un argomento**: in `TEMI` con `a` (come lo tira fuori chi parla), `si` (risposte di chi è appassionato) e `solo` (pensieri da soli). Poi metterlo negli interessi di qualche tratto, tipo o personaggio.
+
+**Aggiungere frasi**: basta allungare le liste. Le liste per stile vanno scritte per tutti e cinque gli stili. Nessuno ripete una frase finché ne ha di nuove, quindi più frasi ci sono, più tutto sembra vivo.
+
+Segnaposti: `{B}` l'altra persona della conversazione (rispetto a chi parla in quella riga), `{X}` `{Y}` le persone di cui si parla, `{item}`, `{giorni}`, `{meteo}` («Pioveva»…), `{nome}` del locale, `{v}` visite, `{o}` per «o/a» di chi parla, `{X:o}` per «o/a» di `{X}`. Nelle frasi a due non usare lui/lei per l'altra persona. Il controllo `node tests/dati.js` segnala segnaposti sconosciuti, stili mancanti, argomenti inesistenti.
