@@ -19,7 +19,10 @@ const ctx = vm.createContext({
   JSON
 });
 for (const f of files) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
-const D = vm.runInContext('({ CH, ARCS, MENU, FILI, FILI2, KEYS, KSEED, XS, XEPI, REL, PETC, RICETTE, INGR })', ctx);
+const D = vm.runInContext(
+  '({ CH, ARCS, MENU, FILI, FILI2, KEYS, KSEED, XS, XEPI, REL, PETC, RICETTE, INGR, STAGIONI, FESTE, COMPLEANNI, COMPL_L, ANNIV, EVENTS, WXN })',
+  ctx
+);
 
 const problems = [];
 const bad = msg => problems.push(msg);
@@ -159,6 +162,25 @@ D.FILI2.forEach(F =>
   )
 );
 
+// --- calendario: stagioni, feste, compleanni
+if (D.STAGIONI.length !== 4) bad('calendario: servono 4 stagioni');
+const giorniFesta = new Set();
+D.FESTE.forEach(f => {
+  if (!(f.s >= 0 && f.s < 4 && f.g >= 1 && f.g <= 10)) bad(`festa ${f.id}: giorno ${f.s}/${f.g} fuori dal calendario`);
+  if (giorniFesta.has(f.s * 10 + f.g)) bad(`festa ${f.id}: due feste nello stesso giorno`);
+  giorniFesta.add(f.s * 10 + f.g);
+  if (f.ev && !D.EVENTS[f.ev]) bad(`festa ${f.id}: evento ${f.ev} sconosciuto`);
+  if (f.wx && !D.WXN[f.wx]) bad(`festa ${f.id}: tempo ${f.wx} sconosciuto`);
+  if (!f.n || !f.d) bad(`festa ${f.id}: manca nome o descrizione`);
+});
+for (const [k, [s, g]] of Object.entries(D.COMPLEANNI)) {
+  if (!D.KEYS[k]) bad(`compleanno di ${k}: non è un personaggio che diventa habitué`);
+  if (giorniFesta.has(s * 10 + g)) bad(`compleanno di ${k}: cade in un giorno di festa`);
+  if (!D.COMPL_L[k]) bad(`compleanno di ${k}: manca la sua frase`);
+}
+Object.keys(D.KEYS).forEach(k => !D.COMPLEANNI[k] && bad(`${k}: manca il compleanno`));
+D.ANNIV.forEach((a, i) => a.forEach(l => (!(l[0] === 0 || l[0] === 1) || !l[1]) && bad(`anniversario ${i}: battuta non valida`)));
+
 // --- personaggi chiave, legami di partenza, incontri ed epiloghi
 for (const [k, K] of Object.entries(D.KEYS)) {
   if (!D.CH[k]) bad(`KEYS ${k}: non esiste in CH`);
@@ -223,6 +245,7 @@ console.log(
     ),
     n(D.FILI.length, 'vite'),
     n(D.FILI2.length, 'vite a due'),
+    n(D.FESTE.length, 'feste'),
     n(D.XS.length, 'incontri'),
     n(D.XEPI.length, 'epiloghi')
   ].join(' · ')

@@ -221,13 +221,13 @@ FILI.push(
   },
   {
     id: 'secondo',
-    t: 'Il secondo caffè',
+    t: 'Una tazza sola',
     solo: 1,
     ok: r => r.type !== 'studente',
     b: [
       [
-        [0, 'Due caffè, per favore. Anzi no. Uno. Scusi, l’abitudine.'],
-        [0, 'Per vent’anni ne ho ordinati due. Uno era macchiato, e non era il mio.'],
+        [0, 'Al mercato ho comprato una tazza. Una sola. Dopo vent’anni di servizi da sei.'],
+        [0, 'Adesso a casa ci sono troppe sedie.'],
         [0, 'Ci siamo separati a marzo. In modo civile, dicono tutti. Civile.']
       ],
       [
@@ -256,7 +256,7 @@ FILI.push(
         [0, 'Gliel’ho scritto. Mi ha risposto: «Finalmente». Ci siamo fatti una risata.', '@a'],
         [0, 'Ho buttato lo spazzolino. Ci ho messo un mese. Ma l’ho fatto io, quando ero pront{o}.', '@b'],
         [0, 'Certi giorni sono ancora grigi. Ma sono miei, i giorni. Me li riprendo.', '@b'],
-        [0, 'Un caffè, per favore. Uno. E stavolta non mi scuso.']
+        [0, 'Un caffè, per favore. Nella tazza più bella che avete.']
       ]
     ],
     e: { a: 'ha ricominciato da un corso di tango', b: 'si è dato il tempo di essere triste, e poi di ripartire' }

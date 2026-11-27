@@ -809,6 +809,90 @@ async function playMini(page, kind, itemId) {
       giuste.acc === 'Sono andata|Sono andato' && giuste.okM && giuste.okG,
       'vite per le persone giuste: «andato/andata» secondo il nome, e la vita di una mamma sola non capita a Marco'
     );
+    // calendario: stagioni, feste, compleanni, anniversari
+    const cal1 = await page.evaluate(() => {
+      const d = [1, 11, 20, 21].map(x => cal(x));
+      return {
+        date: [dataN(1), dataN(11), dataN(21)].join(' | '),
+        anni: d.map(c => c.anno).join(''),
+        neve: festa(11) && festa(11).id,
+        fine: festa(20) && festa(20).id
+      };
+    });
+    ok(
+      cal1.date === '1 d’autunno | 1 d’inverno | 1 di primavera' &&
+        cal1.anni === '1112' &&
+        cal1.neve === 'neve' &&
+        cal1.fine === 'fineanno',
+      `calendario: 40 giorni, 4 stagioni (${cal1.date}), l’anno nuovo comincia a primavera`
+    );
+    const neve = await page.evaluate(() => {
+      const C = window.__cafe,
+        st = C.st,
+        d0 = st.day;
+      st.day = 11; // la prima neve
+      startDay();
+      const r = { wx: st.wx, atm: calAtm(), html: calHTML() };
+      st.day = d0;
+      startDay();
+      return r;
+    });
+    ok(
+      neve.wx === 'neve' && /calstrip/.test(neve.html) && /La prima neve/.test(neve.html),
+      'feste: la prima neve fa nevicare davvero e il pannello Giorno mostra il calendario'
+    );
+    const bd = await page.evaluate(`(() => { const C = window.__cafe, st = C.st; const mia = C.keyReg('mia'); if (!mia) return null;
+      const d0 = st.day; let d = st.day; while (cal(d).i !== complI(mia)) d++; st.day = d; mia.bdY = 0;
+      const [a] = (${seatPair})(C, mia, mia, 0); C.people.filter(p => p.reg === mia && p !== a).forEach(p => { p.dead = true; if (p.seat) p.seat.occ = null; });
+      const h0 = st.hearts; calOnSit(a); const sc = C.scenes.find(s => s.story === 'compleanno'); window.__bd = { d0, h0 }; return !!sc; })()`);
+    for (let i = 0; i < 200; i++) {
+      if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=1');
+      if (!(await page.evaluate(() => window.__cafe.scenes.some(s => s.story === 'compleanno')))) break;
+      await sleep(80);
+    }
+    const bd2 = await page.evaluate(() => {
+      const C = window.__cafe,
+        st = C.st,
+        r = { hearts: st.hearts > window.__bd.h0, log: st.log[0] && st.log[0].t };
+      st.day = window.__bd.d0;
+      return r;
+    });
+    ok(
+      bd && bd2.hearts && /Compleanno di Mia/.test(bd2.log),
+      `compleanni: Mia festeggia al locale e tutti cantano gli auguri («${bd2.log}»)`
+    );
+    await clear();
+    const ann = await page.evaluate(`(() => { const C = window.__cafe, st = C.st;
+      const R = st.rel['ra|rb']; R.k = 'coppia'; R.d = st.day - 40; R.annY = 0;
+      const [a, b] = (${seatPair})(C, st.regs.find(r => r.id === 'ra'), st.regs.find(r => r.id === 'rb'), 4);
+      C.relScene(a, b); return !!C.scenes.find(s => s.story === 'anniversario'); })()`);
+    ok(ann, 'anniversari: un anno dopo essersi conosciuti, la coppia lo festeggia al loro tavolo');
+    await clear();
+    const fine = await page.evaluate(() => {
+      const C = window.__cafe,
+        st = C.st,
+        d0 = st.day;
+      st.day = 20;
+      st.yrShown = 0;
+      st.tod = 0.99;
+      const shown = calFineAnno();
+      const txt = document.querySelector('#mbox').textContent;
+      return { shown, txt, d0 };
+    });
+    await page.click('#mbox button.big');
+    await sleep(600);
+    const fine2 = await page.evaluate(d0 => {
+      const st = window.__cafe.st,
+        r = { again: calFineAnno(), shownYear: st.yrShown };
+      st.day = d0;
+      st.tod = 0.3;
+      hideModal();
+      return r;
+    }, fine.d0);
+    ok(
+      fine.shown && /L’anno del caffè/.test(fine.txt) && /nuovi habitué/.test(fine.txt) && !fine2.again && fine2.shownYear === 1,
+      'l’ultima sera dell’anno mostra il riepilogo: storie, vite, habitué, coppie (una volta sola)'
+    );
     // vite uniche e regia: un momento alla volta, chi aspetta fa segno, il locale si calma, il testo va avanti col tocco
     await clear();
     await page.evaluate(() => (window.__cafe.regia.off = false));
@@ -979,7 +1063,7 @@ async function playMini(page, kind, itemId) {
       const r = await gp.evaluate(() => {
         const s = TUT[tut.i].id,
           q = queue[0];
-        if (['cliente', 'speciale', 'aldo'].includes(s) && q && q.state === 'order' && !mini) tapCounter();
+        if (['cliente', 'speciale', 'ospite'].includes(s) && q && q.state === 'order' && !mini) tapCounter();
         if (mini && !mini.done) {
           mini.done = true;
           mini.q = 2;
@@ -994,7 +1078,7 @@ async function playMini(page, kind, itemId) {
           if (d) cleanSeat(d, 1);
         }
         if (s === 'macchina' && machTilt) tapIncident(W - 20, 84);
-        if (s === 'stella' && tut.aldo.invite) regiaTap(tut.aldo.x, tut.aldo.y - 10);
+        if (s === 'stella' && tut.ospite.invite) regiaTap(tut.ospite.x, tut.ospite.y - 10);
         if (regia.live) regiaNext();
         // durante il tutorial entrano solo i clienti mandati da Nonna Rosa
         return people.filter(p => !p.dead && p.state !== 'intro' && !p.tut).length;
@@ -1016,17 +1100,17 @@ async function playMini(page, kind, itemId) {
       await gp.waitForTimeout(80);
     }
     const want =
-      'cliente ascolta bisogno speciale cocci pulisci monete barista macchina aldo stella cuore diario diario2 atm fine fine-tutorial';
+      'cliente ascolta bisogno speciale cocci pulisci monete barista macchina ospite stella cuore diario diario2 atm fine fine-tutorial';
     ok(seen.join(' ') === want, `tutorial completo: ${seen.length - 1} passi (${seen.slice(0, -1).join(' › ')})`);
     ok(ringOk && calm && clockOk, 'il cerchio indica cosa toccare, entrano solo i clienti di Nonna Rosa e l’orologio è fermo');
-    const aldo = await gp.evaluate(() => ({
-      reg: !!st.regs.find(r => r.id === 'r_aldo'),
-      fd: (st.fdone || []).find(f => f.rid === 'r_aldo'),
+    const gino = await gp.evaluate(() => ({
+      reg: !!st.regs.find(r => r.id === 'r_gino'),
+      fd: (st.fdone || []).find(f => f.rid === 'r_gino'),
       barista: st.barista
     }));
     ok(
-      aldo.reg && aldo.fd && aldo.fd.log.length === 1 && aldo.barista === 1,
-      `il primo racconto: Aldo diventa habitué e la sua storia è nel Diario («${aldo.fd && aldo.fd.e}»)`
+      gino.reg && gino.fd && gino.fd.log.length === 1 && gino.barista === 1,
+      `il primo racconto: Gino diventa habitué e la sua storia è nel Diario («${gino.fd && gino.fd.e}»)`
     );
     for (let i = 0; i < 60 && (await gp.evaluate(() => people.some(p => p.name === 'Nonna Rosa' && !p.dead))); i++)
       await gp.waitForTimeout(200);

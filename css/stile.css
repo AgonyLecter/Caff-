@@ -1422,3 +1422,45 @@ input {
   color: #8a6a9a;
   margin-left: 6px;
 }
+
+/* Calendario nel pannello Giorno */
+.calstrip {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+  margin: 6px 0 8px;
+}
+.calstrip i {
+  font-style: normal;
+  text-align: center;
+  font-size: 12px;
+  padding: 4px 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  position: relative;
+}
+.calstrip i.pas {
+  opacity: 0.45;
+}
+.calstrip i.oggi {
+  outline: 2px solid var(--pink);
+}
+.calstrip i.fe {
+  color: #ffd166;
+}
+.calstrip i.co::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ff4fa3;
+}
+.calnext {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+}

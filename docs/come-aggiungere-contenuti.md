@@ -168,3 +168,18 @@ In tutte le battute `{item}` diventa quello che il cliente sta bevendo.
 
 `REL.amici`, `REL.coppia`, `REL.rivali`… sono elenchi di piccoli scambi tra due habitué con quel legame.
 Per aggiungerne basta un altro elemento: `[[0, 'Ciao {B}!'], [1, 'Ciao {A}.']]`.
+
+## Calendario: feste e compleanni (`js/dati/calendario.js`)
+
+L'anno del caffè dura 40 giorni: primavera (`s: 0`), estate (`1`), autunno (`2`), inverno (`3`), 10 giorni ciascuna (`g: 1…10`).
+
+```js
+{ id: 'castagne', s: 2, g: 3, n: 'La castagnata', d: 'Profumo di caldarroste (+5 Atmosfera)',
+  atm: 5,                       // facoltativo: Atmosfera in più quel giorno
+  ev: 'festival',               // facoltativo: usa gli effetti di un evento (più clienti, coppie, musicisti...)
+  wx: 'neve',                   // facoltativo: il tempo di quel giorno
+  tipi: { lettore: 6 },         // facoltativo: più clienti di un tipo
+  l: ['Frasi che i clienti dicono quel giorno', 'Si può usare {item}'] }
+```
+
+Due feste non possono cadere nello stesso giorno, e i compleanni dei personaggi (`COMPLEANNI: { mia: [0, 2] }`, con la frase in `COMPL_L`) non cadono nei giorni di festa: il controllo `node tests/dati.js` lo verifica.

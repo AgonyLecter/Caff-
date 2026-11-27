@@ -97,6 +97,7 @@ function pickType() {
     if (e === 'studenti' && k === 'studente') w *= 5;
     if (e === 'turisti' && k === 'turista') w *= 6;
     if (e === 'concerto' && k === 'musicista') w *= 10;
+    w *= calTipo(k); // nei giorni di festa, più clienti di un certo tipo
     if (k === 'studente') w *= 1 + st.wifi * 0.5;
     if (k === 'influencer' && rating() < 3.5) w *= 0.3;
     return w;
@@ -461,6 +462,7 @@ function checkFlag(c) {
 function relScene(a, b) {
   const k = relKey(a.reg, b.reg);
   let r = st.rel[k];
+  if (r && calAnniv(a, b, r)) return; // un anno fa si sono conosciuti qui
   let lines,
     mood = 'chat';
   const x = regiaFree() && momOk('incontro') ? xsFor([a, b]) : null;
@@ -602,6 +604,7 @@ function onSit(c) {
     c.reg.tb = c.reg.tb || {};
     c.reg.tb[ti] = (c.reg.tb[ti] || 0) + 1;
   }
+  if (calOnSit(c)) return; // compleanni e pensierini
   if (c.join) {
     const o = c.join;
     c.join = null;
@@ -909,6 +912,13 @@ function updCust(c, dt) {
             say(c, kl, sayDur(kl) + 0.6, c.name);
           }
         }
+        if (c.thinkT <= 0 && !c.story && !c.tut) {
+          const fl = calLine(c); // nei giorni di festa se ne parla
+          if (fl) {
+            c.thinkT = rnd(12, 20);
+            say(c, fl, sayDur(fl), c.reg ? c.name : '');
+          }
+        }
         if (c.thinkT <= 0 && c.reg && !c.reg.key && (c.reg.hn || 0) >= 3 && bubCount() < 4 && Math.random() < 0.22) {
           c.thinkT = rnd(10, 18);
           say(c, pick(REGL).replace('{item}', (c.order || MENU[0]).n), 3, c.name);
@@ -1193,10 +1203,12 @@ function updStreet(dt) {
       d.x = rnd(0, W + 20);
     }
   }
+  calParts(dt); // foglie, petali, lucciole
 }
-function rollWx() {
-  const ws = WXW[st.district] || WXW.centro;
-  return wpick(Object.keys(ws), k => ws[k]);
+function rollWx(d) {
+  const ws = WXW[st.district] || WXW.centro,
+    sw = stagione(d || st.day).wx; // il tempo segue la stagione
+  return wpick(Object.keys(ws), k => ws[k] * (sw[k] !== undefined ? sw[k] : 1));
 }
 function rollEv() {
   if (Math.random() > 0.45) return null;
@@ -1217,12 +1229,14 @@ function startDay() {
   st.wxShown = 0;
   st.evT = rnd(0.2, 0.65);
   st.evDone = 0;
-  st.nwx = rollWx();
+  st.nwx = rollWx(st.day + 1);
   st.nev = rollEv();
+  calStartDay(); // stagioni e feste
   st.ds = { served: 0, earned: 0, stars: [], couples: 0, cleaned: 0, items: {}, specials: 0, stories: 0 };
   genQuests();
-  toast(`Giorno ${st.day} · ${WXN[st.wx]}${st.ev ? ' · ' + EVENTS[st.ev].n : ''}`);
-  if (st.ev) setTimeout(() => toast(EVENTS[st.ev].d), 3700);
+  const E = giornoEv(st.day, st.ev);
+  toast(`Giorno ${st.day} · ${dataN()} · ${WXN[st.wx]}${E ? ' · ' + E.n : ''}`);
+  if (E) setTimeout(() => toast(E.d), 3700);
   drops.length = 0;
 }
 function genQuests() {
@@ -1282,6 +1296,7 @@ function claimQ(q) {
   }
 }
 function endDay() {
+  if (calFineAnno()) return; // l'ultima sera dell'anno, prima il riepilogo
   paused = true;
   const ds = st.ds || { served: 0, earned: 0, stars: [], couples: 0, stories: 0 };
   const avg = ds.stars.length ? ds.stars.reduce((a, b) => a + b, 0) / ds.stars.length : 0;
@@ -1289,7 +1304,14 @@ function endDay() {
   if (st.manager) st.quests.forEach(claimQ);
   let n = 12;
   const html = `<h2>Fine del giorno ${st.day}</h2><div class="sum"><div><b>${ds.served}</b><span>clienti serviti</span></div><div><b>${fmt(ds.earned)}</b><span>monete</span></div><div><b>${avg ? avg.toFixed(1).replace('.', ',') : '–'} ★</b><span>recensioni</span></div><div><b>${ds.couples}</b><span>coppie</span></div><div><b>${ds.stories}</b><span>racconti</span></div><div><b>${st.quests.filter(q => q.done).length}/3</b><span>obiettivi</span></div></div>
- ${ds.mlog && ds.mlog.length ? `<p class="note">Stasera ti hanno raccontato qualcosa: <b>${esc(ds.mlog.slice(0, -1).join(', ') + (ds.mlog.length > 1 ? ' e ' : '') + ds.mlog[ds.mlog.length - 1])}</b>.</p>` : ''}${best ? `<p>«${esc(best.t)}» <small>— ${esc(best.n)}</small></p>` : ''}<p>Domani: <b>${WXN[st.nwx]}</b>${st.nev ? ' · ' + EVENTS[st.nev].n : ''}</p>${st.quests.some(q => q.done && !q.cl) ? '<p>Hai obiettivi da riscuotere nel pannello Giorno: li riscuoto io per te.</p>' : ''}`;
+ ${ds.mlog && ds.mlog.length ? `<p class="note">Stasera ti hanno raccontato qualcosa: <b>${esc(ds.mlog.slice(0, -1).join(', ') + (ds.mlog.length > 1 ? ' e ' : '') + ds.mlog[ds.mlog.length - 1])}</b>.</p>` : ''}${best ? `<p>«${esc(best.t)}» <small>— ${esc(best.n)}</small></p>` : ''}<p>Domani, ${esc(dataN(st.day + 1))}: <b>${WXN[st.nwx]}</b>${giornoEv(st.day + 1, st.nev) ? ' · ' + giornoEv(st.day + 1, st.nev).n : ''}${complDi(
+   st.day + 1
+ )
+   .filter(r => r.key || r.f >= 3)
+   .map(r => ' · compleanno di ' + esc(r.n))
+   .join(
+     ''
+   )}</p>${st.quests.some(q => q.done && !q.cl) ? '<p>Hai obiettivi da riscuotere nel pannello Giorno: li riscuoto io per te.</p>' : ''}`;
   st.quests.forEach(claimQ);
   showModal(html, [{ t: `Apri il giorno ${st.day + 1}`, id: 'nd', big: 1, fn: next }]);
   const iv = setInterval(() => {
@@ -1413,6 +1435,7 @@ function update(dt) {
   musicianOn = people.some(p => p.state === 'sit' && p.act === 'guitar');
   scenes.forEach(s => updScene(s, dt));
   regiaTick(dt);
+  calTick(dt);
   scenes = scenes.filter(s => !s.done);
   for (const k in groups) if (!people.some(p => p.group === k) && !timers.length) delete groups[k];
   syncStaff();

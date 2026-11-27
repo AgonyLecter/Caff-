@@ -286,6 +286,7 @@ function pickReg() {
 function ritual() {
   const h = hour();
   if (h < 9 || h > 23) return false;
+  if (calRitoAnniv()) return true; // nel giorno dell'anniversario, le coppie vengono insieme
   for (const [k, v] of Object.entries(st.rel)) {
     if (!CLOSE.includes(v.k) || v.k === 'cotta') continue;
     if (v.rit == null) v.rit = (st.day + Object.keys(st.rel).indexOf(k)) % 7;
