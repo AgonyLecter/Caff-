@@ -210,7 +210,8 @@ function atm() {
     st.vetrina * 2 +
     perkAtm() +
     (blackout() ? 10 : 0) +
-    (musicianOn ? 5 : 0)
+    (musicianOn ? 5 : 0) +
+    calAtm() // feste
   );
 }
 function rating() {

@@ -19,8 +19,8 @@ Preferenze dell'utente:
 Script classici (non moduli ES) che condividono lo scope globale: funziona da `file://` e su GitHub Pages. Ordine di caricamento in `index.html`:
 
 1. `js/motore/base.js`
-2. `js/dati/`: personaggi, storie, mondo, frasi, animali, vite, vite-nuove, intrecci, segreti (solo contenuti)
-3. `js/motore/`: stato, citta, audio, simulazione, disegno-persone, disegno-locale, animali, vita, regia, attivo, atmosfera, interfaccia, risultati, guida, avvio
+2. `js/dati/`: personaggi, storie, mondo, frasi, animali, vite, vite-nuove, calendario, intrecci, segreti (solo contenuti)
+3. `js/motore/`: stato, citta, audio, simulazione, disegno-persone, disegno-locale, animali, vita, regia, calendario, attivo, atmosfera, interfaccia, risultati, guida, avvio
 
 Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `icone/`, `docs/come-aggiungere-contenuti.md` (guida per aggiungere personaggi/storie/vite/incroci/frasi), `README.md`, `tools/` (simulazione del ritmo).
 
@@ -55,6 +55,7 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 - **Storie** (`js/dati/storie.js`, ARCS): capitoli con `req` (anche `'a|b'`), flag `end`, `rand:{from,p}` (inizio in un giorno casuale), `gap` (giorni tra capitoli), `calc:{flag,values,fn}` (finale calcolato da più scelte), `whoBy` (chi compare in base a un flag), `nota` (finestra di aiuto alla fine). Ricompensa con `reward(sec)` basata su `incomeRef()`.
 - **Personaggi chiave** (`intrecci.js`): KEYS/KSEED diventano clienti abituali speciali (`ensureKeyRegs`). Ci sono gli incroci XS (`tryCross`) e gli epiloghi XEPI. Le vite autonome sono FILI e FILI2 (coppie, `startDuo`), più `socialAI`, `ritual()` e gli amici reciproci.
 - **Regia** (`regia.js`): un momento importante alla volta (scene con `story`, cioè `big`). Chi aspetta mostra la stellina (`invite`, `drawInvite`); parte se lo tocchi (`regiaTap`), se il bancone è libero o dopo `REGIA_WAIT`. Testo grande in alto (`#regia`, tocca per avanzare: `regiaNext`), luce abbassata intorno (`regiaDraw`), respiro `REGIA_REST`, limiti al giorno `MOM_DAY` (vite 4 visite, incontri 2), capitoli e vite a turno (`capTurno`, `regiaVita`). Fine giornata: «Stasera ti hanno raccontato qualcosa: …» (`st.ds.mlog`).
+- **Calendario** (`dati/calendario.js` + `motore/calendario.js`): anno di 40 giorni, 4 stagioni da 10 (`cal(d)` → anno, i, s, g; `CAL0=20`: il giorno 1 è il primo d'autunno, l'anno comincia a primavera; `dataN`). Il tempo segue la stagione (`STAGIONI[].wx` in `rollWx(d)`). 13 `FESTE` fisse (`ev` riusa EVENTS, `wx`, `atm`, `tipi`, `regali`, frasi `l`); nome mostrato con `giornoEv`. Compleanni: fissi per i personaggi chiave (`COMPLEANNI`, frase `COMPL_L`, scena con scelta `compleanno()`, il festeggiato passa da solo con `calTick`), «a caso ma fisso» per gli altri (`complI`, festa piccola in `calOnSit`). Anniversari delle coppie 40 giorni dopo `rel.d` (`calAnniv` in relScene, `calRitoAnniv` in ritual). Ultima sera dell'anno: riepilogo `calFineAnno` (foto di inizio anno `st.yr`). Pannello Giorno: `calHTML` (striscia dei 10 giorni, prossime feste/compleanni/anniversari). Fuori dalla finestra foglie, petali, lucciole (`calParts`/`calDraw`). Orologio: «7 aut · 12:00».
 - **Gioco attivo** (`attivo.js`):
   - ora di punta (`rush`, moltiplicatore fino a x3);
   - bisogni ai tavoli (`NEEDS`, `tapNeed`);
@@ -69,17 +70,17 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
   - insegne al neon sui muri (`NEONS`, `wallSlots`, `drawNeons` dopo `lighting()`).
 - **Accoglienza** (`guida.js`):
   - scena d'introduzione (`INTRO`): Nonna Rosa spiega che contano le storie, non solo le monete;
-  - **tutorial a passi** (`TUT`, stato `tut`): Nonna Rosa resta nel locale (`TUT_STAY`) e fa provare tutto: primo cliente, toccare chi è seduto, un bisogno, un ordine speciale, cocci, tavolo sporco, monete, barista, macchina in tilt, il primo racconto (il signor Aldo, `ALDO`, scena `noAuto` che parte solo toccando la stellina; poi diventa l'habitué `r_aldo` con la storia «Il forno di Ines» nel Diario), Diario, Atmosfera, saluto. I clienti di prova hanno `c.tut` (pazienza infinita, si siedono sempre, `forceSpecial`, `noDirty`). Durante `tut` niente clienti normali, storie, imprevisti casuali, e l'orologio è fermo. «Salta il tutorial» chiude tutto (`tutEnd(true)`). Parte solo nelle partite nuove (giorno 1, meno di 10 serviti);
+  - **tutorial a passi** (`TUT`, stato `tut`): Nonna Rosa resta nel locale (`TUT_STAY`) e fa provare tutto: primo cliente, toccare chi è seduto, un bisogno, un ordine speciale, cocci, tavolo sporco, monete, barista, macchina in tilt, il primo racconto (Gino, il garzone del vecchio forno, `GINO`, scena `noAuto` che parte solo toccando la stellina; poi diventa l'habitué `r_gino` con la storia «Il garzone del forno» nel Diario; non usare nomi dei personaggi chiave, es. Aldo esiste già), Diario, Atmosfera, saluto. I clienti di prova hanno `c.tut` (pazienza infinita, si siedono sempre, `forceSpecial`, `noDirty`). Durante `tut` niente clienti normali, storie, imprevisti casuali, e l'orologio è fermo. «Salta il tutorial» chiude tutto (`tutEnd(true)`). Parte solo nelle partite nuove (giorno 1, meno di 10 serviti);
   - consigli sulle novità (`GUIDA`, anello `#gring`), che scattano quando serve dopo il tutorial.
 - **PWA**: installabile; il service worker legge prima dalla rete e usa la cache se manca la connessione.
 
 ## Contenuti attuali
 
-22 personaggi, 24 storie (79 capitoli), 56 vite, 19 vite di coppia, 24 incroci, 13 epiloghi, 12 ricette, 14 insegne al neon.
+22 personaggi, 24 storie (79 capitoli), 56 vite, 19 vite di coppia, 13 feste, 20 compleanni, 24 incroci, 13 epiloghi, 12 ricette, 14 insegne al neon.
 
 Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline): circa 2 capitoli al giorno, 40 capitoli verso i 160 minuti (prima a 57), le vite partono verso l'ora di gioco; i potenziamenti arrivano ancora fino a circa 3 ore. Le storie ora durano di più apposta, per gustarle; se sembra troppo lento, alzare `MOM_DAY` o abbassare `REGIA_REST`/`REGIA_WAIT`. Il gioco avanzato si regge su vite infinite e relazioni; il calendario (fase 2) serve a dargli più struttura.
 
-## Fatto finora (PR #6 → #25)
+## Fatto finora (PR #6 → #26)
 
 - Minigiochi solo dal pulsante.
 - Grafica più curata.
@@ -98,8 +99,9 @@ Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline)
 - Laboratorio ricette.
 - PWA.
 - Guida e intro con Nonna Rosa.
-- Tutorial vero con Nonna Rosa (16 passi, il primo racconto del signor Aldo).
+- Tutorial vero con Nonna Rosa (16 passi, il primo racconto di Gino).
 - Vite uniche (niente testi uguali per persone diverse) e regia dei racconti (un momento alla volta).
+- Calendario: stagioni, 13 feste, compleanni, anniversari, riepilogo di fine anno, foglie/petali/lucciole.
 - 25 vite nuove e 10 vite a due nuove (anche temi forti: un genitore che dimentica, solitudine, bullismo, mamma sola, separazione, coming out, lutto per un animale, panico, esaurimento).
 
 ## Prossimi passi (in ordine)
@@ -111,10 +113,7 @@ Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline)
    - qualche suono più bello (pioggia, tazzine, porta).
 
    **NON** fare l'opzione «grafica leggera» per telefoni: l'utente non la vuole.
-2. **Calendario interno (fase 2)**:
-   - anno di 40 giorni, con 4 stagioni da 10 giorni;
-   - feste, compleanni e anniversari dei personaggi;
-   - eventualmente un richiamo alla data reale.
+2. Calendario: fatto. Idee per dopo: un richiamo alla data reale (Natale, Capodanno…), decorazioni stagionali dentro il locale, ricette di stagione.
 3. Altre idee già discusse:
    - versione in inglese;
    - altre storie forti trattate con cura (anziano solo, bullismo, madre single…);

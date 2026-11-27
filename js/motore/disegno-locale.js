@@ -216,6 +216,7 @@ function drawWindow() {
     g.fillStyle = 'rgba(180,205,255,.45)';
     for (const d of drops) g.fillRect(Math.round(d.x), WY0 + Math.round(d.y), 1, 3);
   }
+  calDraw(); // foglie, petali, lucciole
   if (w === 'nebbia') {
     g.fillStyle = 'rgba(210,214,224,.38)';
     g.fillRect(0, WY0, W, hh);

@@ -1149,7 +1149,8 @@ function dayHTML() {
     hh = Math.floor(h) % 24,
     mm = Math.floor((h % 1) * 60);
   return (
-    `<div class="card2"><h3>Giorno ${st.day}<small>${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}</small></h3><p class="ad">Meteo: ${WXN[curWx()]}${st.wx2 && st.tod < 0.5 ? ' (poi ' + WXN[st.wx2].toLowerCase() + ')' : ''}${st.ev ? ` · <b>${EVENTS[st.ev].n}</b>: ${EVENTS[st.ev].d}` : ''}</p><p class="ad">Domani: ${WXN[st.nwx] || '?'}${st.nev ? ' · ' + EVENTS[st.nev].n : ''}</p></div>` +
+    calHTML() +
+    `<div class="card2"><h3>Giorno ${st.day}<small>${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}</small></h3><p class="ad">Meteo: ${WXN[curWx()]}${st.wx2 && st.tod < 0.5 ? ' (poi ' + WXN[st.wx2].toLowerCase() + ')' : ''}${(E => (E ? ` · <b>${E.n}</b>: ${E.d}` : ''))(giornoEv(st.day, st.ev))}</p><p class="ad">Domani: ${WXN[st.nwx] || '?'}${(E => (E ? ' · ' + E.n : ''))(giornoEv(st.day + 1, st.nev))}</p></div>` +
     `<p class="note">Obiettivi di oggi${st.manager ? ' (la manager li riscuote da sola)' : ''}. Completali tutti per un ♥.</p>` +
     st.quests
       .map(
@@ -1638,7 +1639,8 @@ function hud() {
   const h = hour(),
     hh = Math.floor(h) % 24,
     mm = Math.floor((h % 1) * 6) * 10;
-  const clock = `G${st.day} · ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  const cc = cal(),
+    clock = `${cc.g} ${STAGIONI[cc.s].sig} · ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
   const wk = curWx() === 'sereno' && nightF() > 0.5 ? 'luna' : curWx();
   if (wk !== lastW) {
     lastW = wk;

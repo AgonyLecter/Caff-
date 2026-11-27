@@ -203,6 +203,12 @@ document.addEventListener('click', e => {
 });
 // i salvataggi già avanzati non rivedono i consigli di base: solo quelli sulle novità
 function guideForOldSaves() {
+  // il primo habitué del tutorial si chiamava Aldo come un personaggio delle storie: ora si distingue
+  const a = st.regs && st.regs.find(r => r.id === 'r_aldo' && r.n === 'Aldo');
+  if (a) {
+    a.n = 'Aldo B.';
+    (st.fdone || []).forEach(f => f.rid === 'r_aldo' && (f.n = 'Aldo B.'));
+  }
   if (st.tut || st.served < 80) return;
   st.tut = {};
   GUIDA.forEach(s => {
@@ -214,7 +220,7 @@ setInterval(() => guideTick(0.3), 300);
 /* ----- il primo giorno: Nonna Rosa apre il locale e ti insegna il mestiere ----- */
 // Dopo il filmato e il nome entra Nonna Rosa col suo gatto e spiega che qui contano le persone e le loro storie.
 // Poi resta in piedi accanto a te e ti fa provare tutto, una cosa alla volta: il primo cliente, un bisogno,
-// un ordine speciale, i cocci, il tavolo sporco, il barista, la macchina in tilt... e il primo racconto (il signor Aldo).
+// un ordine speciale, i cocci, il tavolo sporco, il barista, la macchina in tilt... e il primo racconto (Gino, il garzone del vecchio forno).
 // Intanto non entra nessun altro e l'orologio è fermo. Alla fine se ne va, e da lì in poi dà solo consigli sulle novità.
 const INTRO = [
   "Oh! Le luci sono accese! Finalmente. Io sono Rosa, abito qui sopra da sessant'anni. Lui è Ciuffo.",
@@ -309,31 +315,31 @@ function tutCust(o) {
 }
 const tutGone = c => !c || c.dead || c.state === 'leave';
 const tutServed = c => c && !['enter', 'queue', 'order'].includes(c.state);
-const ALDO = [
+const GINO = [
   [0, 'Scusi... è aperto davvero? Non ci credevo, quando ho visto la luce.'],
-  [0, "Qui una volta c'era il forno. Mia moglie Ines veniva ogni mattina alle sette."],
-  [0, '*gira il cucchiaino, piano piano*'],
-  [0, 'È mancata in primavera. Da allora esco poco. La casa è troppo silenziosa.'],
+  [0, 'Da ragazzo lavoravo qui. Era un forno. Mi alzavo alle tre per impastare.'],
+  [0, '*passa la mano sul tavolo, come per sentire se c’è ancora la farina*'],
+  [0, 'Quando ha chiuso ho cambiato tre lavori. Nessuno profumava così.'],
   {
     c: {
-      q: 'Aldo guarda la tazza. Non sa se ha fatto bene a entrare.',
+      q: 'Gino guarda il bancone come se ci vedesse ancora il vecchio forno.',
       o: [
         {
-          t: '«Mi racconti di Ines.»',
-          f: 'tut_aldo=ines',
+          t: '«Mi racconti com’era.»',
+          f: 'tut_gino=forno',
           r: [
-            [0, 'Rideva forte, sa? La sentivano fino in piazza.'],
-            [0, 'Prendeva sempre due cornetti. Uno per me, anche se dicevo di no.'],
+            [0, 'Il pane usciva alle sei. La fila arrivava fino all’angolo.'],
+            [0, 'Rosa comprava sempre la pagnotta più bruciata. Diceva che era la più buona.'],
             [0, '...Grazie. Era tanto che nessuno me lo chiedeva.']
           ]
         },
         {
           t: '«Torni quando vuole. Questo può essere il suo tavolo.»',
-          f: 'tut_aldo=tavolo',
+          f: 'tut_gino=tavolo',
           r: [
-            [0, 'Un tavolo mio? Alla mia età?'],
+            [0, 'Un tavolo mio? Proprio qui, dove c’era il forno?'],
             [0, '*sorride, per la prima volta*'],
-            [0, 'Va bene. Allora domani torno. Alle sette, come lei.']
+            [0, 'Va bene. Allora torno domani. Alle sei, come il pane.']
           ]
         }
       ]
@@ -430,32 +436,32 @@ const TUT = [
     done: () => !machTilt
   },
   {
-    id: 'aldo',
-    start: () => (tut.aldo = tutCust({ type: 'nonno', name: 'Aldo', look: randLook('nonno') })),
-    text: 'Guarda chi entra... È il signor Aldo! Veniva al forno tutte le mattine. Servilo pure (o lascia fare al barista), poi vediamo.',
-    world: () => (tut.aldo.state === 'sit' ? null : tut.aldo),
-    done: () => !!tut.aldo.scene
+    id: 'ospite',
+    start: () => (tut.ospite = tutCust({ type: 'nonno', name: 'Gino', look: randLook('nonno') })),
+    text: 'Guarda chi entra... È Gino! Da ragazzo faceva il garzone del forno. Servilo pure (o lascia fare al barista), poi vediamo.',
+    world: () => (tut.ospite.state === 'sit' ? null : tut.ospite),
+    done: () => !!tut.ospite.scene
   },
   {
     id: 'stella',
     text: 'Vedi la stellina sopra di lui? Vuol dire che ha qualcosa da raccontarti. Toccalo quando sei pronta: il locale ti aspetta.',
-    world: () => (tut.aldo.invite ? tut.aldo : null),
-    done: () => tut.aldoDone
+    world: () => (tut.ospite.invite ? tut.ospite : null),
+    done: () => tut.ospiteDone
   },
   {
     id: 'cuore',
-    text: 'Hai visto? Questo è il cuore del locale. Le persone ti affidano la loro vita, e quello che rispondi la cambia davvero. Aldo tornerà: ora è uno dei tuoi habitué.'
+    text: 'Hai visto? Questo è il cuore del locale. Le persone ti affidano la loro vita, e quello che rispondi la cambia davvero. Gino tornerà: ora è uno dei tuoi habitué.'
   },
   {
     id: 'diario',
-    text: 'Le storie non si perdono: restano nel Diario. Apri «Clienti», c’è già quella di Aldo.',
+    text: 'Le storie non si perdono: restano nel Diario. Apri «Clienti», c’è già quella di Gino.',
     target: '#bCli',
     done: () => panel === 'cli'
   },
   {
     id: 'diario2',
     start: () => {
-      // apre la pagina delle vite, dove c'è la storia di Aldo
+      // apre la pagina delle vite, dove c'è la storia di Gino
       if (panel === 'cli') {
         tab = 'Vite';
         renderPanel();
@@ -508,11 +514,11 @@ function tutTick(dt) {
     s = TUT[tut.i];
   if (c.path.length && follow(c, dt)) c.face = 1;
   tut.t += dt;
-  // il signor Aldo, appena seduto, vuole raccontare: la scena aspetta che tu lo tocchi
-  const A = tut.aldo;
+  // Gino, appena seduto, vuole raccontare: la scena aspetta che tu lo tocchi
+  const A = tut.ospite;
   if (A && A.state === 'sit' && !A.scene && !A.told) {
     A.told = 1;
-    startScene([A], fillT(ALDO, A, null), { story: 'tut', noAuto: true, onEnd: () => tutAldoEnd(A) });
+    startScene([A], fillT(GINO, A, null), { story: 'tut', noAuto: true, onEnd: () => tutOspiteEnd(A) });
     A._sc = scenes[scenes.length - 1];
   }
   if (!s) return;
@@ -525,13 +531,13 @@ function tutTick(dt) {
   if (!tut.shown) tutShow(s);
   placeRing(s);
 }
-// Aldo diventa il primo habitué, e la sua storia entra nel Diario
-function tutAldoEnd(A) {
-  const ines = st.flags.tut_aldo === 'ines';
-  delete st.flags.tut_aldo;
+// Gino diventa il primo habitué, e la sua storia entra nel Diario
+function tutOspiteEnd(A) {
+  const forno = st.flags.tut_gino === 'forno';
+  delete st.flags.tut_gino;
   const r = {
-    id: 'r_aldo',
-    n: 'Aldo',
+    id: 'r_gino',
+    n: 'Gino',
     look: A.look,
     type: 'nonno',
     fav: (A.order || MENU[0]).id,
@@ -544,18 +550,18 @@ function tutAldoEnd(A) {
   A.reg = r;
   const sc = A._sc,
     ch = sc && sc.lines.find(x => !Array.isArray(x));
-  st.fdone = (st.fdone || []).filter(f => f.rid !== 'r_aldo'); // se il tutorial è ricominciato a metà
+  st.fdone = (st.fdone || []).filter(f => f.rid !== 'r_gino'); // se il tutorial è ricominciato a metà
   st.fdone.unshift({
-    n: 'Aldo',
+    n: 'Gino',
     rid: r.id,
-    t: 'Il forno di Ines',
-    e: ines ? 'ti ha raccontato di Ines, e ha sorriso' : 'ha trovato il suo tavolo, alle sette come lei',
+    t: 'Il garzone del forno',
+    e: forno ? 'ti ha raccontato del vecchio forno, e ha sorriso' : 'ha trovato il suo tavolo, proprio dove c’era il forno',
     d: st.day,
     log: sc
       ? [
           {
             l: sc.lines.filter(Array.isArray).map(x => x[1]),
-            ch: ch ? ch.c.o.find(o => o.f === 'tut_aldo=' + (ines ? 'ines' : 'tavolo')).t : null,
+            ch: ch ? ch.c.o.find(o => o.f === 'tut_gino=' + (forno ? 'forno' : 'tavolo')).t : null,
             at: ch ? sc.lines.indexOf(ch) : 0
           }
         ]
@@ -566,9 +572,9 @@ function tutAldoEnd(A) {
   floats.push({ x: A.x, y: A.y - 36, txt: '♥ +1', t: 1.8, col: '#ff4fa3' });
   sfx('story');
   st.newStory = 1;
-  toast('Aldo ora è un habitué · la sua storia è nel Diario');
-  logB('Aldo ora è un habitué');
-  tut.aldoDone = 1;
+  toast('Gino ora è un habitué · la sua storia è nel Diario');
+  logB('Gino ora è un habitué');
+  tut.ospiteDone = 1;
   save();
 }
 function tutEnd(skipped) {
