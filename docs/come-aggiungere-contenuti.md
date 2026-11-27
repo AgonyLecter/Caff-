@@ -93,7 +93,8 @@ lina: { n: 'Lina', l: {
 
 - Se la storia ha `end`, ogni finale deve avere almeno una battuta propria nell'ultimo capitolo.
 - Un `perk` nuovo vale solo come testo finché non gli si dà un effetto nel motore (per esempio Atmosfera in `perkAtm`, in `js/motore/stato.js`).
-- Perché i personaggi **restino** dopo la storia, aggiungili anche a `KEYS` (vedi sotto).
+- Perché i personaggi **restino** dopo la storia, aggiungili anche a `KEYS` (vedi sotto). Ogni personaggio in `KEYS` deve avere anche un compleanno (`COMPLEANNI` e `COMPL_L` in `js/dati/calendario.js`).
+- Se la storia tocca un tema forte, aggiungi `nota`: alla fine compare una finestra con un aiuto concreto (numeri di supporto).
 
 ## Un personaggio che resta (`KEYS`)
 

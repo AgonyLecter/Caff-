@@ -151,6 +151,7 @@ const FESTE = [
 ];
 
 const COMPLEANNI = {
+  alice: [0, 3],
   mia: [0, 2],
   luca: [0, 6],
   giada: [0, 9],
@@ -175,6 +176,7 @@ const COMPLEANNI = {
 
 // una frase tutta loro, il giorno del compleanno
 const COMPL_L = {
+  alice: 'L’anno scorso il compleanno l’ho passato in ospedale. Quest’anno voglio una torta enorme. E la mangio tutta.',
   mia: 'Mi sono regalata un pennello nuovo. Costava troppo. Non me ne pento.',
   luca: 'Mia madre mi ha chiamato alle sette e mi ha cantato gli auguri. Stonata. Bellissimo.',
   giada: 'Ho studiato fino a mezzanotte e poi mi sono accorta che era il mio compleanno.',

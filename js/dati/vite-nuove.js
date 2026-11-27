@@ -52,6 +52,51 @@ const donna = r => !!r && NOMI_F.includes(String(r.n || r.name || '').split(' ')
 
 FILI.push(
   {
+    id: 'k_alice',
+    p: 1,
+    t: 'La recita',
+    ok: r => r.key === 'alice',
+    b: [
+      [
+        [0, 'A fine anno i bambini fanno la recita. E indovina chi la deve organizzare? Io.'],
+        [0, 'Ventidue bambini, una storia, un palco che è la palestra con le tende.'],
+        [0, 'Un anno fa non riuscivo a salire le scale. Adesso devo dirigere uno spettacolo.']
+      ],
+      [
+        [0, 'C’è un problema. Tommaso, il più timido, vuole fare l’albero. Solo l’albero. Senza battute.'],
+        [0, 'Gli altri ridono di lui. E io so cosa vuol dire, voler sparire.'],
+        {
+          c: {
+            q: '«Lo lascio fare l’albero o lo incoraggio a dire qualcosa?»',
+            o: [
+              {
+                t: '«Lascialo fare l’albero. Il più bello che si sia mai visto.»',
+                f: '@a',
+                r: [[0, 'L’albero più bello del mondo. Gli faccio le foglie una per una.']]
+              },
+              {
+                t: '«Dagli una battuta sola. Piccola. Sua.»',
+                f: '@b',
+                r: [[0, 'Una battuta sola... «Anche gli alberi ascoltano». La scrivo stasera.']]
+              }
+            ]
+          }
+        }
+      ],
+      [
+        [0, 'Tommaso era un albero meraviglioso. Fermo, fierissimo. Alla fine tutti hanno applaudito l’albero.', '@a'],
+        [0, 'Sua madre mi ha abbracciata e piangeva. Ha detto che non l’aveva mai visto così contento.', '@a'],
+        [0, 'Tommaso ha detto la sua battuta. Piano, ma l’hanno sentita tutti: «Anche gli alberi ascoltano».', '@b'],
+        [0, 'Poi ha fatto un inchino che non era previsto. Il pubblico è impazzito.', '@b'],
+        [0, 'Sai cosa ho pensato, dietro le tende? Che sono contenta di essere qui. Proprio qui, adesso.']
+      ]
+    ],
+    e: {
+      a: 'ha diretto la recita, con l’albero più bello del mondo',
+      b: 'ha diretto la recita, e il bambino più timido ha detto la sua battuta'
+    }
+  },
+  {
     id: 'dimentica',
     t: 'La mamma che dimentica',
     solo: 1,
