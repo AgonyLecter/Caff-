@@ -388,7 +388,6 @@ const TUT = [
         s = c.seat;
       if (s && c.state === 'sit') {
         newIncident('cocci', s.x + s.side * 3, s.y + 4);
-        sfx('pop');
         c.sitT = 0;
         say(c, 'Oh no, scusate! Che sbadato...', 2.4);
       }

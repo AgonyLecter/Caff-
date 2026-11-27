@@ -65,7 +65,7 @@ function tap(e) {
         sl.seats.forEach(s => {
           if (s.dirty) cleanSeat(s, 1);
         });
-        sfx('tap');
+        sfx('piatti');
         return;
       }
       const c = sl.seats
@@ -181,6 +181,7 @@ function begin() {
   save();
   hud();
   guideForOldSaves();
+  applyBig();
   // partita nuova (o tutorial interrotto a metà, il primo giorno): apre Nonna Rosa e ti insegna il mestiere
   if (!st.introDone && !st.tutOff && st.day === 1 && st.served < 10) setTimeout(startIntro, 1200);
   else st.introDone = 1;

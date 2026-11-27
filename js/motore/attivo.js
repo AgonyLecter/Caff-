@@ -246,6 +246,7 @@ function incidentTick(dt) {
   }
 }
 function newIncident(k, x, y, o) {
+  if (k === 'cocci') sfx('crash');
   incid.push(Object.assign({ k, x, y, t: k === 'ombrello' ? 70 : 60, id: ++uid }, o || {}));
 }
 // chiamata quando un cliente si alza: a volte rompe la tazza, a volte dimentica l'ombrello

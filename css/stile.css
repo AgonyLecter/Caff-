@@ -1464,3 +1464,82 @@ input {
   font-size: 13px;
   line-height: 1.5;
 }
+
+/* Impostazioni: volumi e lettura */
+.set .card2 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.vol {
+  display: grid;
+  grid-template-columns: 112px 1fr 34px;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--ink);
+}
+.vol input[type='range'] {
+  background: none;
+  border: 0;
+  padding: 0;
+  height: 28px;
+  accent-color: var(--pink);
+  width: 100%;
+}
+.vol b {
+  text-align: right;
+  color: #ffd166;
+  font-weight: 500;
+}
+.seg {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.seg span {
+  font-size: 14px;
+  flex: 1 0 100%;
+}
+.seg button {
+  flex: 1;
+}
+.seg button.on {
+  border-color: var(--pink);
+  color: #ffd166;
+}
+
+/* Testo grande */
+.grande #pbody,
+.grande #modal .box,
+.grande #mini .box {
+  zoom: 1.15;
+}
+.grande #regia p {
+  font-size: 20px;
+}
+.grande #regia b {
+  font-size: 16px;
+}
+.grande #guide {
+  max-width: min(440px, 52vw);
+}
+.grande #guide p {
+  font-size: 16px;
+}
+.grande #guide b {
+  font-size: 16px;
+}
+.grande #toast {
+  font-size: 18px;
+}
+.grande #rtext p {
+  font-size: 18px;
+}
+
+/* mentre qualcuno racconta, gli avvisi compaiono in basso */
+body.racconto #toast {
+  top: auto;
+  bottom: calc(max(6px, env(safe-area-inset-bottom)) + 70px);
+}
