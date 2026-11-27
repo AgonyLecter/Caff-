@@ -1,7 +1,7 @@
 // Servizio offline: il gioco si apre anche senza connessione.
 // Prima prova la rete (così gli aggiornamenti arrivano subito), se non c'è usa la copia salvata.
 // Quando cambiano i file del gioco basta aumentare VERSIONE: la vecchia copia viene buttata.
-const VERSIONE = 'caffe-v6';
+const VERSIONE = 'caffe-v7';
 const FILE = [
   './',
   'index.html',
@@ -17,6 +17,7 @@ const FILE = [
   'js/dati/vite.js',
   'js/dati/vite-nuove.js',
   'js/dati/calendario.js',
+  'js/dati/novita.js',
   'js/dati/intrecci.js',
   'js/dati/segreti.js',
   'js/motore/stato.js',
@@ -34,6 +35,7 @@ const FILE = [
   'js/motore/interfaccia.js',
   'js/motore/risultati.js',
   'js/motore/guida.js',
+  'js/motore/ritorno.js',
   'js/motore/avvio.js',
   'icone/apple-touch-icon.png',
   'icone/favicon-48.png',

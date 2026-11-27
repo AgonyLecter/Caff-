@@ -1138,6 +1138,10 @@ async function playMini(page, kind, itemId) {
       rosa: people.some(p => p.name === 'Nonna Rosa' && !p.dead)
     }));
     ok(end.done && !end.rosa && back, 'finito il tutorial Nonna Rosa se ne va e il locale si riempie');
+    ok(
+      await gp.evaluate(() => st.nov === NOVITA.length && !novita),
+      'in una partita nuova Nonna Rosa non racconta le novità: si scoprono giocando'
+    );
     await gp.close();
     // chi vuole, salta tutto
     const gs = await newGame();
@@ -1154,6 +1158,85 @@ async function playMini(page, kind, itemId) {
     });
     ok(old, 'i salvataggi avanzati vedono solo i consigli sulle novità');
     await gs.close();
+  }
+
+  console.log('Mentre eri via e novità di Nonna Rosa');
+  {
+    const rp = await browser.newPage({ viewport: { width: 1000, height: 450 } });
+    rp.on('pageerror', e => errors.push(e.message));
+    await rp.goto(FILE);
+    await rp.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem(
+        'cafe_pioggia_v2',
+        JSON.stringify({
+          v: 2,
+          name: 'Ritorno',
+          tutOff: 1,
+          introDone: 1,
+          day: 9,
+          served: 400,
+          ips: 3,
+          barista: 2,
+          waiter: 1,
+          cat: 1,
+          story: { tazze: 2 },
+          fU: ['esame'],
+          last: Date.now() - 5 * 3600 * 1000,
+          regs: [
+            {
+              id: 'r1',
+              n: 'Giulia',
+              look: { s: '#eab88f', h: '#3b2418', hs: 1, o: 1, c1: '#90be6d', c2: '#264653' },
+              type: 'normale',
+              fav: 'capp',
+              v: 9,
+              f: 6,
+              tr: [],
+              fl: { id: 'esame', s: 1, day: 8, log: [] }
+            }
+          ]
+        })
+      );
+    });
+    await rp.reload();
+    await rp.waitForTimeout(300);
+    await rp.click('#go');
+    let notte = null;
+    for (let i = 0; i < 40 && !notte; i++) {
+      notte = await rp.evaluate(() =>
+        !document.querySelector('#modal').hidden && /Mentre eri via/.test(document.querySelector('#mbox').textContent)
+          ? {
+              voci: document.querySelectorAll('#mbox .notte li').length,
+              monete: /monete/.test(document.querySelector('#mbox').textContent)
+            }
+          : null
+      );
+      await rp.waitForTimeout(150);
+    }
+    const fermo = await rp.evaluate(() => ({
+      story: st.story.tazze,
+      fl: st.regs[0].fl && st.regs[0].fl.s,
+      day: st.day,
+      fU: st.fU.join(',')
+    }));
+    ok(
+      notte && notte.voci === 3 && notte.monete && fermo.story === 2 && fermo.fl === 1 && fermo.day === 9 && fermo.fU === 'esame',
+      `mentre eri via (5 ore): ${notte && notte.voci} piccole notizie e le monete, ma storie, vite e giorno restano fermi`
+    );
+    await rp.click('#mbox button.big');
+    let nov = null;
+    for (let i = 0; i < 30 && !nov; i++) {
+      nov = await rp.evaluate(() => (novita && !document.querySelector('#guide').hidden ? novita.L.length : null));
+      await rp.waitForTimeout(200);
+    }
+    for (let i = 0; i < 6 && (await rp.isVisible('#nok')); i++) {
+      await rp.click('#nok');
+      await rp.waitForTimeout(120);
+    }
+    const dopo = await rp.evaluate(() => ({ fine: !novita && document.querySelector('#guide').hidden, nov: st.nov === NOVITA.length }));
+    ok(nov === 4 && dopo.fine && dopo.nov, `Nonna Rosa racconta le novità al ritorno (${nov}), una volta sola`);
+    await rp.close();
   }
 
   console.log('Macchina del caffè e schermata di caricamento');

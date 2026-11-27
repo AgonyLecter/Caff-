@@ -130,7 +130,7 @@ function dirtySeat() {
 let gCur = null,
   gT = 0;
 function guideTick(dt) {
-  if (intro || tut) return; // durante la scena e il tutorial di Nonna Rosa la scheda è sua
+  if (intro || tut || novita) return; // durante la scena, il tutorial e le novità di Nonna Rosa la scheda è sua
   if (!started || cine) return hideGuide();
   st.tut = st.tut || {};
   if (st.tutOff) return hideGuide();

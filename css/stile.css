@@ -1683,3 +1683,14 @@ body.racconto #toast {
   margin-right: 8px;
   vertical-align: -3px;
 }
+
+/* il diario della notte */
+.notte {
+  margin: 8px 0 12px;
+  padding-left: 20px;
+  text-align: left;
+  line-height: 1.45;
+}
+.notte li {
+  margin-bottom: 6px;
+}
