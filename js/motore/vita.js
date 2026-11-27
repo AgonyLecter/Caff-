@@ -3,11 +3,18 @@
 function fFlag(r) {
   return 'fl_' + r.id;
 }
+// {o} diventa «o» o «a» secondo il nome dell'habitué (sono andat{o} → andato / andata)
+const gO = (t, r) => t.replace(/\{o\}/g, typeof donna === 'function' && donna(r) ? 'a' : 'o');
 function filoLines(lines, r) {
   const k = fFlag(r);
   return lines.map(l => {
-    if (Array.isArray(l)) return l[2] && l[2][0] === '@' ? [l[0], l[1], k + '=' + l[2].slice(1)] : l;
-    return { c: { q: l.c.q.replace(/\{A\}/g, r.n), o: l.c.o.map(o => ({ t: o.t, f: k + '=' + o.f.slice(1), r: o.r })) } };
+    if (Array.isArray(l)) return [l[0], gO(l[1], r), l[2] && l[2][0] === '@' ? k + '=' + l[2].slice(1) : l[2]];
+    return {
+      c: {
+        q: gO(l.c.q.replace(/\{A\}/g, r.n), r),
+        o: l.c.o.map(o => ({ t: gO(o.t, r), f: k + '=' + o.f.slice(1), r: o.r.map(x => [x[0], gO(x[1], r)]) }))
+      }
+    };
   });
 }
 function filoReady(r) {
@@ -39,14 +46,17 @@ function vitePrese() {
 const filoPreso = id => vitePrese().fU.includes(id);
 const duoPreso = id => vitePrese().f2U.includes(id);
 function filoLibero(r) {
-  return FILI.some(f => !filoPreso(f.id) && (f.ok(r) || (!f.p && !(r.type === 'nonno' && ['bici', 'compleanno'].includes(f.id)))));
+  return FILI.some(
+    f => !filoPreso(f.id) && (f.ok(r) || (!f.p && !f.solo && !(r.type === 'nonno' && ['bici', 'compleanno'].includes(f.id))))
+  );
 }
 function startFilo(c) {
   const r = c.reg;
   if (!r.fl) {
     const opts = FILI.filter(f => !filoPreso(f.id) && f.ok(r)),
       pri = opts.filter(f => f.p);
-    const any = FILI.filter(f => !f.p && !filoPreso(f.id) && !(r.type === 'nonno' && ['bici', 'compleanno'].includes(f.id)));
+    // a caso solo le vite adatte a tutti: quelle «solo» (temi delicati, mamme, papà...) capitano solo a chi passa il controllo
+    const any = FILI.filter(f => !f.p && !f.solo && !filoPreso(f.id) && !(r.type === 'nonno' && ['bici', 'compleanno'].includes(f.id)));
     if (!opts.length && !any.length) return false;
     const F = pick(pri.length ? pri : opts.length ? opts : any);
     r.fl = { id: F.id, s: 0, day: -1, log: [] };
@@ -68,7 +78,7 @@ function startFilo(c) {
       F.b[step].forEach(l => {
         if (l && l.c)
           l.c.o.forEach(o => {
-            if (st.flags[fFlag(r)] === o.f.slice(1)) ch = o.t;
+            if (st.flags[fFlag(r)] === o.f.slice(1)) ch = gO(o.t, r);
           });
       });
       if (sc)
