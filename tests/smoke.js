@@ -1492,6 +1492,112 @@ async function playMini(page, kind, itemId) {
     });
   }
 
+  console.log('Alice (ricominciare dopo una malattia)');
+  {
+    await page.evaluate(() => (window.__cafe.speed = 6));
+    const seen = [];
+    let saraC4 = false;
+    for (let k = 0; k < 5; k++) {
+      await page.evaluate(k => {
+        const C = window.__cafe,
+          st = C.st;
+        C.people.forEach(p => (p.dead = true));
+        C.queue.length = 0;
+        C.scenes.length = 0;
+        C.regiaReset();
+        C.slots.forEach(sl => sl.seats.forEach(q => Object.assign(q, { occ: null, dirty: false, res: null })));
+        st.rolls = st.rolls || {};
+        st.rolls.alice = { d: st.day, v: true };
+        C.ARCS.find(a => a.id === 'alice').rand.from = 0; // nella partita vera comincia dal giorno 6
+        st.arcDay = st.arcDay || {};
+        if (st.ds) st.ds.chap = 0;
+        if (k) st.arcDay.alice = st.day - 5;
+        C.ARCS.forEach(a => {
+          if (a.id !== 'alice') ((a._r = a.ch.map(c => c.r)), a.ch.forEach(c => (c.r = 1e9)));
+        });
+      }, k);
+      let got = false;
+      for (let i = 0; i < 120 && !got; i++) {
+        await page.evaluate(() => {
+          const C = window.__cafe;
+          // se Sara è già seduta nel locale come habitué, le storie con lei aspettano: la facciamo uscire
+          C.people.forEach(p => {
+            if (!p.story && p.reg && ['sara', 'alice'].includes(p.reg.key)) {
+              p.dead = true;
+              if (p.seat) p.seat.occ = null;
+            }
+          });
+          C.tryStory();
+        });
+        got = await page.evaluate(() => window.__cafe.people.some(p => !p.dead && p.story === 'alice'));
+        if (!got) await sleep(50);
+      }
+      for (let i = 0; i < 400; i++) {
+        if (k === 3 && (await page.evaluate(() => window.__cafe.people.some(p => !p.dead && p.story === 'alice' && p.key === 'sara'))))
+          saraC4 = true;
+        if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
+        if (await page.evaluate(k => (window.__cafe.st.story.alice || 0) > k, k)) break;
+        await sleep(80);
+      }
+      seen.push(await page.evaluate(() => window.__cafe.st.story.alice || 0));
+      await page.evaluate(() => {
+        const C = window.__cafe;
+        C.people.forEach(p => {
+          if (p.story === 'alice') {
+            p.dead = true;
+            if (p.seat) p.seat.occ = null;
+          }
+        });
+        C.ARCS.forEach(a => {
+          if (a._r) {
+            a.ch.forEach((c, i) => (c.r = a._r[i]));
+            delete a._r;
+          }
+        });
+      });
+    }
+    for (let i = 0; i < 150; i++) {
+      if (
+        await page.evaluate(
+          () => /LILT/.test((document.querySelector('#mbox') || {}).textContent || '') && !document.querySelector('#modal').hidden
+        )
+      )
+        break;
+      if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
+      else if (await page.isVisible('#nd')) await page.click('#nd');
+      await sleep(100);
+    }
+    const end = await page.evaluate(() => {
+      const C = window.__cafe,
+        st = C.st;
+      return {
+        flags: ['alice1', 'alice2', 'alice3', 'alice4'].map(k => st.flags[k]).join(','),
+        perk: !!st.perks.alice,
+        note: !document.querySelector('#modal').hidden ? document.querySelector('#mbox').textContent : '',
+        key: C.KEYS.alice.ok()
+      };
+    });
+    ok(
+      seen.join(',') === '1,2,3,4,5' &&
+        end.flags === 'stare,scuola,sara,amica' &&
+        end.perk &&
+        end.key &&
+        saraC4 &&
+        /800 998877/.test(end.note),
+      `Alice: cinque capitoli (${seen.join(',')}), scelte ${end.flags}, Sara la accompagna ai risultati, finale e nota con i numeri di aiuto`
+    );
+    if (await page.isVisible('#modal .btns button')) await page.click('#modal .btns button >> nth=0');
+    await page.evaluate(() => {
+      const C = window.__cafe;
+      C.speed = 1;
+      C.people.forEach(p => (p.dead = true));
+      C.scenes.length = 0;
+      C.regiaReset();
+      C.ARCS.forEach(a => delete C.st.rt[a.id]);
+      C.ARCS.find(a => a.id === 'alice').rand.from = 6;
+    });
+  }
+
   console.log('Segreti e interazioni');
   await page.evaluate(() => {
     window.__cafe.speed = 1;

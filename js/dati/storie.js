@@ -2019,6 +2019,203 @@ const ARCS = [
         [0, 'Stamattina. Ti saluta. Dice che sei la mia nonna italiana.']
       ]
     ]
+  },
+  {
+    id: 'alice',
+    t: 'Ricominciare',
+    d: 'Una ragazza con un basco entra da sola. È la prima volta da otto mesi.',
+    nota: 'Questa storia parla di una malattia grave, un tumore, e di quello che viene dopo le cure: la stanchezza, la paura dei controlli, il sentirsi diversi, le amicizie che cambiano. Se lo stai vivendo tu o una persona che ami, non devi farcela da solo: oltre ai medici che ti seguono, in molti ospedali c’è un servizio di psico-oncologia. In Italia puoi chiamare SOS LILT al numero verde 800 998877, o il servizio di ascolto di AIMaC (840 503579).',
+    who: ['alice'],
+    rand: { from: 6, p: 0.35 },
+    gap: 1,
+    perk: 'alice',
+    pt: 'Il quaderno dei «prima» e dei «dopo» sul bancone (+4 Atmosfera)',
+    end: {
+      'alice2=scuola': { n: 'La maestra col basco', perk: 'alice', pt: 'Il quaderno dei «prima» e dei «dopo» sul bancone (+4 Atmosfera)' },
+      'alice2=piccolo': { n: 'Una cosa alla volta', perk: 'alice', pt: 'Il quaderno dei «prima» e dei «dopo» sul bancone (+4 Atmosfera)' }
+    },
+    ch: [
+      {
+        t: 'Il basco',
+        r: 15,
+        l: [
+          [0, '*entra piano, si guarda intorno, si sistema il basco sulla testa*'],
+          [0, 'Una cioccolata, per favore. Calda. Molto calda.'],
+          [0, '*si siede nell’angolo, con le spalle al muro, e tiene il cappotto addosso*'],
+          [0, 'Scusi se la fisso. È che è la prima volta che esco da sola. Da otto mesi.'],
+          [0, 'Ho finito le cure tre settimane fa. Tutti mi dicono: «Adesso sei guarita, festeggia!»'],
+          [0, 'Io non mi ricordo più come si fa a stare in mezzo alla gente senza che mi guardino la testa.'],
+          {
+            c: {
+              q: 'Alice stringe la tazza con tutte e due le mani. Fuori piove piano.',
+              o: [
+                {
+                  t: '«Qui non deve festeggiare niente. Può anche solo stare.»',
+                  f: 'alice1=stare',
+                  r: [
+                    [0, '...Solo stare. Mi piace.'],
+                    [0, '*si toglie il cappotto, finalmente*'],
+                    [0, 'Mi chiamo Alice.']
+                  ]
+                },
+                {
+                  t: '«Cosa le piaceva fare, prima?»',
+                  f: 'alice1=prima',
+                  r: [
+                    [0, 'Prima... Studiavo per fare la maestra. Ero al tirocinio, in una prima elementare.'],
+                    [0, 'Nessuno me l’aveva più chiesto. Mi chiedono tutti come sto. Mai cosa mi piace.'],
+                    [0, 'Mi chiamo Alice.']
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'Il quaderno dei «prima»',
+        r: 30,
+        l: [
+          [0, 'Ciao! Sono tornata. Con un quaderno.'],
+          [0, '*lo apre: due colonne. Una dice «prima», l’altra è vuota*'],
+          [0, 'Prima: nuotavo, ballavo in cucina, insegnavo le vocali a ventidue bambini. Mangiavo la pizza senza pensarci.'],
+          [0, 'La colonna del «dopo» non riesco a riempirla. Ho paura di scrivere una cosa e poi perderla di nuovo.', 'alice1=stare'],
+          [0, 'Mi hai chiesto cosa mi piaceva. Ci ho pensato tutta la settimana. Ecco la lista.', 'alice1=prima'],
+          [0, 'E poi c’è il controllo. Fra dieci giorni. Ogni tre mesi, per anni. Ogni volta è come aspettare una sentenza.'],
+          {
+            c: {
+              q: 'Alice guarda la colonna vuota. «Da dove ricomincio?»',
+              o: [
+                {
+                  t: '«Dal tirocinio. Ai bambini interessa la maestra, non i capelli.»',
+                  f: 'alice2=scuola',
+                  r: [
+                    [0, 'La maestra Elsa mi ha scritto che i bambini chiedono di me. Ogni lunedì.'],
+                    [0, 'Va bene. Le scrivo. Prima di cambiare idea.']
+                  ]
+                },
+                {
+                  t: '«Da una cosa piccola, solo per lei. Il resto arriva dopo.»',
+                  f: 'alice2=piccolo',
+                  r: [
+                    [0, 'Una cosa piccola... Nuotare. Anche solo due vasche. La domenica mattina, quando non c’è nessuno.'],
+                    [0, '*scrive nella colonna del «dopo»: «nuotare». Con la penna, non a matita.*']
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'Il giorno prima',
+        r: 45,
+        who: ['alice', 'sara'],
+        l: [
+          [0, '*non ha toccato la cioccolata. Fissa il telefono*'],
+          [1, 'Scusa... ma tu sei Alice? Day hospital, terzo piano. Il tè alla menta che non bevevi mai.'],
+          [0, 'Sara! L’infermiera che canticchiava. Non ti avevo riconosciuta senza la divisa.'],
+          [1, 'Neanch’io ti avevo riconosciuta. Hai un colore, sulle guance. L’ultima volta eri bianca come il lenzuolo.'],
+          [0, 'Domani ho il controllo. Non dormo da tre notti. Mi sembra che il pavimento si muova.'],
+          [1, 'È normale. Tutti, la notte prima, hanno il pavimento che si muove. Anche chi va benissimo.'],
+          {
+            c: {
+              q: 'Alice si torce le mani. Sara guarda te, come a dire: «Aiutami».',
+              o: [
+                {
+                  t: '«Sara, domani potrebbe accompagnarla?»',
+                  f: 'alice3=sara',
+                  r: [
+                    [1, 'Domani attacco alle due. Il controllo è alle dieci? Allora ti aspetto all’ingresso.'],
+                    [0, 'Davvero? ...Grazie. Non volevo andare con mia madre. Piange più lei di me.']
+                  ]
+                },
+                {
+                  t: '«Domani, comunque vada, venga qui. Il tavolo è suo.»',
+                  f: 'alice3=tavolo',
+                  r: [
+                    [0, 'Comunque vada. Sì. Avere un posto dove andare dopo... aiuta.'],
+                    [1, 'Io passo di qui verso le sei. Se vuoi, ci vediamo.']
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'I risultati',
+        r: 55,
+        who: ['alice', 'sara'],
+        whoBy: { 'alice3=tavolo': ['alice'] }, // Sara c'è solo se l'ha accompagnata
+        l: [
+          [0, '*entra di corsa, fradicia, senza ombrello, e ride*'],
+          [0, 'Puliti. Gli esami sono puliti.'],
+          [1, 'Te l’avevo detto, che il pavimento si muove per tutti.', 'alice3=sara'],
+          [
+            0,
+            'Sara mi ha aspettata all’ingresso. Mi ha tenuto la mano anche quando il medico ha detto «bene». Non ci credevo.',
+            'alice3=sara'
+          ],
+          [0, 'Sono venuta qui subito. Prima ancora di chiamare mia madre. Non diteglielo.', 'alice3=tavolo'],
+          [0, 'Non è finita per sempre, lo so. Ma per tre mesi posso respirare.'],
+          [0, '*poi tira fuori il telefono, e il sorriso si fa piccolo*'],
+          [0, 'Mi ha scritto Giorgia. La mia migliore amica. Durante le cure è sparita. Neanche un messaggio, per otto mesi.'],
+          [0, 'Adesso scrive: «Scusami. Non sapevo cosa dirti, e allora non ti ho detto niente».'],
+          {
+            c: {
+              q: 'Alice ti mostra il messaggio. «Le rispondo?»',
+              o: [
+                {
+                  t: '«Rispondile. A volte le persone spariscono per paura, non per cattiveria.»',
+                  f: 'alice4=amica',
+                  r: [[0, 'Per paura... Anche io avrei avuto paura, al posto suo. Le scrivo: «Vieni a prendere un caffè».']]
+                },
+                {
+                  t: '«Scegli tu chi tenere vicino. Non devi niente a nessuno.»',
+                  f: 'alice4=nuovi',
+                  r: [[0, 'Non devo niente a nessuno... Le scriverò, forse. Ma quando lo decido io. Intanto mi tengo chi c’è stato.']]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'Il primo giorno',
+        r: 65,
+        l: [
+          [0, '*entra con un mazzo di disegni sotto il braccio*', 'alice2=scuola'],
+          [0, 'Sono tornata a scuola. Il primo giorno un bambino mi ha chiesto perché avevo i capelli così corti.', 'alice2=scuola'],
+          [
+            0,
+            'Gli ho detto: «Sono stata malata, e adesso sto guarendo. Come le piante quando le poti». Lui ha detto: «Ah, ok». E basta.',
+            'alice2=scuola'
+          ],
+          [0, 'Alla fine della mattina mi hanno regalato tutti un disegno. Ventidue fiori. Uno ha anche le gambe.', 'alice2=scuola'],
+          [0, '*entra con i capelli umidi e le guance rosse*', 'alice2=piccolo'],
+          [0, 'Stamattina venti vasche. Venti! La prima domenica ne ho fatte due e poi ho pianto nello spogliatoio.', 'alice2=piccolo'],
+          [0, 'In acqua il corpo non mi sembra più un nemico. Mi sembra quello che mi ha portata fino a qui.', 'alice2=piccolo'],
+          [0, 'E a settembre torno al tirocinio. Con calma. Una cosa alla volta.', 'alice2=piccolo'],
+          [0, 'Giorgia è venuta con me, ieri. Abbiamo parlato tre ore. Abbiamo pianto. Poi abbiamo ordinato due pizze.', 'alice4=amica'],
+          [0, 'Sara mi ha portata a una cena con le sue amiche. Gente nuova, che mi conosce adesso, non com’ero prima.', 'alice4=nuovi'],
+          [0, '*apre il quaderno: la colonna del «dopo» è piena, e continua sulla pagina dopo*'],
+          [0, 'Sai cosa ho scritto per ultimo? «Togliere il basco».'],
+          [0, '*si toglie il basco. I capelli sono corti, ricci, nuovi*'],
+          [0, 'Ecco. Sono io. Quella di adesso.']
+        ]
+      }
+    ],
+    rt: [
+      [
+        [0, 'Oggi una giornata normale. Le giornate normali sono bellissime.'],
+        [0, '*scrive qualcosa nel quaderno del «dopo»*']
+      ],
+      [
+        [0, 'I capelli mi arrivano alle orecchie. Mia madre dice che sembro un carciofo. Io dico un carciofo felice.'],
+        [0, '*ride*']
+      ]
+    ]
   }
 ];
 const CINE = [

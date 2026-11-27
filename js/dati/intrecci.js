@@ -4,6 +4,24 @@
 // hanno abitudini, frasi proprie, animali, legami già nati nelle storie, vite nuove e incontri tra storie diverse.
 const fl = f => checkFlag(f);
 const KEYS = {
+  alice: {
+    type: 'lettore',
+    fav: 'choc',
+    tr: ['timido', 'sognatore'],
+    ok: () => arcDone('alice'),
+    l: [
+      '*scrive nel quaderno del «dopo». Ormai è al terzo quaderno*',
+      'I capelli mi arrivano alle orecchie. Mia madre dice che sembro un carciofo. Un carciofo felice.',
+      'Il controllo è tra un mese. Ci penso meno. Non zero, ma meno.',
+      'Certi giorni sono ancora stanca alle quattro del pomeriggio. Allora mi siedo qui e aspetto che passi.',
+      ['Oggi abbiamo fatto la lettera G. «G come gatto». Un bambino ha detto «G come Gino». Ho riso per dieci minuti.', 'alice2=scuola'],
+      ['La maestra Elsa vuole che l’anno prossimo prenda una classe tutta mia. Una classe mia!', 'alice2=scuola'],
+      ['Trenta vasche, stamattina. Il bagnino mi saluta per nome.', 'alice2=piccolo'],
+      ['Ho dato l’esame che mi mancava. Trenta. Con calma, ma ce l’ho fatta.', 'alice2=piccolo'],
+      ['Giorgia viene a prendermi il venerdì. Recuperiamo otto mesi di chiacchiere, un caffè alla volta.', 'alice4=amica'],
+      ['Sara dice che sono la sua paziente preferita. Io le dico che non sono più una paziente. Lei ride.', 'alice3=sara']
+    ]
+  },
   davide: {
     type: 'normale',
     fav: 'caffe',
@@ -305,6 +323,7 @@ const KEYS = {
 };
 // legami che esistono già dalle storie
 const KSEED = [
+  ['alice', 'sara', () => arcDone('alice'), () => (fl('alice3=sara') ? 'migliori' : 'amici')],
   ['yusuf', 'rosa', () => arcDone('yusuf'), () => 'famiglia'],
   ['mia', 'luca', () => arcDone('pioggia'), () => (arcDone('nozze') ? 'sposati' : 'coppia')],
   ['marta', 'gio', () => arcDone('valigie'), () => 'coppia'],
@@ -327,6 +346,23 @@ const KSEED = [
 ];
 /* ----- incroci tra storie diverse (una volta sola) e epiloghi ----- */
 const XS = [
+  {
+    id: 'x_alice_davide',
+    w: ['alice', 'davide'],
+    req: () => arcDone('alice') && arcDone('davide'),
+    l: [
+      [1, 'Scusa, questo è il tavolo vicino alla finestra? Di solito mi siedo qui.'],
+      [0, 'Oh, scusi! Mi sposto.'],
+      [1, 'No, resta. C’è posto per due. ...Quel quaderno, cos’è?'],
+      [0, 'Le cose che ho ricominciato a fare. Dopo una malattia. Una lunga.'],
+      [1, 'Anch’io sono stato... lontano. In un altro modo. Ma lontano.'],
+      [0, 'Come si fa, secondo lei, quando torna la paura?'],
+      [1, 'Io la chiamo per nome. «Ah, sei tu». E poi bevo il caffè lo stesso. Caldo.'],
+      [0, '*scrive nel quaderno: «chiamare la paura per nome»*'],
+      [1, 'Le giornate medie, sai, sono una conquista. Nessuno te lo dice.'],
+      [0, 'Le giornate normali sono bellissime. Lo dico sempre anch’io.']
+    ]
+  },
   {
     id: 'x_yusuf_kenji',
     w: ['yusuf', 'kenji'],
@@ -671,6 +707,20 @@ const XS = [
   }
 ];
 const XEPI = [
+  {
+    id: 'e_alice',
+    w: ['alice'],
+    req: () => arcDone('alice') && st.day >= ((st.arcDay || {}).alice || 0) + 6,
+    l: [
+      [0, 'Volevo dirtelo prima che a chiunque altro: controllo dei sei mesi. Tutto bene.'],
+      [0, 'Il primo giorno che sono entrata qui tenevo il cappotto addosso. Avevo paura anche delle tazze.'],
+      [0, 'Mi hai lasciata stare. Senza farmi sentire malata. Non sai quanto conta.', 'alice1=stare'],
+      [0, 'Mi hai chiesto cosa mi piaceva. Da lì è cominciato il quaderno. E tutto il resto.', 'alice1=prima'],
+      [0, '*appoggia sul bancone un disegno: una tazza, la pioggia, e una ragazza senza basco*'],
+      [0, 'Questo l’ha fatto una mia alunna. Ha detto che sei tu, quello dietro al bancone.', 'alice2=scuola'],
+      [0, 'Questo l’ho fatto io. Non so disegnare. Ma volevo che restasse qui.', 'alice2=piccolo']
+    ]
+  },
   {
     id: 'e_davide',
     w: ['davide'],
