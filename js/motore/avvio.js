@@ -73,6 +73,7 @@ function tap(e) {
         .filter(c => c && c.state === 'sit' && !c.scene && !c.bub)
         .sort((a, b) => Math.abs(a.x - x) - Math.abs(b.x - x))[0];
       if (c) {
+        c.tapped = 1;
         const info = c.reg ? `${TYPES[c.type] ? TYPES[c.type].n : ''} · habitué, affetto ${c.reg.f}/10` : (TYPES[c.type] || {}).n || '';
         say(c, pick(TAPL).replace('{item}', (c.order || MENU[0]).n), 2.6, `${c.name}${info ? ' · ' + info : ''}`);
         if (c.sleep) {
@@ -180,7 +181,9 @@ function begin() {
   save();
   hud();
   guideForOldSaves();
-  if (!st.introDone && st.served === 0) setTimeout(startIntro, 1200); // partita nuova: apre Nonna Rosa
+  // partita nuova (o tutorial interrotto a metà, il primo giorno): apre Nonna Rosa e ti insegna il mestiere
+  if (!st.introDone && !st.tutOff && st.day === 1 && st.served < 10) setTimeout(startIntro, 1200);
+  else st.introDone = 1;
 }
 function showNaming() {
   $('#intro').hidden = true;

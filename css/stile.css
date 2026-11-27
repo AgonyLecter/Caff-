@@ -1416,3 +1416,9 @@ input {
     height: 48px;
   }
 }
+#guide .tstep {
+  font-weight: 400;
+  font-size: 11px;
+  color: #8a6a9a;
+  margin-left: 6px;
+}
