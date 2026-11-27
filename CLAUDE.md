@@ -12,6 +12,7 @@ Preferenze dell'utente:
 - Ogni blocco di lavoro va **messo online**: PR verso `main` e merge (GitHub Pages pubblica da `main`).
 - Finire sempre il lavoro iniziato: **non lasciare niente rotto** (test verdi prima di consegnare).
 - Gli screenshot del risultato sono graditi.
+- **Ogni aggiornamento che interessa al giocatore va annunciato da Nonna Rosa**: aggiungere una riga in fondo a `NOVITA` (`js/dati/novita.js`), con un id nuovo e un testo nella voce di Rosa. Le cose tecniche nostre (test, codice, correzioni invisibili) no. Mai cambiare l'ordine o gli id: `st.nov` conta quante novità il giocatore ha già sentito.
 - Nome del gioco: **«Caffè sotto la pioggia»** (anche nel titolo della schermata iniziale).
 
 ## Struttura (sito statico, nessuna build)
@@ -19,8 +20,8 @@ Preferenze dell'utente:
 Script classici (non moduli ES) che condividono lo scope globale: funziona da `file://` e su GitHub Pages. Ordine di caricamento in `index.html`:
 
 1. `js/motore/base.js` (e `js/motore/icone.js`, che però si carica dopo base e prima dei dati)
-2. `js/dati/`: personaggi, storie, mondo, frasi, animali, vite, vite-nuove, calendario, intrecci, segreti (solo contenuti)
-3. `js/motore/`: icone (subito dopo base.js), stato, citta, audio, simulazione, disegno-persone, disegno-locale, animali, vita, regia, calendario, attivo, atmosfera, interfaccia, risultati, guida, avvio
+2. `js/dati/`: personaggi, storie, mondo, frasi, animali, vite, vite-nuove, calendario, novita, intrecci, segreti (solo contenuti)
+3. `js/motore/`: icone (subito dopo base.js), stato, citta, audio, simulazione, disegno-persone, disegno-locale, animali, vita, regia, calendario, attivo, atmosfera, interfaccia, risultati, guida, ritorno, avvio
 
 Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `icone/`, `docs/come-aggiungere-contenuti.md` (guida per aggiungere personaggi/storie/vite/incroci/frasi), `README.md`, `tools/` (simulazione del ritmo).
 
@@ -75,6 +76,7 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
   - consigli sulle novità (`GUIDA`, anello `#gring`), che scattano quando serve dopo il tutorial.
 - **Comodità e suoni**: tre volumi separati (`st.vol = {m, s, a}` 0–100: musica `musG`, effetti `sfxG`, ambiente `ambG` con pioggia e voci; `applyVol`, `VOL0`), velocità del testo (`st.txtV` lenta/normale/veloce → `TXTV` in `sayDur`), «i racconti vanno avanti quando tocco io» (`st.txtTap` → `sc.waitTap`, sblocca `regiaNext`), testo grande (`st.bigTxt` → classe `grande` su `<html>`, `applyBig`; fumetti ×1.3). Suoni nuovi in `audio.js`: campanello della porta (`bell` + `thud`), tazzina (`cup`), piatti (`piatti`, pulizia), cocci (`crash`), gocce sul vetro e raffiche di pioggia (`drip`). Durante un racconto gli avvisi vanno in basso (`body.racconto`).
 - **Tutto a tema** (`icone.js`): un'icona in pixel art per ogni miglioramento (`PXU` → `UPI`, anche nel «Consiglio») e per ogni scheda (`PXT` → `TABI`); frecce e stellina disegnate (`ICO.dx/sx/stella`, `pxText` converte › ‹ ✦; sul canvas `ctxPx('frdx'|'frsx')`); cursore a tazzina e chicco sui pulsanti (`--cur`, `--cur2`, solo `pointer: fine`); cursori del volume a chicco di caffè (`--bean`); barre di scorrimento, selezione e contorno della tastiera a tema. Un miglioramento nuovo vuole anche la sua icona in `PXU` (il test lo controlla).
+- **Ritorno al caffè** (`ritorno.js` + `dati/novita.js`): mentre il gioco è chiuso si guadagna una parte delle monete (`offline`, max 8 ore) e **nient'altro va avanti** (storie, vite, giorno: succedono solo davanti al giocatore). Al ritorno, dopo almeno 10 minuti, il «diario della notte» (`diarioNotte`, testi `NOTTE`): 1-3 piccole notizie senza effetti (gatto, biglietti degli habitué, coppie sotto la tettoia, frasi dei personaggi di casa). Poi Nonna Rosa racconta le novità non ancora sentite (`novitaInizio`, al massimo 4); in una partita nuova vengono segnate come già sentite.
 - **PWA**: installabile; il service worker legge prima dalla rete e usa la cache se manca la connessione.
 
 ## Contenuti attuali
@@ -83,7 +85,7 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 
 Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline): circa 2 capitoli al giorno, 40 capitoli verso i 160 minuti (prima a 57), le vite partono verso l'ora di gioco; i potenziamenti arrivano ancora fino a circa 3 ore. Le storie ora durano di più apposta, per gustarle; se sembra troppo lento, alzare `MOM_DAY` o abbassare `REGIA_REST`/`REGIA_WAIT`. Il gioco avanzato si regge su vite infinite e relazioni; il calendario (fase 2) serve a dargli più struttura.
 
-## Fatto finora (PR #6 → #30)
+## Fatto finora (PR #6 → #31)
 
 - Minigiochi solo dal pulsante.
 - Grafica più curata.
@@ -106,6 +108,8 @@ Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline)
 - Guida e intro con Nonna Rosa.
 - Tutorial vero con Nonna Rosa (16 passi, il primo racconto di Gino).
 - Vite uniche (niente testi uguali per persone diverse) e regia dei racconti (un momento alla volta).
+- Decorazioni stagionali nel locale (ghirlanda, bancone), monete col chicco, iconcine negli avvisi.
+- Diario «mentre eri via» e novità raccontate da Nonna Rosa all'apertura.
 - Tutto a tema: icone pixel per miglioramenti e schede, frecce disegnate, cursore a tazzina, volume a chicco di caffè, barre di scorrimento.
 - Comodità e suoni: volumi separati, velocità del testo, racconti a tocco, testo grande, suoni nuovi (porta, tazzine, piatti, cocci, pioggia).
 - Calendario: stagioni, 13 feste, compleanni, anniversari, riepilogo di fine anno, foglie/petali/lucciole.
@@ -114,7 +118,8 @@ Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline)
 ## Prossimi passi (in ordine)
 
 1. Comodità e suoni: fatto. **NON** fare l'opzione «grafica leggera» per telefoni: l'utente non la vuole.
-   Blocco in corso: **nuovi personaggi con storie lunghe**, uno alla volta (ognuno 4-5 capitoli intrecciati con quelli esistenti). Fatto: Alice (dopo una malattia), Leo (lutto per il nonno, con Aldo nonno acquisito). Da fare: un rider che manda soldi a casa, un uomo appena uscito di prigione, un'insegnante vicina alla pensione. Per ogni personaggio: `CH`, arco in `ARCS` (con `nota` se il tema è forte), `KEYS`, `KSEED`, un `XS` e un `XEPI`, `COMPLEANNI` + `COMPL_L` (i test lo pretendono, mai in un giorno di festa), vita personale `k_<id>` in `vite-nuove.js`, eventuale `perkAtm`, e un test nel browser che gioca tutta la storia (nel test abbassare `rand.from` e far uscire i personaggi già seduti: le storie aspettano se uno dei loro personaggi è nel locale). Poi un **finale per chi completa tutto** (serata con tutti i personaggi e lettera di Nonna Rosa).
+   **Prossimo blocco chiesto dall'utente: versione inglese completa** (scelta della lingua nel menu e nella schermata d'avvio) **e pacchetto per itch.io**. Piano: dizionario EN con chiavi = hash del testo italiano, traduzione dei dati all'avvio, `L()` per i testi del codice, test di copertura che segnala le frasi senza traduzione.
+   Blocco precedente: **nuovi personaggi con storie lunghe**, uno alla volta (ognuno 4-5 capitoli intrecciati con quelli esistenti). Fatto: Alice (dopo una malattia), Leo (lutto per il nonno, con Aldo nonno acquisito). Da fare: un rider che manda soldi a casa, un uomo appena uscito di prigione, un'insegnante vicina alla pensione. Per ogni personaggio: `CH`, arco in `ARCS` (con `nota` se il tema è forte), `KEYS`, `KSEED`, un `XS` e un `XEPI`, `COMPLEANNI` + `COMPL_L` (i test lo pretendono, mai in un giorno di festa), vita personale `k_<id>` in `vite-nuove.js`, eventuale `perkAtm`, e un test nel browser che gioca tutta la storia (nel test abbassare `rand.from` e far uscire i personaggi già seduti: le storie aspettano se uno dei loro personaggi è nel locale). Poi un **finale per chi completa tutto** (serata con tutti i personaggi e lettera di Nonna Rosa).
 2. Calendario: fatto. Idee per dopo: un richiamo alla data reale (Natale, Capodanno…), decorazioni stagionali dentro il locale, ricette di stagione.
 3. Altre idee già discusse:
    - versione in inglese;

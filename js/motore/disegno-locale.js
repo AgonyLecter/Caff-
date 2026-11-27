@@ -427,6 +427,7 @@ function drawRoom() {
   g.fillRect(sx + 6, 0, 1, 4);
   g.fillRect(sx + sw - 7, 0, 1, 4);
   drawWindow();
+  calDecoStanza(); // la ghirlanda della stagione
   if (st.decor >= 1)
     panes().forEach((p, k) => {
       if (!p.locked && k % 2 === (st.decor >= 4 ? k % 2 : 1)) hangPlant(k % 2 ? p.x + 6 : p.x + p.w - 7, WY0, k);
@@ -1172,6 +1173,7 @@ function drawCounter() {
     g.fillRect(mx + 6, 95, 3, 2);
     if (Math.random() < 0.3) parts.push({ x: mx + 7, y: 92, vx: rnd(-2, 2), vy: -8, t: 0.9, max: 0.9, k: 'steam' });
   }
+  calDecoBancone(); // qualcosa di stagione sul bancone
 }
 // macchina del caffè personalizzabile: corpo 15x13 con angolo in alto a sinistra in (mx, my)
 function machCfg() {
@@ -1910,6 +1912,7 @@ function render() {
   drawParts();
   lighting();
   drawNeons(); // dopo le luci: di notte le insegne brillano davvero
+  calDecoLuci(); // d'inverno le lucine brillano
   regiaDraw(); // mentre qualcuno racconta, il resto si abbassa
   g.setTransform(1, 0, 0, 1, 0, 0);
   grade();

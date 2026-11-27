@@ -151,18 +151,19 @@ function lockO() {
     if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
   } catch (e) {}
 }
+// mentre il gioco era chiuso si guadagna (una parte), ma il resto è fermo: niente storie, niente vite
 function offline() {
-  if (!st.last) return;
+  if (!st.last) return { el: 0, v: 0 };
   const el = Math.min(8 * 3600, (Date.now() - st.last) / 1000);
-  if (el < 60) return;
+  if (el < 60) return { el, v: 0 };
   const f = baristaLv() > 0 ? (st.waiter > 0 ? 0.45 : 0.25) : 0.05;
   const v = Math.round((st.ips || 0) * el * f * (st.manager ? 1.2 : 1));
   if (v > 0) {
     st.coins += v;
     st.earned += v;
     st.runEarned += v;
-    setTimeout(() => toast(`Mentre eri via: +${fmt(v)} monete`), 900);
   }
+  return { el, v };
 }
 function begin() {
   $('#start').hidden = true;
@@ -177,7 +178,8 @@ function begin() {
     st.migrated = 0;
     setTimeout(() => toast('Ho portato qui la tua partita precedente'), 1500);
   }
-  offline();
+  const via = offline();
+  ritorno(via.el, via.v); // il diario della notte e le novità di Nonna Rosa
   save();
   hud();
   guideForOldSaves();

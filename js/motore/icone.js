@@ -214,3 +214,48 @@ function temaCursori() {
   } catch (e) {}
 }
 temaCursori();
+// la moneta: oro, con un chicco di caffè inciso
+(function () {
+  try {
+    const coin = pxSvg(
+      ['..yyyyy..', '.yYYYYYy.', 'yYYoooYYy', 'yYoYdYoYy', 'yYoYdYoYy', 'yYoYdYoYy', 'yYYoooYYy', '.yYYYYYy.', '..yyyyy..'],
+      {
+        y: '#c9902a',
+        Y: '#ffd166',
+        o: '#e8b040',
+        d: '#8a5a1a'
+      }
+    ).replace('aria-hidden="true"', 'xmlns="http://www.w3.org/2000/svg"');
+    document.documentElement.style.setProperty('--coin', `url("data:image/svg+xml,${encodeURIComponent(coin)}")`);
+  } catch (e) {}
+})();
+// un'iconcina davanti agli avvisi, secondo di cosa parlano (in italiano e in inglese)
+const TOASTI = [
+  [/compleann|auguri|birthday/i, 'cake'],
+  [/ora di punta|rush hour/i, 'bell'],
+  [/segret|secret/i, 'key'],
+  [/habitué|regular/i, 'cup'],
+  [/capitol|diario|storia|racconta|chapter|diary|story/i, 'book'],
+  [/giorno \d|^day \d|primavera|estate|autunno|inverno|spring|summer|autumn|winter|anno|year/i, 'cal'],
+  [/anniversari|innamor|coppia|insieme|couple|together|love/i, 'love']
+];
+const TOASTP = {
+  cake: {
+    p: { w: '#fff3d0', p: '#ff6fa0', y: '#ffd166', j: '#c94f7c' },
+    r: ['...y...', '...p...', '.wwwww.', '.ppppp.', '.wwwww.', '.jjjjj.']
+  },
+  bell: { p: { y: '#ffd166', o: '#c9902a' }, r: ['...y...', '..yyy..', '.yyyyy.', '.yyyyy.', 'yyyyyyy', '...o...'] },
+  key: PXT.Segreti,
+  cup: PXT.Habitué,
+  book: PXT.Storie,
+  cal: {
+    p: { r: '#ff4fa3', w: '#f4f1de', k: '#5a3a6a' },
+    r: ['.r...r.', 'rrrrrrr', 'wwwwwww', 'wkwkwkw', 'wwwwwww', 'wkwkwww', 'wwwwwww']
+  },
+  love: PXT.Vite
+};
+function toastIco(t) {
+  if (/♥/.test(t)) return '';
+  const m = TOASTI.find(([re]) => re.test(t));
+  return m ? pxSvg(TOASTP[m[1]].r, TOASTP[m[1]].p, 'tico') : '';
+}
