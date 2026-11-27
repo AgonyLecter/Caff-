@@ -4,6 +4,22 @@
 // hanno abitudini, frasi proprie, animali, legami già nati nelle storie, vite nuove e incontri tra storie diverse.
 const fl = f => checkFlag(f);
 const KEYS = {
+  leo: {
+    type: 'studente',
+    fav: 'choc',
+    tr: ['timido', 'nerd'],
+    ok: () => arcDone('leo'),
+    l: [
+      '*sistema i pezzi sulla scacchiera, uno per uno, con calma*',
+      'Oggi ho sognato il nonno. Mi spiegava l’arrocco. Mi sono svegliato contento.',
+      'Certi giorni mi manca così tanto che mi fa male la pancia. Allora vengo qui.',
+      'Il professore di tecnica dice che ho le mani da falegname. Come lui.',
+      ['La scacchiera di nonno Nino è sempre al suo posto. La tocco appena entro, per salutarla.', 'leo4=qui'],
+      ['La mamma ha vinto la sua prima partita. Ha urlato. Abbiamo riso fino a piangere.', 'leo4=mamma'],
+      ['Ho riletto la lettera per il nonno. La tengo nel portafoglio.', 'leo3=lettera'],
+      ['«Per Leo, quando vuoi.» Adesso lo so cosa voleva dire.', 'leo3=colpa']
+    ]
+  },
   alice: {
     type: 'lettore',
     fav: 'choc',
@@ -232,7 +248,9 @@ const KEYS = {
       'Lidia avrebbe adorato questa musica.',
       'Giada viene il giovedì. Il giovedì è il giorno più bello della settimana.',
       ['Il disegno di Giada è appeso sopra il nostro tavolo. Lo guardo ogni volta.', 'lezioni=nonno'],
-      ['Sto imparando gli scacchi. Lidia rideva sempre quando perdevo.', 'club=giovedi']
+      ['Sto imparando gli scacchi. Lidia rideva sempre quando perdevo.', 'club=giovedi'],
+      ['Il giovedì gioco con Leo. Perdo sempre. Non sono mai stato così contento di perdere.', 'leo4=qui'],
+      ['Leo mi chiama «nonno in prestito». Io faccio finta di brontolare. Poi lo racconto a tutti.', 'leo4=mamma']
     ]
   },
   giada: {
@@ -323,6 +341,8 @@ const KEYS = {
 };
 // legami che esistono già dalle storie
 const KSEED = [
+  ['leo', 'aldo', () => arcDone('leo'), () => 'famiglia'],
+  ['leo', 'giada', () => arcDone('leo'), () => 'amici'],
   ['alice', 'sara', () => arcDone('alice'), () => (fl('alice3=sara') ? 'migliori' : 'amici')],
   ['yusuf', 'rosa', () => arcDone('yusuf'), () => 'famiglia'],
   ['mia', 'luca', () => arcDone('pioggia'), () => (arcDone('nozze') ? 'sposati' : 'coppia')],
@@ -346,6 +366,21 @@ const KSEED = [
 ];
 /* ----- incroci tra storie diverse (una volta sola) e epiloghi ----- */
 const XS = [
+  {
+    id: 'x_leo_giada',
+    w: ['leo', 'giada'],
+    req: () => arcDone('leo') && arcDone('tazze'),
+    l: [
+      [1, 'Allora sei tu il ragazzo degli scacchi. Il nonno parla sempre di te.'],
+      [0, 'Ah. Tu sei Giada. Lui parla sempre di te, invece. Dei tuoi disegni.'],
+      [1, 'Ti confesso una cosa: all’inizio ero un po’ gelosa. Il giovedì era solo nostro.'],
+      [0, 'Scusa. Non volevo prendermi il tuo nonno. È che il mio...'],
+      [1, 'Lo so. Me l’ha detto. *sorride*  Poi ho visto che il nonno ride di più, da quando ci sei. E la gelosia è passata.'],
+      [1, 'Facciamo così: il giovedì è di tutti e due. Lui gioca con te, e io vi disegno.'],
+      [0, 'Affare fatto. Ma non disegnarmi mentre perdo.'],
+      [1, 'Troppo tardi. Ne ho già tre.']
+    ]
+  },
   {
     id: 'x_alice_davide',
     w: ['alice', 'davide'],
@@ -707,6 +742,24 @@ const XS = [
   }
 ];
 const XEPI = [
+  {
+    id: 'e_leo',
+    w: ['leo'],
+    req: () => arcDone('leo') && st.day >= ((st.arcDay || {}).leo || 0) + 6,
+    l: [
+      [0, 'Oggi sarebbe stato il compleanno di nonno Nino. Settantotto anni.'],
+      [0, 'A casa abbiamo fatto la sua torta, quella con le noci. È venuta brutta. L’abbiamo mangiata tutta.'],
+      [0, 'Volevo festeggiare anche qui. Era un po’ anche il suo posto, ormai, anche se non c’è mai stato.'],
+      [0, 'Il primo giorno mi hai lasciato stare. Avevo bisogno solo di quello: di un posto dove non dovevo andare avanti.', 'leo1=resta'],
+      [
+        0,
+        'Il primo giorno mi hai chiesto com’era. Nessuno me l’aveva chiesto. Tutti volevano solo che smettessi di essere triste.',
+        'leo1=nonno'
+      ],
+      [0, '*appoggia sul bancone un pedone di legno, intagliato a mano, un po’ storto*'],
+      [0, 'L’ho fatto io. Il primo. È per il locale. Così c’è un pezzo di noi due, qui.']
+    ]
+  },
   {
     id: 'e_alice',
     w: ['alice'],

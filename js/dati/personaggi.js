@@ -238,6 +238,10 @@ const CH = {
     n: 'Vittoria',
     l: { s: '#f9e0c9', h: '#1b1420', hs: 1, o: 4, c1: '#e63946', c2: '#1b1420', a: 'occhiali orecchino rossetto', ac: '#1b1420' }
   },
+  leo: {
+    n: 'Leo',
+    l: { s: '#e0ac85', h: '#2b1d16', hs: 7, o: 1, c1: '#3d5a4c', c2: '#2b2d42', ac: '#e63946', a: 'cuffie', act: 'phone', sh: '#f4f1de' }
+  },
   alice: {
     n: 'Alice',
     l: {

@@ -52,6 +52,44 @@ const donna = r => !!r && NOMI_F.includes(String(r.n || r.name || '').split(' ')
 
 FILI.push(
   {
+    id: 'k_leo',
+    p: 1,
+    t: 'Il primo torneo',
+    ok: r => r.key === 'leo',
+    b: [
+      [
+        [0, 'Nonno Aldo mi ha iscritto a un torneo. Un torneo vero, con l’orologio e tutto.'],
+        [0, 'Io non volevo. Poi ho pensato a nonno Nino: lui ci teneva tantissimo, che un giorno giocassi un torneo.'],
+        [0, 'Sabato. Ho paura di bloccarmi.']
+      ],
+      [
+        [0, 'Domani è il giorno. Ho portato la scacchiera del nonno per allenarmi un’ultima volta.'],
+        [0, 'Posso portare un suo pezzo in tasca? È stupido?'],
+        {
+          c: {
+            q: 'Leo stringe la regina col naso storto. «La porto con me?»',
+            o: [
+              { t: '«Portala. Così gioca un po’ anche lui.»', f: '@a', r: [[0, 'Così gioca anche lui. Sì. In tasca, vicino al cuore.']] },
+              {
+                t: '«Lasciala qui. La troverai ad aspettarti, comunque vada.»',
+                f: '@b',
+                r: [[0, 'Ad aspettarmi... Va bene. Così ho un motivo per tornare a raccontare.']]
+              }
+            ]
+          }
+        }
+      ],
+      [
+        [0, 'Terzo! Su ventiquattro! Ho stretto la regina in tasca a ogni partita.', '@a'],
+        [0, 'Nonno Aldo ha urlato così forte che l’arbitro l’ha ammonito. Io ridevo e piangevo insieme.', '@a'],
+        [0, 'Ho perso la finale. Ma ci sono arrivato. In finale!', '@b'],
+        [0, 'Sono venuto subito qui a riprendere la regina. Le ho raccontato tutto, sottovoce. Stupido, lo so.', '@b'],
+        [0, 'Nonno Nino sarebbe stato contento. Lo so perché lo sono anch’io. Un po’ è la stessa cosa.']
+      ]
+    ],
+    e: { a: 'è arrivato terzo al suo primo torneo, con la regina di nonno Nino in tasca', b: 'è arrivato in finale al suo primo torneo' }
+  },
+  {
     id: 'k_alice',
     p: 1,
     t: 'La recita',

@@ -47,7 +47,8 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 - `present()` deve ignorare le persone morte.
 - `offsetParent` è null per gli elementi fixed: usare `getClientRects`.
 - Ricominciare usa `location.replace(location.pathname+'?nuova=1')` più il flag `resetting` (corsa di scrittura di localStorage in Chromium).
-- Le modifiche con sostituzioni di testo possono fallire in silenzio su codice formattato: verificare sempre che siano avvenute.
+- Le modifiche con sostituzioni di testo possono fallire in silenzio su codice formattato: verificare sempre che siano avvenute. Succede anche copiando un test da un altro (es. il test di Leo ricavato da quello di Alice): dopo la copia cercare con grep che non resti niente del vecchio.
+- Nel tutorial il primo cliente resta seduto finché non arriva il passo dei cocci (altrimenti, con un giocatore lento, il passo veniva saltato).
 - Storia di Davide (depressione): approccio di messaggistica sicura. Niente dettagli sui metodi, finale con speranza possibile, `nota` finale con aiuto concreto (numeri di supporto). Mantenere questo approccio per tutti i temi forti.
 
 ## Mappa dei sistemi
@@ -77,11 +78,11 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 
 ## Contenuti attuali
 
-23 personaggi, 25 storie (84 capitoli), 57 vite, 19 vite di coppia, 13 feste, 21 compleanni, 25 incroci, 14 epiloghi, 12 ricette, 14 insegne al neon.
+24 personaggi, 26 storie (89 capitoli), 58 vite, 19 vite di coppia, 13 feste, 22 compleanni, 26 incroci, 15 epiloghi, 12 ricette, 14 insegne al neon.
 
 Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline): circa 2 capitoli al giorno, 40 capitoli verso i 160 minuti (prima a 57), le vite partono verso l'ora di gioco; i potenziamenti arrivano ancora fino a circa 3 ore. Le storie ora durano di più apposta, per gustarle; se sembra troppo lento, alzare `MOM_DAY` o abbassare `REGIA_REST`/`REGIA_WAIT`. Il gioco avanzato si regge su vite infinite e relazioni; il calendario (fase 2) serve a dargli più struttura.
 
-## Fatto finora (PR #6 → #28)
+## Fatto finora (PR #6 → #29)
 
 - Minigiochi solo dal pulsante.
 - Grafica più curata.
@@ -90,6 +91,7 @@ Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline)
 - Codice diviso in file.
 - Storie di Davide (depressione e perdita del lavoro) e di Yusuf.
 - Storia di Alice («Ricominciare», dopo un tumore): 5 capitoli, si intreccia con Sara (l'infermiera del day hospital) e Davide, `nota` con SOS LILT 800 998877 e AIMaC 840 503579; diventa habitué con vita personale «La recita», epilogo e compleanno.
+- Storia di Leo («Un nonno in prestito», lutto per il nonno a 15 anni): 5 capitoli dopo la storia di Aldo (`req: ['tazze']`), gli scacchi di nonno Nino, Aldo diventa il suo nonno acquisito (legame `famiglia`), incontro con Giada, `nota` con Telefono Azzurro 19696; vita personale «Il primo torneo».
 - Analisi e ribilanciamento del ritmo.
 - Gioco più attivo: ora di punta, bisogni, incidenti.
 - Risultati animati dei minigiochi.
@@ -110,7 +112,7 @@ Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline)
 ## Prossimi passi (in ordine)
 
 1. Comodità e suoni: fatto. **NON** fare l'opzione «grafica leggera» per telefoni: l'utente non la vuole.
-   Blocco in corso: **nuovi personaggi con storie lunghe**, uno alla volta (ognuno 4-5 capitoli intrecciati con quelli esistenti). Fatto: Alice (dopo una malattia). Da fare: un rider che manda soldi a casa, un uomo appena uscito di prigione, un'insegnante vicina alla pensione. Per ogni personaggio: `CH`, arco in `ARCS` (con `nota` se il tema è forte), `KEYS`, `KSEED`, un `XS` e un `XEPI`, `COMPLEANNI` + `COMPL_L` (i test lo pretendono, mai in un giorno di festa), vita personale `k_<id>` in `vite-nuove.js`, eventuale `perkAtm`, e un test nel browser che gioca tutta la storia (nel test abbassare `rand.from` e far uscire i personaggi già seduti: le storie aspettano se uno dei loro personaggi è nel locale). Poi un **finale per chi completa tutto** (serata con tutti i personaggi e lettera di Nonna Rosa).
+   Blocco in corso: **nuovi personaggi con storie lunghe**, uno alla volta (ognuno 4-5 capitoli intrecciati con quelli esistenti). Fatto: Alice (dopo una malattia), Leo (lutto per il nonno, con Aldo nonno acquisito). Da fare: un rider che manda soldi a casa, un uomo appena uscito di prigione, un'insegnante vicina alla pensione. Per ogni personaggio: `CH`, arco in `ARCS` (con `nota` se il tema è forte), `KEYS`, `KSEED`, un `XS` e un `XEPI`, `COMPLEANNI` + `COMPL_L` (i test lo pretendono, mai in un giorno di festa), vita personale `k_<id>` in `vite-nuove.js`, eventuale `perkAtm`, e un test nel browser che gioca tutta la storia (nel test abbassare `rand.from` e far uscire i personaggi già seduti: le storie aspettano se uno dei loro personaggi è nel locale). Poi un **finale per chi completa tutto** (serata con tutti i personaggi e lettera di Nonna Rosa).
 2. Calendario: fatto. Idee per dopo: un richiamo alla data reale (Natale, Capodanno…), decorazioni stagionali dentro il locale, ricette di stagione.
 3. Altre idee già discusse:
    - versione in inglese;

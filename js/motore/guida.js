@@ -513,6 +513,9 @@ function tutTick(dt) {
     s = TUT[tut.i];
   if (c.path.length && follow(c, dt)) c.face = 1;
   tut.t += dt;
+  // il primo cliente resta seduto finché non arriva il passo dei cocci (anche se il giocatore se la prende comoda)
+  const iC = TUT.findIndex(x => x.id === 'cocci');
+  if (tut.c1 && tut.c1.state === 'sit' && tut.i < iC) tut.c1.sitT = Math.max(tut.c1.sitT, 20);
   // Gino, appena seduto, vuole raccontare: la scena aspetta che tu lo tocchi
   const A = tut.ospite;
   if (A && A.state === 'sit' && !A.scene && !A.told) {
