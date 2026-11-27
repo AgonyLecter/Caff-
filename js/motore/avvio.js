@@ -75,7 +75,7 @@ function tap(e) {
       if (c) {
         c.tapped = 1;
         const info = c.reg ? `${TYPES[c.type] ? TYPES[c.type].n : ''} · habitué, affetto ${c.reg.f}/10` : (TYPES[c.type] || {}).n || '';
-        say(c, pick(TAPL).replace('{item}', (c.order || MENU[0]).n), 2.6, `${c.name}${info ? ' · ' + info : ''}`);
+        say(c, tocco(c), 2.8, `${c.name}${info ? ' · ' + info : ''}`);
         if (c.sleep) {
           c.sleep = 0;
           say(c, 'Eh?! Non dormivo!', 2, c.name);
@@ -267,6 +267,17 @@ window.__cafe = {
   KEYS,
   ensureKeyRegs,
   socialAI,
+  pensiero,
+  conversa,
+  tocco,
+  evento,
+  scegli,
+  pers,
+  affinita,
+  stileDi,
+  mn,
+  rv,
+  advanceRel,
   relScene,
   startDuo,
   playXS,

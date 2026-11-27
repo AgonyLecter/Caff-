@@ -907,7 +907,8 @@ async function playMini(page, kind, itemId) {
     })()`);
     ok(rg.ia && rg.ib && rg.ia !== rg.ib && rg.n === 2, `vite uniche: due habitué non vivono mai la stessa storia (${rg.ia} / ${rg.ib})`);
     let r1 = null;
-    for (let i = 0; i < 100 && !r1; i++) {
+    // se entra un cliente nel primo secondo, il racconto parte da solo dopo REGIA_WAIT (10 s)
+    for (let i = 0; i < 200 && !r1; i++) {
       r1 = await page.evaluate(() => {
         const C = window.__cafe,
           big = C.scenes.filter(s => s.big);
@@ -926,6 +927,7 @@ async function playMini(page, kind, itemId) {
       n: window.__cafe.people.filter(p => !p.dead).length,
       cap: !document.querySelector('#regia').hidden && document.querySelector('#regia').textContent
     }));
+    if (!(r1 && r1.on === 1 && r1.inv && r2.n <= r1.n && r2.cap)) console.log('    diagnosi:', JSON.stringify({ r1, r2 }));
     ok(
       r1 && r1.on === 1 && r1.inv && r2.n <= r1.n && r2.cap,
       'regia: un solo racconto alla volta, l’altro fa segno con la stellina, non entra nessuno e il testo compare in basso'
@@ -1020,6 +1022,79 @@ async function playMini(page, kind, itemId) {
           });
         })
       );
+    await clear();
+
+    console.log('La mente dei personaggi');
+    const mente = await page.evaluate(`(() => {
+      const C = window.__cafe, st = C.st, seat = ${seatPair};
+      const mk = (id, n, tr, type) => { let r = st.regs.find(x => x.id === id); if (!r) { r = { id, n, look: C.CH.irene.l, type: type || 'normale', fav: 'caffe', v: 6, f: 6, tr }; st.regs.push(r); } return r; };
+      const out = {};
+      // 1. niente ripetizioni: cinque frasi, cinque volte, tutte diverse
+      const P = ['uno', 'due', 'tre', 'quattro', 'cinque'], own = {};
+      out.norip = new Set(P.map(() => C.scegli(P, 'test:norip', own))).size;
+      // 2. il carattere: il timido parla da timido, il chiacchierone da chiacchierone
+      const ti = mk('mt', 'Tea', ['timido']), ch = mk('mc', 'Ciro', ['chiacchierone']), bro = mk('mb', 'Ugo B.', ['brontolone']);
+      out.stili = [C.stileDi(ti), C.stileDi(bro)].join(',');
+      out.soc = C.pers(ti).soc < C.pers(ch).soc;
+      // 3. una conversazione costruita sul momento, senza segnaposti rimasti
+      const ma = mk('ma', 'Gaia', ['romantico', 'artista']), mb2 = mk('mb2', 'Sandro', ['sognatore', 'artista']);
+      st.rel['ma|mb2'] = { k: 'coppia', lv: 1, d: st.day - 5 };
+      const [a, b] = seat(C, ma, mb2, 4);
+      let righe = [], bad = [];
+      for (let i = 0; i < 12; i++) { const cv = C.conversa(a, b, st.rel['ma|mb2']); righe.push(cv.L.length); cv.L.forEach(l => /[{}]|undefined/.test(l[1]) && bad.push(l[1])); out.mood = cv.mood; }
+      out.conv = Math.min(...righe) >= 2 && !bad.length; out.bad = bad.slice(0, 3);
+      // 4. le notizie girano: chi lo sa lo racconta, e chi ascolta poi lo sa
+      st.rel['ma|mt'] = { k: 'conoscenti', lv: 1, d: 1 }; /* Tea conosce Gaia: la notizia le interessa */
+      st.rel['mc|mt'] = { k: 'amici', lv: 1, d: 1 };
+      notizia('coppia', ma, mb2);
+      const [x, y] = seat(C, ch, ti, 2);
+      impara(ch, st.news[st.news.length - 1].id);
+      let detto = false;
+      for (let i = 0; i < 30 && !detto; i++) { const cv = C.conversa(x, y, st.rel['mc|mt']); if (cv.L.some(l => /Gaia/.test(l[1]))) { cv.dopo.forEach(f => f()); detto = true; } }
+      out.notizia = detto && conosce(ti, st.news[st.news.length - 1].id);
+      // 5. un piccolo litigio, e la volta dopo si chiarisce: il legame esce più forte
+      const R = st.rel['mc|mt']; C.rv(R); R.lit = 1; R.fn = st.day + 99; /* niente vita a due, adesso */ const fi0 = R.fi;
+      C.scenes.length = 0; C.relScene(x, y);
+      const s1 = C.scenes[C.scenes.length - 1]; out.lite = s1 && s1.mood === 'angry'; s1.onEnd();
+      out.lit2 = R.lit === 2;
+      C.scenes.length = 0; C.relScene(x, y); C.scenes[C.scenes.length - 1].onEnd();
+      out.chiaro = R.lit === 0 && R.fi > fi0 && (st.log[0].t || '').includes('chiarito');
+      // 6. chi è nel locale reagisce a un fidanzamento, e se lo ricorda
+      C.scenes.length = 0; x.scene = y.scene = a.scene = b.scene = null; [x, y, a, b].forEach(p => (p.bub = null));
+      timers.length = 0;
+      C.evento('fidanzati', ma, mb2);
+      timers.forEach(t => t.fn());
+      out.reaz = [x, y].some(p => p.bub) && (ch.mn.mem.some(m => m.k === 'visto') || ti.mn.mem.some(m => m.k === 'visto'));
+      // 7. pensieri legati alla situazione: chi aspetta da tanto lo dice, a modo suo
+      const stA = C.stileDi(ch), altri = Object.entries(PENSA.attesa).filter(([k]) => k !== stA).flatMap(([, l]) => l);
+      let visto = 0, sbagliato = '';
+      for (let i = 0; i < 40; i++) { x.vis = {}; x.why = 'attesa'; const t = C.pensiero(x); if (PENSA.attesa[stA].some(l => riempi(l, { sp: x }) === t)) visto++; if (altri.some(l => riempi(l, { sp: x }) === t)) sbagliato = t; }
+      out.attesa = visto >= 5 && !sbagliato ? 'ok' : visto + ' ' + sbagliato;
+      // 8. saluti tra tavoli
+      [x, y, a, b].forEach(p => { p.bub = null; p.vis = {}; });
+      let sal = false; for (let i = 0; i < 30 && !sal; i++) { y.vis = {}; y.bub = null; sal = salutaTavoli(y) && !!y.bub && /Gaia|Sandro/.test(y.bub.txt + (y.bub.txt.includes('*') ? 'Gaia' : '')); }
+      out.saluto = sal;
+      // 10. nel Diario: carattere, umore, un ricordo, e com'è il legame
+      out.diario = carattereN(ch) + ' · ' + umoreN(ch) + ' · ' + ricordoN(ch) + ' · ' + relN(st.rel['ma|mb2']);
+      return out;
+    })()`);
+    ok(mente.norip === 5, `niente ripetizioni: 5 frasi diverse su 5 (${mente.norip})`);
+    ok(mente.stili === 'timido,brontolone' && mente.soc, `carattere: ognuno risponde a modo suo (${mente.stili})`);
+    ok(
+      mente.conv && mente.mood === 'love',
+      'conversazioni costruite sul momento, senza segnaposti vuoti' + (mente.bad.length ? ': ' + mente.bad.join(' | ') : '')
+    );
+    ok(mente.notizia, 'le notizie girano: chi sa che Gaia e Sandro stanno insieme lo racconta a un amico');
+    ok(mente.lite && mente.lit2 && mente.chiaro, 'un piccolo litigio, poi si chiariscono e si fidano di più');
+    ok(mente.reaz, 'chi è nel locale reagisce a un fidanzamento e se lo ricorda');
+    ok(mente.attesa === 'ok', `pensieri legati alla situazione (chi aspetta lo dice a modo suo): ${mente.attesa}`);
+    ok(mente.saluto, 'chi conosce qualcuno a un altro tavolo lo saluta');
+    ok(/·.+·.+·/.test(mente.diario) && !/undefined|\{/.test(mente.diario), `nel Diario: ${mente.diario}`);
+    await page.evaluate(() => {
+      const st = window.__cafe.st;
+      st.regs = st.regs.filter(r => !['mt', 'mc', 'mb', 'ma', 'mb2'].includes(r.id));
+      ['ma|mb2', 'ma|mt', 'mc|mt'].forEach(k => delete st.rel[k]);
+    });
     await clear();
   }
 

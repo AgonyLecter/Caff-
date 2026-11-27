@@ -226,6 +226,82 @@ D.RICETTE.forEach(r => {
 });
 
 // --- app offline: ogni file del gioco deve essere nella lista del servizio offline (sw.js)
+// La mente dei personaggi (voci.js): ogni personaggio chiave ha il suo profilo, ogni argomento esiste
+// e ha tutte le parti, ogni stile di risposta c'è dappertutto, e nelle frasi solo segnaposti conosciuti.
+const V = vm.runInContext(
+  '({ MENTI_K, TEMI, TRAITS, TRATTI_P, TRATTI_INT, TIPO_INT, TIPO_P, TYPES, RISP, APRI, APRI_R, PRIMA, CHIUDI, CONFIDA, NOTIZIE, NOTIZIE_R, RICORDO_A, RICORDO_R, FUTURO, PUNGE, LITE, CHIARO, PENSA, PENSA_TR, SALUTA, SALUTA_R, REAZ, TOCCO, RIC_N, CAR_N, AFF_TR })',
+  ctx
+);
+const STILI = ['caldo', 'ironico', 'timido', 'brontolone', 'entusiasta'];
+Object.keys(D.KEYS).forEach(k => {
+  if (!V.MENTI_K[k]) bad(`voci: il personaggio chiave ${k} non ha il suo profilo in MENTI_K`);
+});
+Object.entries(V.MENTI_K).forEach(([k, m]) => {
+  if (!D.KEYS[k]) bad(`voci: MENTI_K.${k} non è un personaggio chiave`);
+  (m.int || []).forEach(t => V.TEMI[t] || bad(`voci: ${k} ama parlare di «${t}», ma l'argomento non esiste in TEMI`));
+  Object.keys(m.p || {}).forEach(
+    x => ['soc', 'cal', 'iro', 'sens', 'ape', 'rom', 'bro', 'ene'].includes(x) || bad(`voci: ${k} ha la manopola sconosciuta ${x}`)
+  );
+});
+V.TRAITS.forEach(t => {
+  if (!V.TRATTI_P[t]) bad(`voci: il tratto ${t} non ha il carattere in TRATTI_P`);
+  if (!V.PENSA_TR[t]) bad(`voci: il tratto ${t} non ha pensieri in PENSA_TR`);
+  (V.TRATTI_INT[t] || []).forEach(x => V.TEMI[x] || bad(`voci: TRATTI_INT.${t} usa «${x}», che non è in TEMI`));
+});
+Object.entries(V.TIPO_INT).forEach(([k, l]) => l.forEach(x => V.TEMI[x] || bad(`voci: TIPO_INT.${k} usa «${x}», che non è in TEMI`)));
+Object.keys(V.TIPO_P).forEach(k => V.TYPES[k] || bad(`voci: TIPO_P.${k} non è un tipo di cliente`));
+Object.keys(V.AFF_TR).forEach(k => {
+  const [a, b] = k.split('|');
+  if (!V.TRAITS.includes(a) || !V.TRAITS.includes(b) || [a, b].sort().join('|') !== k)
+    bad(`voci: AFF_TR «${k}» (tratti in ordine alfabetico)`);
+});
+Object.entries(V.TEMI).forEach(([k, T]) => ['a', 'si', 'solo'].forEach(x => (T[x] && T[x].length) || bad(`voci: TEMI.${k} senza «${x}»`)));
+const perStile = (o, nome) => STILI.forEach(s => (o[s] && o[s].length) || bad(`voci: ${nome} senza lo stile ${s}`));
+[
+  [V.RISP.si, 'RISP.si'],
+  [V.RISP.no, 'RISP.no'],
+  [V.APRI_R.cono, 'APRI_R.cono'],
+  [V.APRI_R.vicini, 'APRI_R.vicini'],
+  [V.PRIMA.a, 'PRIMA.a'],
+  [V.PRIMA.r, 'PRIMA.r'],
+  [V.CHIUDI, 'CHIUDI'],
+  [V.CONFIDA.r, 'CONFIDA.r'],
+  [V.NOTIZIE_R, 'NOTIZIE_R'],
+  [V.RICORDO_R, 'RICORDO_R'],
+  [V.PUNGE.r, 'PUNGE.r'],
+  [V.SALUTA_R, 'SALUTA_R'],
+  [V.PENSA.attesa, 'PENSA.attesa'],
+  [V.PENSA.sporco, 'PENSA.sporco'],
+  [V.PENSA.perfetto, 'PENSA.perfetto'],
+  ...Object.entries(V.REAZ).map(([k, o]) => [o, 'REAZ.' + k]),
+  ...['poco', 'medio', 'tanto'].map(k => [V.TOCCO[k], 'TOCCO.' + k])
+].forEach(([o, n]) => perStile(o, n));
+['spesso', 'lontani'].forEach(g =>
+  ['amici', 'amore', 'cono', 'rivali', 'famiglia'].forEach(k => (V.APRI[g][k] || []).length || bad(`voci: APRI.${g}.${k} vuoto`))
+);
+['amici', 'amore', 'cotta', 'cono', 'rivali', 'famiglia', 'lite'].forEach(
+  k => (V.SALUTA[k] || []).length || bad(`voci: SALUTA.${k} vuoto`)
+);
+Object.entries(V.NOTIZIE).forEach(
+  ([k, N]) => (N.a && N.a.length && N.io && N.io.length) || bad(`voci: NOTIZIE.${k} deve avere «a» e «io»`)
+);
+// i segnaposti: solo quelli che il motore sa riempire
+const SEGN = new Set(['{A}', '{B}', '{X}', '{Y}', '{item}', '{giorni}', '{meteo}', '{nome}', '{v}', '{o}', '{X:o}']);
+const testiM = [];
+const raccogli = (x, dove) => {
+  if (typeof x === 'string') testiM.push([x, dove]);
+  else if (Array.isArray(x)) x.forEach((y, i) => raccogli(y, dove));
+  else if (x && typeof x === 'object') Object.entries(x).forEach(([k, y]) => raccogli(y, dove + '.' + k));
+};
+Object.entries(V).forEach(
+  ([k, x]) => !['TRAITS', 'TYPES', 'TRATTI_P', 'TIPO_P', 'AFF_TR', 'MENTI_K', 'TRATTI_INT', 'TIPO_INT'].includes(k) && raccogli(x, k)
+);
+testiM.forEach(([t, dove]) =>
+  (t.match(/\{[^}]*\}/g) || []).forEach(m => SEGN.has(m) || bad(`voci: ${dove}: segnaposto sconosciuto ${m} in «${t}»`))
+);
+// le scenette di litigio e chiarimento: battute di 0 o 1
+[...V.LITE, ...V.CHIARO].forEach((L, i) => L.forEach(l => [0, 1].includes(l[0]) || bad(`voci: LITE/CHIARO ${i}: chi parla?`)));
+
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 [...html.matchAll(/<script src="([^"]+)"/g)]
   .map(m => m[1])
@@ -247,7 +323,8 @@ console.log(
     n(D.FILI2.length, 'vite a due'),
     n(D.FESTE.length, 'feste'),
     n(D.XS.length, 'incontri'),
-    n(D.XEPI.length, 'epiloghi')
+    n(D.XEPI.length, 'epiloghi'),
+    n(testiM.length, 'frasi della mente')
   ].join(' · ')
 );
 if (problems.length) {

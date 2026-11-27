@@ -33,6 +33,10 @@ const NOVITA = [
   {
     id: 'diario',
     t: 'Quando torni dopo un po’, ti racconto io cosa è successo al caffè mentre non c’eri. Ma le storie aspettano te: quelle succedono solo quando ci sei.'
+  },
+  {
+    id: 'mente',
+    t: 'Ho notato una cosa, cara: i tuoi clienti hanno ognuno il suo carattere. Si ricordano le cose, si raccontano le novità, ogni tanto bisticciano e poi fanno pace. Ascoltali: non dicono mai due volte la stessa cosa. E nel Diario c’è scritto com’è fatto ognuno.'
   }
 ];
 

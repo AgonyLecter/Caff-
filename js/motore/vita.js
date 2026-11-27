@@ -180,7 +180,7 @@ function keyLine(c) {
   if (!K) return null;
   const ok = K.l.filter(x => typeof x === 'string' || fl(x[1]));
   if (!ok.length) return null;
-  const x = pick(ok);
+  const x = scegli(ok, 'key:' + c.reg.key, c.reg);
   return typeof x === 'string' ? x : x[0];
 }
 function xsFor(mem) {
@@ -288,7 +288,7 @@ function ritual() {
   if (h < 9 || h > 23) return false;
   if (calRitoAnniv()) return true; // nel giorno dell'anniversario, le coppie vengono insieme
   for (const [k, v] of Object.entries(st.rel)) {
-    if (!CLOSE.includes(v.k) || v.k === 'cotta') continue;
+    if (!CLOSE.includes(v.k) || v.k === 'cotta' || v.lit === 2) continue; // dopo un litigio, il loro giorno salta
     if (v.rit == null) v.rit = (st.day + Object.keys(st.rel).indexOf(k)) % 7;
     if (v.rit !== (st.day - 1) % 7 || v.ritD === st.day) continue;
     const [a, b] = k.split('|').map(id => st.regs.find(r => r.id === id));
@@ -334,17 +334,17 @@ function socialAI(dt) {
   const scored = others
     .map(o => {
       const r = st.rel[relKey(c.reg, o.reg)];
-      let w = 0.3;
+      // chi raggiungere: dipende da quanto gli vuole bene, da quanto gli piace, e dal carattere
+      let w = 0.3 + affinita(c.reg, o.reg) * 0.25;
       if (r) {
-        if (r.k === 'rivali') w = 0;
-        else if (['cotta', 'coppia', 'fidanzati', 'sposati'].includes(r.k)) w = 3;
-        else if (CLOSE.includes(r.k)) w = 2;
-        else w = 1;
+        rv(r);
+        if (r.k === 'rivali' || r.lit === 2) w = 0;
+        else w = 0.3 + r.a / 45 + r.at / 35 + (AMORE.includes(r.k) ? 1 : 0);
       }
-      const tr = c.reg.tr || [];
-      if (tr.includes('chiacchierone')) w *= 1.8;
-      if (tr.includes('romantico') && (!r || r.k === 'cotta')) w *= 1.4;
-      if (tr.includes('timido')) w *= 0.35;
+      const p = pers(c.reg);
+      w *= 0.3 + p.soc * 1.4;
+      if (p.rom > 0.6 && (!r || r.k === 'cotta')) w *= 1.4;
+      if (c.mood < 45 && r && r.fi >= 50) w *= 1.6; // chi sta giù cerca chi si fida
       if (mutual(c.reg, o.reg)) w *= 1.6;
       if (c.reg.key && o.reg.key && xsFor([c, o])) w = Math.max(w, 1) * 3;
       return { o, w };
@@ -367,7 +367,7 @@ function socialAI(dt) {
     { x: seat.x, y: LANE },
     { x: seat.x, y: seat.y }
   ];
-  say(c, r && CLOSE.includes(r.k) ? pick(JOINF) : pick(JOINL), 2.6, c.name);
+  say(c, gO(r && CLOSE.includes(r.k) ? scegli(JOINF, 'joinf', c.reg) : scegli(JOINL, 'joinl', c.reg), c.reg), 2.6, c.name);
 }
 function mutual(A, B) {
   for (const [k, v] of Object.entries(st.rel)) {
