@@ -193,7 +193,8 @@ function tapNeed(x, y) {
 
 function activeTick(dt) {
   introTick(dt);
-  if (intro) return; // finché parla Nonna Rosa non succede altro
+  tutTick(dt);
+  if (intro || tut) return; // finché parla Nonna Rosa non succede altro: nel tutorial gli imprevisti li prepara lei
   incidentTick(dt);
   rushTick(dt);
   needsTick(dt);

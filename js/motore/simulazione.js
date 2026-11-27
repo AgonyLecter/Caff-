@@ -303,7 +303,7 @@ function serve(c, quality) {
   let seat = null;
   const tp = TYPES[c.type] || {};
   if (c.res) seat = allSeats().find(s => s.res === c.res) || null;
-  else if (c.rare || Math.random() > (tp.take || 0.18)) seat = findSeat(c);
+  else if (c.rare || c.tut || Math.random() > (tp.take || 0.18)) seat = findSeat(c);
   if (seat) {
     seat.occ = c;
     seat.res = null;
@@ -386,7 +386,7 @@ function leaveSeat(c) {
   incidentOnLeave(c, s);
   if (s) {
     s.occ = null;
-    s.dirty = true;
+    s.dirty = !c.noDirty;
   }
   c.seat = null;
   const tp = TYPES[c.type] || {};
@@ -444,6 +444,7 @@ function startScene(mem, lines, o) {
     onEnd: o.onEnd,
     story: o.story,
     big: !!o.story, // un momento importante: passa dalla regia
+    noAuto: !!o.noAuto, // parte solo se lo tocchi (il primo racconto, nel tutorial)
     mood: o.mood || ''
   };
   mem.forEach(m => {
@@ -656,7 +657,7 @@ function present(r) {
   return people.some(p => p.reg === r && !p.dead);
 }
 function trySpawn() {
-  if (intro) return; // il locale resta vuoto mentre parla Nonna Rosa
+  if (intro || tut) return; // il locale resta vuoto mentre parla Nonna Rosa (nel tutorial i clienti li manda lei)
   if (regia.live) return; // mentre qualcuno racconta non entra nessuno
   if (queue.length >= 5) return;
   if (!freeSeats().length && queue.length >= 2) return;
@@ -717,7 +718,7 @@ function storyNote(arc) {
   showModal(`<h2>${esc(arc.t)}</h2><p>${esc(arc.nota)}</p>`, [{ t: 'Ho capito', big: 1, fn: hideModal }]);
 }
 function tryStory() {
-  if (intro) return; // il locale resta vuoto mentre parla Nonna Rosa
+  if (intro || tut) return; // il locale resta vuoto mentre parla Nonna Rosa
   if (!regiaFree() || !capTurno()) return; // un momento alla volta, e a turno con le vite
   const a = atm(),
     c = [];
@@ -840,9 +841,9 @@ function updCust(c, dt) {
         if (i === 0) {
           c.state = 'order';
           c.order = pickOrder(c);
-          c.special = c.type === 'critico' || (!rush && Math.random() < (c.type === 'influencer' ? 0.5 : 0.07)); // nell'ora di punta niente speciali
+          c.special = c.tut ? !!c.forceSpecial : c.type === 'critico' || (!rush && Math.random() < (c.type === 'influencer' ? 0.5 : 0.07)); // nell'ora di punta niente speciali
           c.req = null;
-          if (!c.special && !c.story && !rush && Math.random() < 0.17) makeReq(c);
+          if (!c.special && !c.story && !c.tut && !rush && Math.random() < 0.17) makeReq(c);
           const o = c.order;
           const line =
             c.reg && c.order.id === c.reg.fav && Math.random() < 0.6
@@ -1340,7 +1341,7 @@ function ambient(dt) {
 function update(dt) {
   ambient(dt);
   if (paused) return;
-  if (!regia.live) st.tod += dt / DAYLEN; // mentre qualcuno racconta, l'orologio aspetta
+  if (!regia.live && !tut) st.tod += dt / DAYLEN; // mentre qualcuno racconta (o Nonna Rosa ti insegna), l'orologio aspetta
   if (st.wx2 && st.tod >= 0.5 && !st.wxShown) {
     st.wxShown = 1;
     toast(
@@ -1390,7 +1391,7 @@ function update(dt) {
     storyT = rnd(18, 34);
   }
   const q = queue[0];
-  if (q && q.state === 'order' && q.special && q.waited > (st.manager ? 30 : 20) + (q.type === 'critico' ? 25 : 0)) {
+  if (q && q.state === 'order' && q.special && !q.tut && q.waited > (st.manager ? 30 : 20) + (q.type === 'critico' ? 25 : 0)) {
     q.special = false;
     if (q.req && q.req.mg) q.req = null;
     say(q, pick(['Va bene, fammelo normale.', 'Niente di speciale, allora. Pazienza.', 'Ok, va bene anche semplice.']), 2.4);

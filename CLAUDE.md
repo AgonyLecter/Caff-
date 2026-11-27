@@ -67,8 +67,9 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
   - macchina del caffè (`MACH`, `drawMachine`);
   - insegne al neon sui muri (`NEONS`, `wallSlots`, `drawNeons` dopo `lighting()`).
 - **Accoglienza** (`guida.js`):
-  - guida a passi con Nonna Rosa (`GUIDA`, anello `#gring`);
-  - scena d'introduzione (`INTRO`): Nonna Rosa spiega che bisogna badare alle storie.
+  - scena d'introduzione (`INTRO`): Nonna Rosa spiega che contano le storie, non solo le monete;
+  - **tutorial a passi** (`TUT`, stato `tut`): Nonna Rosa resta nel locale (`TUT_STAY`) e fa provare tutto: primo cliente, toccare chi è seduto, un bisogno, un ordine speciale, cocci, tavolo sporco, monete, barista, macchina in tilt, il primo racconto (il signor Aldo, `ALDO`, scena `noAuto` che parte solo toccando la stellina; poi diventa l'habitué `r_aldo` con la storia «Il forno di Ines» nel Diario), Diario, Atmosfera, saluto. I clienti di prova hanno `c.tut` (pazienza infinita, si siedono sempre, `forceSpecial`, `noDirty`). Durante `tut` niente clienti normali, storie, imprevisti casuali, e l'orologio è fermo. «Salta il tutorial» chiude tutto (`tutEnd(true)`). Parte solo nelle partite nuove (giorno 1, meno di 10 serviti);
+  - consigli sulle novità (`GUIDA`, anello `#gring`), che scattano quando serve dopo il tutorial.
 - **PWA**: installabile; il service worker legge prima dalla rete e usa la cache se manca la connessione.
 
 ## Contenuti attuali
@@ -77,7 +78,7 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 
 Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline): circa 2 capitoli al giorno, 40 capitoli verso i 160 minuti (prima a 57), le vite partono verso l'ora di gioco; i potenziamenti arrivano ancora fino a circa 3 ore. Le storie ora durano di più apposta, per gustarle; se sembra troppo lento, alzare `MOM_DAY` o abbassare `REGIA_REST`/`REGIA_WAIT`. Il gioco avanzato si regge su vite infinite e relazioni; il calendario (fase 2) serve a dargli più struttura.
 
-## Fatto finora (PR #6 → #23)
+## Fatto finora (PR #6 → #24)
 
 - Minigiochi solo dal pulsante.
 - Grafica più curata.
@@ -96,6 +97,7 @@ Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline)
 - Laboratorio ricette.
 - PWA.
 - Guida e intro con Nonna Rosa.
+- Tutorial vero con Nonna Rosa (16 passi, il primo racconto del signor Aldo).
 - Vite uniche (niente testi uguali per persone diverse) e regia dei racconti (un momento alla volta).
 
 ## Prossimi passi (in ordine)

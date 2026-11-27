@@ -906,18 +906,23 @@ async function playMini(page, kind, itemId) {
 
   console.log('Primo giorno guidato');
   {
-    const gp = await browser.newPage({ viewport: { width: 1000, height: 450 } });
-    await gp.goto(FILE);
-    await gp.evaluate(() => localStorage.clear());
-    await gp.reload();
-    await gp.waitForTimeout(300);
-    await gp.click('#go');
-    await gp.waitForTimeout(800);
-    await gp.click('#skip');
-    await gp.waitForTimeout(300);
-    await gp.fill('#nameIn', 'Guida');
-    await gp.click('#openBtn');
-    // prima apre Nonna Rosa: locale vuoto, spiega che contano le storie, poi se ne va
+    const newGame = async () => {
+      const gp = await browser.newPage({ viewport: { width: 1000, height: 450 } });
+      gp.on('pageerror', e => errors.push(e.message));
+      await gp.goto(FILE);
+      await gp.evaluate(() => localStorage.clear());
+      await gp.reload();
+      await gp.waitForTimeout(300);
+      await gp.click('#go');
+      await gp.waitForTimeout(800);
+      await gp.click('#skip');
+      await gp.waitForTimeout(300);
+      await gp.fill('#nameIn', 'Guida');
+      await gp.click('#openBtn');
+      return gp;
+    };
+    const gp = await newGame();
+    // prima apre Nonna Rosa: locale vuoto, spiega che contano le storie
     let talking = false;
     for (let i = 0; i < 80 && !talking; i++) {
       talking = await gp.evaluate(() => !!intro && intro.phase === 'talk' && !document.querySelector('#guide').hidden);
@@ -929,39 +934,107 @@ async function playMini(page, kind, itemId) {
       await gp.click('#iok');
       await gp.waitForTimeout(120);
     }
-    for (let i = 0; i < 100 && (await gp.evaluate(() => !!intro)); i++) await gp.waitForTimeout(200);
-    const introDone = await gp.evaluate(() => !intro && st.introDone === 1);
     ok(
-      talking && empty && introDone && /storia/.test(storyText),
-      'Nonna Rosa apre il primo giorno a locale vuoto, spiega le storie e poi se ne va'
+      talking && empty && /storia/.test(storyText) && (await gp.evaluate(() => !!tut && TUT[tut.i].id === 'cliente')),
+      'Nonna Rosa apre il primo giorno a locale vuoto, spiega che contano le storie e comincia il tutorial'
     );
-    let shown = false;
-    for (let i = 0; i < 80 && !shown; i++) {
-      shown = await gp.evaluate(() => !document.querySelector('#guide').hidden && gCur && gCur.id === 'servi');
-      await gp.waitForTimeout(250);
-    }
-    const ring = await gp.evaluate(() => !document.querySelector('#gring').hidden);
-    for (let i = 0; i < 40 && (await gp.evaluate(() => !st.tut.servi)); i++) {
-      await gp.locator('#serve').dispatchEvent('pointerdown');
+    // tutto il tutorial, passo per passo, facendo quello che chiede
+    const step = () => gp.evaluate(() => (tut ? TUT[tut.i].id : 'fine-tutorial'));
+    const seen = [];
+    let ringOk = true,
+      clockOk = true,
+      calm = true;
+    const tod0 = await gp.evaluate(() => st.tod);
+    for (let k = 0; k < 1500; k++) {
+      const s = await step();
+      if (s !== seen[seen.length - 1]) {
+        seen.push(s);
+        if (['cliente', 'bisogno', 'cocci', 'macchina'].includes(s)) {
+          await gp.waitForTimeout(700);
+          if (await gp.evaluate(() => !!tut && !tutAside() && document.querySelector('#gring').hidden)) ringOk = false;
+        }
+      }
+      if (s === 'fine-tutorial') break;
+      const r = await gp.evaluate(() => {
+        const s = TUT[tut.i].id,
+          q = queue[0];
+        if (['cliente', 'speciale', 'aldo'].includes(s) && q && q.state === 'order' && !mini) tapCounter();
+        if (mini && !mini.done) {
+          mini.done = true;
+          mini.q = 2;
+          mini.endT = 0;
+          finishMini();
+        }
+        if (s === 'ascolta' && tut.c1.state === 'sit') tut.c1.tapped = 1;
+        if (s === 'bisogno' && tut.c1.need) tapNeed(tut.c1.x, tut.c1.y - 10);
+        if (s === 'cocci' && incid[0]) tapIncident(incid[0].x, incid[0].y);
+        if (s === 'pulisci') {
+          const d = dirtySeat();
+          if (d) cleanSeat(d, 1);
+        }
+        if (s === 'macchina' && machTilt) tapIncident(W - 20, 84);
+        if (s === 'stella' && tut.aldo.invite) regiaTap(tut.aldo.x, tut.aldo.y - 10);
+        if (regia.live) regiaNext();
+        // durante il tutorial entrano solo i clienti mandati da Nonna Rosa
+        return people.filter(p => !p.dead && p.state !== 'intro' && !p.tut).length;
+      });
+      if (r) calm = false;
+      if (await gp.isVisible('.choice button')) await gp.click('.choice button >> nth=0');
+      const s2 = await step();
+      if (s2 === 'barista') {
+        if (await gp.evaluate(() => panel !== 'up')) await gp.click('#bUp');
+        else if (await gp.evaluate(() => tab !== 'Staff')) await gp.click('#tabs button[data-tab="Staff"]');
+        else await gp.click('button[data-u="barista"]');
+      }
+      if (s2 === 'diario' && (await gp.evaluate(() => panel !== 'cli'))) await gp.click('#bCli');
+      if (s2 !== 'fine-tutorial' && s2 !== 'ascolta' && s2 !== 'cuore' && (await gp.isVisible('#tnext'))) await gp.click('#tnext');
+      if (s2 === 'cuore' && (await gp.isVisible('#tnext'))) {
+        if ((await gp.evaluate(() => st.tod)) !== tod0) clockOk = false;
+        await gp.click('#tnext');
+      }
       await gp.waitForTimeout(80);
     }
-    await gp.waitForTimeout(500);
-    const after = await gp.evaluate(() => ({
-      done: !!st.tut.servi,
-      hidden: document.querySelector('#guide').hidden || (gCur && gCur.id !== 'servi')
+    const want =
+      'cliente ascolta bisogno speciale cocci pulisci monete barista macchina aldo stella cuore diario diario2 atm fine fine-tutorial';
+    ok(seen.join(' ') === want, `tutorial completo: ${seen.length - 1} passi (${seen.slice(0, -1).join(' › ')})`);
+    ok(ringOk && calm && clockOk, 'il cerchio indica cosa toccare, entrano solo i clienti di Nonna Rosa e l’orologio è fermo');
+    const aldo = await gp.evaluate(() => ({
+      reg: !!st.regs.find(r => r.id === 'r_aldo'),
+      fd: (st.fdone || []).find(f => f.rid === 'r_aldo'),
+      barista: st.barista
     }));
     ok(
-      shown && ring && after.done && after.hidden,
-      'Nonna Rosa compare al primo cliente, indica «Servi» e il consiglio si chiude dopo il primo servizio'
+      aldo.reg && aldo.fd && aldo.fd.log.length === 1 && aldo.barista === 1,
+      `il primo racconto: Aldo diventa habitué e la sua storia è nel Diario («${aldo.fd && aldo.fd.e}»)`
     );
-    const old = await gp.evaluate(() => {
+    for (let i = 0; i < 60 && (await gp.evaluate(() => people.some(p => p.name === 'Nonna Rosa' && !p.dead))); i++)
+      await gp.waitForTimeout(200);
+    let back = false;
+    for (let i = 0; i < 60 && !back; i++) {
+      back = await gp.evaluate(() => people.some(p => !p.dead && !p.tut));
+      await gp.waitForTimeout(200);
+    }
+    const end = await gp.evaluate(() => ({
+      done: st.introDone === 1 && st.tutDone === 1,
+      rosa: people.some(p => p.name === 'Nonna Rosa' && !p.dead)
+    }));
+    ok(end.done && !end.rosa && back, 'finito il tutorial Nonna Rosa se ne va e il locale si riempie');
+    await gp.close();
+    // chi vuole, salta tutto
+    const gs = await newGame();
+    for (let i = 0; i < 80 && !(await gs.isVisible('#iskip')); i++) await gs.waitForTimeout(200);
+    await gs.click('#iskip');
+    await gs.waitForTimeout(300);
+    const sk = await gs.evaluate(() => ({ tut: !!tut, intro: !!intro, done: st.introDone === 1, tips: !!st.tut.servi && !st.tut.punta }));
+    ok(!sk.tut && !sk.intro && sk.done && sk.tips, 'si può saltare il tutorial: restano solo i consigli sulle novità');
+    const old = await gs.evaluate(() => {
       st.tut = undefined;
       st.served = 500;
       guideForOldSaves();
       return GUIDA.filter(g => g.base).every(g => st.tut[g.id]) && !st.tut.bisogno;
     });
     ok(old, 'i salvataggi avanzati vedono solo i consigli sulle novità');
-    await gp.close();
+    await gs.close();
   }
 
   console.log('Macchina del caffè e schermata di caricamento');

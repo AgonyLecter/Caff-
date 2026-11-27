@@ -14,8 +14,8 @@ const regia = { live: null, hold: 0, rest: 0, cap: '', off: false, vt: 3, last: 
 
 // c'è spazio per un nuovo momento? (nessuno in corso, nessuno in arrivo, respiro finito)
 function regiaFree() {
-  if (regia.off) return !intro;
-  return !intro && !rush && !regia.live && regia.hold <= 0 && regia.rest <= 0 && !scenes.some(s => s.big && !s.done && !s.on);
+  if (regia.off) return !intro && !tut;
+  return !intro && !tut && !rush && !regia.live && regia.hold <= 0 && regia.rest <= 0 && !scenes.some(s => s.big && !s.done && !s.on);
 }
 function momOk(k) {
   if (regia.off) return true;
@@ -57,7 +57,7 @@ function regiaStart(sc, dt) {
       toast(`✦ ${n.length > 1 ? n.join(' e ') + ' vogliono' : n[0] + ' vuole'} raccontarti qualcosa: tocca quando sei pronto`);
   }
   sc.inv += dt;
-  if (!sc.tap && !(sc.inv > 1.2 && regiaQuiet()) && sc.inv < REGIA_WAIT) return false;
+  if (!sc.tap && (sc.noAuto || (!(sc.inv > 1.2 && regiaQuiet()) && sc.inv < REGIA_WAIT))) return false;
   regia.live = sc;
   regia.hold = 0;
   sc.on = 1;
