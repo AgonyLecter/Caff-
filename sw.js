@@ -1,13 +1,14 @@
 // Servizio offline: il gioco si apre anche senza connessione.
 // Prima prova la rete (così gli aggiornamenti arrivano subito), se non c'è usa la copia salvata.
 // Quando cambiano i file del gioco basta aumentare VERSIONE: la vecchia copia viene buttata.
-const VERSIONE = 'caffe-v5';
+const VERSIONE = 'caffe-v6';
 const FILE = [
   './',
   'index.html',
   'manifest.webmanifest',
   'css/stile.css',
   'js/motore/base.js',
+  'js/motore/icone.js',
   'js/dati/personaggi.js',
   'js/dati/storie.js',
   'js/dati/mondo.js',

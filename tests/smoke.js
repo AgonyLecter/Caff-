@@ -1532,11 +1532,12 @@ async function playMini(page, kind, itemId) {
         got = await page.evaluate(() => window.__cafe.people.some(p => !p.dead && p.story === 'alice'));
         if (!got) await sleep(50);
       }
-      for (let i = 0; i < 400; i++) {
+      for (let i = 0; i < 700; i++) {
         if (k === 3 && (await page.evaluate(() => window.__cafe.people.some(p => !p.dead && p.story === 'alice' && p.key === 'sara'))))
           saraC4 = true;
         if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
         if (await page.evaluate(k => (window.__cafe.st.story.alice || 0) > k, k)) break;
+        if (i % 5 === 4) await page.evaluate(() => window.__cafe.regiaNext()); // come un giocatore che tocca il testo
         await sleep(80);
       }
       seen.push(await page.evaluate(() => window.__cafe.st.story.alice || 0));
@@ -1661,11 +1662,12 @@ async function playMini(page, kind, itemId) {
             })) +
             ')'
         );
-      for (let i = 0; i < 400; i++) {
+      for (let i = 0; i < 700; i++) {
         if (k === 3 && (await page.evaluate(() => window.__cafe.people.some(p => !p.dead && p.story === 'leo' && p.key === 'aldo'))))
           aldoC4 = true;
         if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
         if (await page.evaluate(k => (window.__cafe.st.story.leo || 0) > k, k)) break;
+        if (i % 5 === 4) await page.evaluate(() => window.__cafe.regiaNext()); // come un giocatore che tocca il testo
         await sleep(80);
       }
       seen.push(await page.evaluate(() => window.__cafe.st.story.leo || 0));
@@ -1789,7 +1791,10 @@ async function playMini(page, kind, itemId) {
     C.st.wx = 'pioggia';
     C.st.tod = 0.9;
     C.st.rareDay = 0;
-    for (let i = 0; i < 40 && !C.queue.some(p => p.rare); i++) C.tryRare();
+    // con quattro persone in fila il visitatore raro non entra: la svuotiamo
+    C.queue.forEach(p => (p.dead = true));
+    C.queue.length = 0;
+    for (let i = 0; i < 80 && !C.queue.some(p => p.rare); i++) C.tryRare();
   });
   const rare = await page.evaluate(() => {
     const p = window.__cafe.queue.find(p => p.rare);
@@ -1908,6 +1913,23 @@ async function playMini(page, kind, itemId) {
     );
     await page.click('#pclose');
     await sleep(200);
+    // tutto a tema: icone dei miglioramenti e delle schede, frecce disegnate, cursori e chicco del volume
+    await page.click('#hud button[data-p="up"]');
+    await sleep(200);
+    const tema = await page.evaluate(() => ({
+      righe: document.querySelectorAll('#pbody .row.ico .ui svg').length,
+      schede: document.querySelectorAll('#tabs button svg.tab').length,
+      tutte: UP.every(u => UPI[u.id]),
+      cur: getComputedStyle(document.documentElement).getPropertyValue('--cur').includes('data:image/png'),
+      bean: getComputedStyle(document.documentElement).getPropertyValue('--bean').includes('svg'),
+      frecce: pxText('Avanti ›').includes('<svg')
+    }));
+    await page.click('#pclose');
+    await sleep(200);
+    ok(
+      tema.righe >= 3 && tema.schede === 6 && tema.tutte && tema.cur && tema.bean && tema.frecce,
+      `tutto a tema: un'icona per ogni miglioramento (${tema.righe} in questa scheda) e scheda, frecce disegnate, cursore a tazzina, chicco del volume`
+    );
   }
 
   console.log('Salvataggio');

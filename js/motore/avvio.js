@@ -246,6 +246,9 @@ $('#bSet').innerHTML = ICO.menu;
 ].forEach(([id, ic, l]) => ($('#' + id).innerHTML = `<span class="bi">${ICO[ic]}</span><span class="lbl">${l}</span>`));
 $('#pclose').innerHTML = ICO.close;
 $('#dice').innerHTML = ICO.dice;
+$('#rprev').innerHTML = ICO.sx;
+$('#rnext').innerHTML = ICO.dx;
+$('#skip').innerHTML = 'Salta ' + ICO.dx;
 window.__cafe = {
   tryStory,
   regia,

@@ -133,7 +133,7 @@ function regiaCaption() {
   if (key !== regia.cap) {
     regia.cap = key;
     const look = sp.look || (sp.reg && sp.reg.look);
-    el.innerHTML = `${look ? `<img alt="" src="${portrait(look)}">` : ''}<div><b>${esc(sp.name || '')}</b><p>${esc(sp.bub.txt)}</p><small>tocca per continuare ›</small></div>`;
+    el.innerHTML = `${look ? `<img alt="" src="${portrait(look)}">` : ''}<div><b>${esc(sp.name || '')}</b><p>${esc(sp.bub.txt)}</p><small>tocca per continuare ${ICO.dx}</small></div>`;
   }
   el.hidden = false;
 }

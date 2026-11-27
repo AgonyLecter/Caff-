@@ -160,7 +160,15 @@ const WICO = k => {
   const x = WI[k] || WI.sereno;
   return pxSvg(x.r, x.p);
 };
-const pxText = h => String(h).replace(/♥/g, ICO.heart).replace(/★/g, ICO.star).replace(/☆/g, ICO.star0).replace(/♪/g, ICO.note);
+const pxText = h =>
+  String(h)
+    .replace(/♥/g, ICO.heart)
+    .replace(/★/g, ICO.star)
+    .replace(/☆/g, ICO.star0)
+    .replace(/♪/g, ICO.note)
+    .replace(/›/g, ICO.dx || '›')
+    .replace(/‹/g, ICO.sx || '‹')
+    .replace(/✦/g, ICO.stella || '✦');
 function ctxPx(name, x, y, size, col) {
   const r = PXI[name],
     u = size / r.length;

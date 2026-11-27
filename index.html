@@ -90,7 +90,7 @@
 <div id="reader" class="ov" hidden><div class="book">
   <div class="bpage bleft"><div id="rport"></div><h3 id="rtitle"></h3><p id="rsub"></p><div id="rdots"></div></div>
   <div class="bpage bright"><div id="rtext"></div></div>
-  <div class="bnav"><button id="rprev" aria-label="Capitolo precedente">‹</button><button id="rclose">Chiudi</button><button id="rnext" aria-label="Capitolo successivo">›</button></div>
+  <div class="bnav"><button id="rprev" aria-label="Capitolo precedente"></button><button id="rclose">Chiudi</button><button id="rnext" aria-label="Capitolo successivo"></button></div>
 </div></div>
 
 <div id="modal" class="ov" hidden><div class="box" id="mbox"></div></div>
@@ -121,12 +121,13 @@
   </div>
 </div></div>
 
-<button id="skip" hidden>Salta ›</button>
+<button id="skip" hidden>Salta</button>
 
 <div id="rotate"><div class="ph"></div><div>Ruota il telefono in orizzontale</div></div>
 
 <!-- I file vanno caricati in quest'ordine: prima base, poi i contenuti (dati), poi il motore. -->
 <script src="js/motore/base.js"></script>
+<script src="js/motore/icone.js"></script>
 <script src="js/dati/personaggi.js"></script>
 <script src="js/dati/storie.js"></script>
 <script src="js/dati/mondo.js"></script>

@@ -1866,15 +1866,13 @@ function hiRes() {
   if (camX > 4) {
     ctx.globalAlpha = 0.5 + 0.3 * p;
     ctx.fillStyle = '#fff';
-    ctx.font = `700 ${Math.round(22 * DPR)}px ${FONT}`;
-    ctx.fillText('‹', 14 * DPR, cv.height * 0.5);
+    ctxPx('frsx', 8 * DPR, cv.height * 0.5 - 10 * DPR, 16 * DPR, '#fff');
     ctx.globalAlpha = 1;
   }
   if (camX < W - VW - 4) {
     ctx.globalAlpha = 0.5 + 0.3 * p;
     ctx.fillStyle = '#fff';
-    ctx.font = `700 ${Math.round(22 * DPR)}px ${FONT}`;
-    ctx.fillText('›', cv.width - 14 * DPR, cv.height * 0.5);
+    ctxPx('frdx', cv.width - 20 * DPR, cv.height * 0.5 - 10 * DPR, 16 * DPR, '#fff');
     ctx.globalAlpha = 1;
   }
 }

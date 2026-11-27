@@ -278,7 +278,7 @@ function introShow(i) {
   const el = $('#guide'),
     last = i >= INTRO.length - 1;
   el.innerHTML = `<img alt="" src="${portrait(CH.rosa.l)}"><div><b>Nonna Rosa</b><p>${esc(INTRO[i].replace('{nome}', st.name || 'questo posto'))}</p><div class="gb"><button id="iok">${
-    last ? 'Apri le porte' : 'Avanti ›'
+    last ? 'Apri le porte' : 'Avanti ' + ICO.dx
   }</button><button id="iskip">Salta il tutorial</button></div></div>`;
   el.hidden = false;
   sfx('pop');
@@ -499,7 +499,7 @@ function tutShow(s) {
   const txt = typeof s.text === 'function' ? s.text() : s.text;
   el.innerHTML = `<img alt="" src="${portrait(CH.rosa.l)}"><div><b>Nonna Rosa <small class="tstep">${tut.i + 1}/${TUT.length}</small></b><p>${esc(
     txt
-  )}</p><div class="gb">${s.done ? '' : `<button id="tnext">${s.btn || 'Avanti ›'}</button>`}<button id="tskip">Salta il tutorial</button></div></div>`;
+  )}</p><div class="gb">${s.done ? '' : `<button id="tnext">${s.btn || 'Avanti ' + ICO.dx}</button>`}<button id="tskip">Salta il tutorial</button></div></div>`;
   el.hidden = false;
   tut.shown = true;
   sfx('pop');
