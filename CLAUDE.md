@@ -21,7 +21,7 @@ Script classici (non moduli ES) che condividono lo scope globale: funziona da `f
 
 1. `js/motore/base.js` (e `js/motore/icone.js`, che però si carica dopo base e prima dei dati)
 2. `js/dati/`: personaggi, storie, mondo, frasi, animali, vite, vite-nuove, calendario, novita, intrecci, segreti (solo contenuti)
-3. `js/motore/`: icone (subito dopo base.js), stato, citta, audio, simulazione, disegno-persone, disegno-locale, animali, vita, regia, calendario, attivo, atmosfera, interfaccia, risultati, guida, ritorno, avvio
+3. `js/motore/`: icone (subito dopo base.js), stato, citta, audio, simulazione, disegno-persone, disegno-locale, animali, vita, regia, calendario, attivo, atmosfera, interfaccia, risultati, guida, ritorno, avvio, aggiorna
 
 Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `icone/`, `docs/come-aggiungere-contenuti.md` (guida per aggiungere personaggi/storie/vite/incroci/frasi), `README.md`, `tools/` (simulazione del ritmo).
 
@@ -36,7 +36,8 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 ## Trappole già scoperte
 
 - La regola CSS `canvas{position:fixed;inset:0;...}` vale per tutti i canvas: quelli dentro i pannelli (`#mcan`, `#mdraw`) devono avere `position:static`.
-- **Ogni nuovo file** va aggiunto anche alla lista `FILE` di `sw.js` (il test lo controlla), e quando cambia molto conviene aumentare `VERSIONE`.
+- **Ogni nuovo file** va aggiunto anche alla lista `FILE` di `sw.js` (il test lo controlla).
+- **A OGNI PUBBLICAZIONE aumentare `VERSIONE` in `sw.js`**: è il segnale con cui chi sta giocando riceve subito la versione nuova (`aggiorna.js`). Senza, l'aggiornamento arriva solo a chi riapre il gioco.
 - Nomi globali: evitare collisioni con `window` (es. `moveTo` è stato rinominato `walkTo`) e tra file (tutti gli script condividono lo stesso spazio: un `const` ripetuto blocca tutto il gioco all'avvio; es. `burst` esiste in atmosfera.js, in audio.js si usa `noiseHit`). Dopo aver aggiunto funzioni globali, aprire la pagina e controllare che non ci siano errori.
 - Nei test il salvataggio include `tutOff:1, introDone:1` e `incT=1e12; machTilt=0`, altrimenti guida, intro e incidenti casuali interferiscono. Lo splash viene saltato con `navigator.webdriver` (a meno di `?splash`).
 - `CHAP_PER_DAY=3`: massimo 3 capitoli al giorno, uno per storia. Nei test azzerare `st.ds.chap`. Per l'ora di punta, azzerare `st.ds.rushPlan=[]`.
@@ -77,6 +78,7 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 - **Comodità e suoni**: tre volumi separati (`st.vol = {m, s, a}` 0–100: musica `musG`, effetti `sfxG`, ambiente `ambG` con pioggia e voci; `applyVol`, `VOL0`), velocità del testo (`st.txtV` lenta/normale/veloce → `TXTV` in `sayDur`), «i racconti vanno avanti quando tocco io» (`st.txtTap` → `sc.waitTap`, sblocca `regiaNext`), testo grande (`st.bigTxt` → classe `grande` su `<html>`, `applyBig`; fumetti ×1.3). Suoni nuovi in `audio.js`: campanello della porta (`bell` + `thud`), tazzina (`cup`), piatti (`piatti`, pulizia), cocci (`crash`), gocce sul vetro e raffiche di pioggia (`drip`). Durante un racconto gli avvisi vanno in basso (`body.racconto`).
 - **Tutto a tema** (`icone.js`): un'icona in pixel art per ogni miglioramento (`PXU` → `UPI`, anche nel «Consiglio») e per ogni scheda (`PXT` → `TABI`); frecce e stellina disegnate (`ICO.dx/sx/stella`, `pxText` converte › ‹ ✦; sul canvas `ctxPx('frdx'|'frsx')`); cursore a tazzina e chicco sui pulsanti (`--cur`, `--cur2`, solo `pointer: fine`); cursori del volume a chicco di caffè (`--bean`); barre di scorrimento, selezione e contorno della tastiera a tema. Un miglioramento nuovo vuole anche la sua icona in `PXU` (il test lo controlla).
 - **Ritorno al caffè** (`ritorno.js` + `dati/novita.js`): mentre il gioco è chiuso si guadagna una parte delle monete (`offline`, max 8 ore) e **nient'altro va avanti** (storie, vite, giorno: succedono solo davanti al giocatore). Al ritorno, dopo almeno 10 minuti, il «diario della notte» (`diarioNotte`, testi `NOTTE`): 1-3 piccole notizie senza effetti (gatto, biglietti degli habitué, coppie sotto la tettoia, frasi dei personaggi di casa). Poi Nonna Rosa racconta le novità non ancora sentite (`novitaInizio`, al massimo 4); in una partita nuova vengono segnate come già sentite.
+- **Aggiornamenti in diretta** (`aggiorna.js`): ogni 3 minuti e al ritorno sulla scheda il gioco legge `VERSIONE` da `sw.js` (senza cache); se è cambiata salva, aspetta un momento tranquillo (`momentoTranquillo`: niente racconti, scelte, minigiochi, finestre, pannelli, tutorial) e si ricarica, rientrando subito nel locale (`sessionStorage cafe_agg`). Il service worker chiede sempre al server se i file sono cambiati (`cache: 'no-cache'`). Funziona solo da http/https (GitHub Pages, itch.io); il test usa un piccolo server locale.
 - **PWA**: installabile; il service worker legge prima dalla rete e usa la cache se manca la connessione.
 
 ## Contenuti attuali
@@ -85,7 +87,7 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 
 Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline): circa 2 capitoli al giorno, 40 capitoli verso i 160 minuti (prima a 57), le vite partono verso l'ora di gioco; i potenziamenti arrivano ancora fino a circa 3 ore. Le storie ora durano di più apposta, per gustarle; se sembra troppo lento, alzare `MOM_DAY` o abbassare `REGIA_REST`/`REGIA_WAIT`. Il gioco avanzato si regge su vite infinite e relazioni; il calendario (fase 2) serve a dargli più struttura.
 
-## Fatto finora (PR #6 → #31)
+## Fatto finora (PR #6 → #32)
 
 - Minigiochi solo dal pulsante.
 - Grafica più curata.
@@ -109,6 +111,7 @@ Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline)
 - Tutorial vero con Nonna Rosa (16 passi, il primo racconto di Gino).
 - Vite uniche (niente testi uguali per persone diverse) e regia dei racconti (un momento alla volta).
 - Decorazioni stagionali nel locale (ghirlanda, bancone), monete col chicco, iconcine negli avvisi.
+- Aggiornamenti in diretta: chi sta giocando riceve subito la versione nuova, senza perdere niente.
 - Diario «mentre eri via» e novità raccontate da Nonna Rosa all'apertura.
 - Tutto a tema: icone pixel per miglioramenti e schede, frecce disegnate, cursore a tazzina, volume a chicco di caffè, barre di scorrimento.
 - Comodità e suoni: volumi separati, velocità del testo, racconti a tocco, testo grande, suoni nuovi (porta, tazzine, piatti, cocci, pioggia).

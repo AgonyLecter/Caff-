@@ -33,6 +33,10 @@ const NOVITA = [
   {
     id: 'diario',
     t: 'Quando torni dopo un po’, ti racconto io cosa è successo al caffè mentre non c’eri. Ma le storie aspettano te: quelle succedono solo quando ci sei.'
+  },
+  {
+    id: 'aggiornamenti',
+    t: 'Da oggi, quando sistemo qualcosa, lo trovi subito: il caffè si rinfresca da solo, in un momento tranquillo, senza perdere niente. Io poi ti racconto cosa è cambiato.'
   }
 ];
 

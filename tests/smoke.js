@@ -1239,6 +1239,78 @@ async function playMini(page, kind, itemId) {
     await rp.close();
   }
 
+  console.log('Aggiornamenti in diretta');
+  {
+    // un piccolo server come GitHub Pages: a metà partita «pubblichiamo» una versione nuova cambiando VERSIONE in sw.js
+    const http = require('http'),
+      fs = require('fs');
+    const ROOT = path.resolve(__dirname, '..');
+    let verTest = 'test-1';
+    const TIPI = {
+      '.html': 'text/html',
+      '.js': 'text/javascript',
+      '.css': 'text/css',
+      '.png': 'image/png',
+      '.webmanifest': 'application/json'
+    };
+    const srv = http.createServer((req, res) => {
+      const u = decodeURIComponent(req.url.split('?')[0]);
+      const f = path.join(ROOT, u === '/' ? 'index.html' : u);
+      if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) {
+        res.writeHead(404);
+        return res.end();
+      }
+      let body = fs.readFileSync(f);
+      if (u === '/sw.js') body = body.toString().replace(/VERSIONE = '[^']+'/, `VERSIONE = '${verTest}'`);
+      res.writeHead(200, { 'Content-Type': TIPI[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'max-age=600' });
+      res.end(body);
+    });
+    await new Promise(r => srv.listen(0, r));
+    const URL0 = `http://127.0.0.1:${srv.address().port}/index.html`;
+    const ap = await browser.newPage({ viewport: { width: 1000, height: 450 } });
+    ap.on('pageerror', e => errors.push(e.message));
+    await ap.goto(URL0);
+    await ap.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem(
+        'cafe_pioggia_v2',
+        JSON.stringify({ v: 2, name: 'Diretta', tutOff: 1, introDone: 1, day: 3, served: 50, coins: 777, nov: 99 })
+      );
+    });
+    await ap.reload();
+    await ap.waitForTimeout(400);
+    await ap.click('#go');
+    await ap.waitForTimeout(1500);
+    await ap.evaluate(() => {
+      window.__vecchia = 1; // sparisce se la pagina si ricarica
+      showModal('<h2>Prova</h2>', [{ t: 'Ok', big: 1, fn: hideModal }]);
+    });
+    // aspettiamo che il gioco abbia letto la versione di partenza
+    for (let i = 0; i < 40 && (await ap.evaluate(() => versioneMia)) !== 'test-1'; i++) await ap.waitForTimeout(200);
+    verTest = 'test-2';
+    await ap.evaluate(() => controllaVersione());
+    await ap.waitForTimeout(3000);
+    const aspetta = await ap.evaluate(() => ({ vecchia: window.__vecchia === 1, pronto: aggPronto }));
+    await ap.click('#mbox button.big');
+    let rientro = null;
+    for (let i = 0; i < 40 && !rientro; i++) {
+      await ap.waitForTimeout(250);
+      rientro = await ap
+        .evaluate(() =>
+          window.__vecchia || !started
+            ? null
+            : { started, start: document.querySelector('#start').hidden, coins: st.coins >= 777, ver: versioneMia }
+        )
+        .catch(() => null);
+    }
+    ok(
+      aspetta.vecchia && aspetta.pronto && rientro && rientro.started && rientro.start && rientro.coins && rientro.ver === 'test-2',
+      `aggiornamenti in diretta: con una finestra aperta aspetta, poi si ricarica da solo e si rientra nel locale senza perdere niente (${JSON.stringify({ aspetta, rientro })})`
+    );
+    await ap.close();
+    srv.close();
+  }
+
   console.log('Macchina del caffè e schermata di caricamento');
   {
     await page.evaluate(() => (window.__cafe.st.coins += 1e5));
@@ -1555,6 +1627,8 @@ async function playMini(page, kind, itemId) {
         break;
       if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
       else if (await page.isVisible('#nd')) await page.click('#nd');
+      // altre finestre (riepilogo dell'anno, un compleanno...) vanno chiuse, se no la nota aspetta
+      else if (await page.isVisible('#modal .btns button')) await page.click('#modal .btns button >> nth=-1');
       await sleep(100);
     }
     const end = await page.evaluate(() => ({
@@ -1649,6 +1723,8 @@ async function playMini(page, kind, itemId) {
         break;
       if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
       else if (await page.isVisible('#nd')) await page.click('#nd');
+      // altre finestre (riepilogo dell'anno, un compleanno...) vanno chiuse, se no la nota aspetta
+      else if (await page.isVisible('#modal .btns button')) await page.click('#modal .btns button >> nth=-1');
       await sleep(100);
     }
     const end = await page.evaluate(() => {
@@ -1770,7 +1846,7 @@ async function playMini(page, kind, itemId) {
         });
       });
     }
-    for (let i = 0; i < 150; i++) {
+    for (let i = 0; i < 300; i++) {
       if (
         await page.evaluate(
           () => /19696/.test((document.querySelector('#mbox') || {}).textContent || '') && !document.querySelector('#modal').hidden
@@ -1779,6 +1855,8 @@ async function playMini(page, kind, itemId) {
         break;
       if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
       else if (await page.isVisible('#nd')) await page.click('#nd');
+      // altre finestre (riepilogo dell'anno, un compleanno...) vanno chiuse, se no la nota aspetta
+      else if (await page.isVisible('#modal .btns button')) await page.click('#modal .btns button >> nth=-1');
       await sleep(100);
     }
     const end = await page.evaluate(() => {

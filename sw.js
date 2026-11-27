@@ -1,7 +1,8 @@
 // Servizio offline: il gioco si apre anche senza connessione.
 // Prima prova la rete (così gli aggiornamenti arrivano subito), se non c'è usa la copia salvata.
-// Quando cambiano i file del gioco basta aumentare VERSIONE: la vecchia copia viene buttata.
-const VERSIONE = 'caffe-v7';
+// A OGNI AGGIORNAMENTO PUBBLICATO va aumentata VERSIONE: la vecchia copia viene buttata, e chi sta giocando
+// in quel momento riceve la versione nuova da solo (js/motore/aggiorna.js legge questa riga).
+const VERSIONE = 'caffe-v8';
 const FILE = [
   './',
   'index.html',
@@ -37,6 +38,7 @@ const FILE = [
   'js/motore/guida.js',
   'js/motore/ritorno.js',
   'js/motore/avvio.js',
+  'js/motore/aggiorna.js',
   'icone/apple-touch-icon.png',
   'icone/favicon-48.png',
   'icone/icona-192.png',
@@ -67,7 +69,8 @@ self.addEventListener('fetch', e => {
   const font = /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname);
   if (url.origin !== location.origin && !font) return;
   e.respondWith(
-    fetch(req)
+    // «no-cache»: chiede sempre al server se il file è cambiato, così non resta in giro una copia vecchia
+    fetch(req, { cache: 'no-cache' })
       .then(res => {
         if (res.ok || res.type === 'opaque') {
           const copy = res.clone();
