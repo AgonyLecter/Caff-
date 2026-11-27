@@ -136,6 +136,14 @@ Tre visite; nella seconda c'è una scelta con due risposte, `@a` e `@b`, e la te
 **Ogni vita la vive una persona sola** (e ogni vita a due una coppia sola): così il giocatore non legge mai la stessa
 storia con le stesse parole per due persone diverse. Quando tutte le vite sono state vissute, gli habitué continuano
 con legami, incontri e rituali; per avere altre vite bisogna scriverne di nuove (più ce ne sono, meglio è).
+Le vite nuove si possono mettere in `js/dati/vite-nuove.js` (con `FILI.push(...)` e `FILI2.push(...)`).
+
+- `solo: 1` → la vita capita **solo** a chi passa il controllo `ok`, mai a caso a un altro habitué. Usalo per i temi delicati
+  e per le vite legate a un ruolo (una mamma, un papà, un pensionato).
+- `{o}` → nelle vite singole diventa «o» o «a» secondo il nome dell'habitué: `'Sono andat{o}'` → «Sono andato» / «Sono andata».
+  `donna(r)` dice se il nome è femminile (lista `NOMI_F`), utile anche dentro `ok`.
+- Nelle vite a due niente lui/lei: usa `{A}` e `{B}`.
+- I temi forti seguono l'approccio della storia di Davide: delicatezza, niente dettagli crudi, una via d'uscita, chiedere aiuto è normale.
 
 ```js
 { id: 'serra2', t: 'Titolo nel Diario',

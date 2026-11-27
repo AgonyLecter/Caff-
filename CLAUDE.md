@@ -19,7 +19,7 @@ Preferenze dell'utente:
 Script classici (non moduli ES) che condividono lo scope globale: funziona da `file://` e su GitHub Pages. Ordine di caricamento in `index.html`:
 
 1. `js/motore/base.js`
-2. `js/dati/`: personaggi, storie, mondo, frasi, animali, vite, intrecci, segreti (solo contenuti)
+2. `js/dati/`: personaggi, storie, mondo, frasi, animali, vite, vite-nuove, intrecci, segreti (solo contenuti)
 3. `js/motore/`: stato, citta, audio, simulazione, disegno-persone, disegno-locale, animali, vita, regia, attivo, atmosfera, interfaccia, risultati, guida, avvio
 
 Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `icone/`, `docs/come-aggiungere-contenuti.md` (guida per aggiungere personaggi/storie/vite/incroci/frasi), `README.md`, `tools/` (simulazione del ritmo).
@@ -42,6 +42,7 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 - **Regia nei test**: `startGame` mette `regia.off = true` (altrimenti un racconto in corso mette in pausa ciò che si prova). La regia si accende solo nel suo test e nel gioco accelerato. `clear()` chiama `regiaReset()`. Se un test svuota `scenes`, la regia lo capisce da sola (`!scenes.includes(regia.live)`).
 - Durante un racconto (`regia.live`): niente nuovi clienti, la fila non perde pazienza, niente ora di punta, bisogni o imprevisti, l'orologio si ferma, le altre scene aspettano. Con un pannello aperto il racconto si ferma.
 - **Vite uniche**: `st.fU` / `st.f2U` sono le vite (FILI / FILI2) già prese da qualcuno; una vita non si ripete mai per un'altra persona. Quando finiscono, servono vite nuove.
+- **Vite per le persone giuste** (`vite-nuove.js`): `solo: 1` = la vita capita solo a chi passa `ok` (mai a caso: temi delicati, mamme, papà). `{o}` nelle battute delle vite singole diventa «o»/«a» secondo il nome (`donna(r)`, lista `NOMI_F`; `gO` in `vita.js`). Le vite a due restano neutre (usare `{B}` invece di lui/lei).
 - `storyNote` deve aspettare che non ci siano finestre di scelta aperte.
 - `present()` deve ignorare le persone morte.
 - `offsetParent` è null per gli elementi fixed: usare `getClientRects`.
@@ -74,11 +75,11 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 
 ## Contenuti attuali
 
-22 personaggi, 24 storie (79 capitoli), 31 vite, 9 vite di coppia, 24 incroci, 13 epiloghi, 12 ricette, 14 insegne al neon.
+22 personaggi, 24 storie (79 capitoli), 56 vite, 19 vite di coppia, 24 incroci, 13 epiloghi, 12 ricette, 14 insegne al neon.
 
 Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline): circa 2 capitoli al giorno, 40 capitoli verso i 160 minuti (prima a 57), le vite partono verso l'ora di gioco; i potenziamenti arrivano ancora fino a circa 3 ore. Le storie ora durano di più apposta, per gustarle; se sembra troppo lento, alzare `MOM_DAY` o abbassare `REGIA_REST`/`REGIA_WAIT`. Il gioco avanzato si regge su vite infinite e relazioni; il calendario (fase 2) serve a dargli più struttura.
 
-## Fatto finora (PR #6 → #24)
+## Fatto finora (PR #6 → #25)
 
 - Minigiochi solo dal pulsante.
 - Grafica più curata.
@@ -99,6 +100,7 @@ Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline)
 - Guida e intro con Nonna Rosa.
 - Tutorial vero con Nonna Rosa (16 passi, il primo racconto del signor Aldo).
 - Vite uniche (niente testi uguali per persone diverse) e regia dei racconti (un momento alla volta).
+- 25 vite nuove e 10 vite a due nuove (anche temi forti: un genitore che dimentica, solitudine, bullismo, mamma sola, separazione, coming out, lutto per un animale, panico, esaurimento).
 
 ## Prossimi passi (in ordine)
 

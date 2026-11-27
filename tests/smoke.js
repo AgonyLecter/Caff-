@@ -788,6 +788,27 @@ async function playMini(page, kind, itemId) {
       return { fl: R.fl, e: e && e.e, n: e && e.n, log: e && e.log.length };
     });
     ok(!duo.fl && duo.e && duo.log === 3, `vita a due completa: ${duo.n} ${duo.e}`);
+    // vite per le persone giuste: le parole si accordano al nome, le vite delicate non capitano a caso
+    const giuste = await page.evaluate(() => {
+      const C = window.__cafe,
+        st = C.st;
+      const acc = [gO('Sono andat{o}', { n: 'Giulia' }), gO('Sono andat{o}', { n: 'Marco R.' })].join('|');
+      const keep = st.fU.slice();
+      st.fU = C.FILI.map(f => f.id).filter(id => id !== 'turni');
+      const mk = (id, n) => ({ id, n, look: C.CH.irene.l, type: 'nottambulo', fav: 'caffe', v: 5, f: 5, tr: [], petR: 1 });
+      const giulia = mk('rg1', 'Giulia'),
+        marco = mk('rg2', 'Marco');
+      st.regs.push(giulia, marco);
+      const okM = !filoLibero(marco),
+        okG = filoLibero(giulia);
+      st.fU = keep;
+      st.regs = st.regs.filter(r => r !== giulia && r !== marco);
+      return { acc, okM, okG };
+    });
+    ok(
+      giuste.acc === 'Sono andata|Sono andato' && giuste.okM && giuste.okG,
+      'vite per le persone giuste: «andato/andata» secondo il nome, e la vita di una mamma sola non capita a Marco'
+    );
     // vite uniche e regia: un momento alla volta, chi aspetta fa segno, il locale si calma, il testo va avanti col tocco
     await clear();
     await page.evaluate(() => (window.__cafe.regia.off = false));

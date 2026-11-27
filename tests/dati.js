@@ -143,6 +143,22 @@ D.FILI2.forEach(F => {
   });
 });
 
+// segnaposto conosciuti: {A} {B} {item} in tutte le vite, {o} (accordo maschile/femminile) solo nelle vite singole
+const testi = x =>
+  Array.isArray(x) ? x.flatMap(testi) : x && typeof x === 'object' ? Object.values(x).flatMap(testi) : typeof x === 'string' ? [x] : [];
+D.FILI.forEach(F =>
+  testi(F.b).forEach(t =>
+    (t.match(/\{[^}]*\}/g) || []).forEach(m => !['{A}', '{item}', '{o}'].includes(m) && bad(`vita ${F.id}: segnaposto ${m} sconosciuto`))
+  )
+);
+D.FILI2.forEach(F =>
+  testi(F.b).forEach(t =>
+    (t.match(/\{[^}]*\}/g) || []).forEach(
+      m => !['{A}', '{B}', '{item}'].includes(m) && bad(`vita a due ${F.id}: segnaposto ${m} sconosciuto`)
+    )
+  )
+);
+
 // --- personaggi chiave, legami di partenza, incontri ed epiloghi
 for (const [k, K] of Object.entries(D.KEYS)) {
   if (!D.CH[k]) bad(`KEYS ${k}: non esiste in CH`);
