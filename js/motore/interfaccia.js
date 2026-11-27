@@ -533,7 +533,7 @@ function tipHTML() {
   if (!A) return '';
   const c = A.u.c(),
     can = st.coins >= c;
-  return `<div class="card2 tip"><h3>Consiglio<small>${A.u.tab}</small></h3><p class="ad">${esc(A.why)}</p><div class="who" style="justify-content:space-between"><b style="font-weight:500">${A.u.n()}</b><button data-go="${A.u.id}">${can ? 'Compra ' + coinB(c) : 'Vai · ' + coinB(c)}</button></div></div>`;
+  return `<div class="card2 tip"><h3>Consiglio<small>${A.u.tab}</small></h3><p class="ad">${esc(A.why)}</p><div class="who" style="justify-content:space-between"><b style="font-weight:500">${UPI[A.u.id] ? `<i class="ui">${UPI[A.u.id]}</i>` : ''}${A.u.n()}</b><button data-go="${A.u.id}">${can ? 'Compra ' + coinB(c) : 'Vai · ' + coinB(c)}</button></div></div>`;
 }
 let recId = null;
 /* ----- pannelli ----- */
@@ -786,7 +786,8 @@ function upRow(u) {
     lk = u.lock ? u.lock() : '',
     c = u.c(),
     lv = u.lv ? `<span class="lv">Liv. ${u.lv()}</span>` : '';
-  return `<div class="row${u.id === recId ? ' rec' : ''}"><b>${u.n()}${lv}</b><span>${u.d()}</span><button data-u="${u.id}" ${mx || lk || st.coins < c ? 'disabled' : ''}>${mx ? 'Fatto' : lk ? lk : coinB(c)}</button></div>`;
+  const ic = UPI[u.id] ? `<i class="ui">${UPI[u.id]}</i>` : '';
+  return `<div class="row${ic ? ' ico' : ''}${u.id === recId ? ' rec' : ''}">${ic}<b>${u.n()}${lv}</b><span>${u.d()}</span><button data-u="${u.id}" ${mx || lk || st.coins < c ? 'disabled' : ''}>${mx ? 'Fatto' : lk ? lk : coinB(c)}</button></div>`;
 }
 // scheda Stili: personalizzazione della macchina del caffè, con anteprima
 function machHTML() {
@@ -986,7 +987,7 @@ function cliHTML() {
           arc.ch
             .map((ch, i) => {
               if (i < k)
-                return `<button class="chap" data-rd="${arc.id}" data-i="${i}"><span>${i + 1}. ${ch.t}</span><small>Leggi ›</small></button>`;
+                return `<button class="chap" data-rd="${arc.id}" data-i="${i}"><span>${i + 1}. ${ch.t}</span><small>Leggi ${ICO.dx}</small></button>`;
               if (i === k)
                 return `<div class="lock"><span>${i + 1}. ???</span><small>${arc.rand && i === 0 ? "Un giorno qualunque, all'improvviso" : arc.rand || arc.gap ? 'Tra qualche giorno…' : a >= ch.r ? 'Succederà presto…' : 'Atmosfera ' + a + '/' + ch.r}</small></div>`;
               return `<div class="lock"><span>${i + 1}. ???</span></div>`;
@@ -1235,7 +1236,9 @@ function renderPanel() {
     }
     return '';
   };
-  tb.innerHTML = (TABS[panel] || []).map(t => `<button data-tab="${t}" class="${t === tab ? 'on' : ''}">${t}${badge(t)}</button>`).join('');
+  tb.innerHTML = (TABS[panel] || [])
+    .map(t => `<button data-tab="${t}" class="${t === tab ? 'on' : ''}">${TABI[t] || ''}${t}${badge(t)}</button>`)
+    .join('');
   tb.hidden = !TABS[panel];
   if (panel === 'up') b.innerHTML = pxText(tabHTML());
   else if (panel === 'cli') b.innerHTML = pxText(cliHTML());
