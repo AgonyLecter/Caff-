@@ -2216,6 +2216,211 @@ const ARCS = [
         [0, '*ride*']
       ]
     ]
+  },
+  {
+    id: 'leo',
+    t: 'Un nonno in prestito',
+    d: 'Un ragazzo con le cuffie si siede sempre vicino a chi gioca a scacchi. Non gioca. Guarda.',
+    nota: 'Questa storia parla del lutto, vissuto da un ragazzo. Il dolore per la perdita di una persona cara non ha tempi giusti o sbagliati, e non si «supera» da soli: si impara, piano piano, a portarlo. Se stai vivendo una perdita, parlane con qualcuno di cui ti fidi: un familiare, un insegnante, lo psicologo della scuola. Se sei giovane e hai bisogno di parlare con qualcuno, Telefono Azzurro risponde al 19696, anche in chat.',
+    who: ['leo'],
+    req: ['tazze'],
+    rand: { from: 8, p: 0.4 },
+    gap: 1,
+    perk: 'leo',
+    pt: 'La scacchiera di nonno Nino (+3 Atmosfera)',
+    end: {
+      'leo4=qui': { n: 'Il tavolo del giovedì', perk: 'leo', pt: 'La scacchiera di nonno Nino, sul tavolo del giovedì (+3 Atmosfera)' },
+      'leo4=mamma': { n: 'La scacchiera di casa', perk: 'leo', pt: 'La scacchiera di nonno Nino (+3 Atmosfera)' }
+    },
+    ch: [
+      {
+        t: 'Le cuffie',
+        r: 25,
+        l: [
+          [0, '*entra con le cuffie in testa e il cappuccio alzato. Si siede e non ordina niente*'],
+          [0, '*dopo un po’ si toglie una cuffia. Non c’era nessuna musica*'],
+          [0, 'Una cioccolata. Con la panna. ...Lui la prendeva sempre con la panna.'],
+          [0, 'Mio nonno. È morto tre settimane fa.'],
+          [0, 'Tutti mi dicono che devo andare avanti. Avanti dove? Non c’è un avanti. C’è solo un posto vuoto a tavola.'],
+          {
+            c: {
+              q: 'Leo fissa la panna che si scioglie. Ha quindici anni e la faccia di chi non dorme.',
+              o: [
+                {
+                  t: '«Oggi non devi andare da nessuna parte. Puoi restare qui.»',
+                  f: 'leo1=resta',
+                  r: [
+                    [0, '...Ok.'],
+                    [0, '*si toglie anche l’altra cuffia. Resta lì fino alla chiusura, senza dire niente. Ma resta*']
+                  ]
+                },
+                {
+                  t: '«Com’era, tuo nonno?»',
+                  f: 'leo1=nonno',
+                  r: [
+                    [0, 'Nonno Nino. Faceva il falegname. Aveva le mani piene di tagli e sapeva di segatura.'],
+                    [0, 'Mi ha insegnato gli scacchi. Su una scacchiera fatta da lui. Ogni domenica, da quando avevo sei anni.'],
+                    [0, '*sorride, una volta sola, poi si ricorda e smette*']
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'La scacchiera',
+        r: 40,
+        who: ['leo', 'aldo'],
+        l: [
+          [1, '*ha una scacchiera davanti e gioca da solo, borbottando*'],
+          [0, '*si è seduto al tavolo accanto. Guarda la scacchiera di Aldo da dieci minuti*'],
+          [1, 'Allora: il cavallo qui, e il re è salvo.'],
+          [0, '...Se muove il cavallo, perde la regina in due mosse.'],
+          [1, 'Ah sì? Sto imparando, sai. Gioco malissimo. Allora siediti e fammi vedere, giovanotto.'],
+          [0, '*si alza di scatto, poi si blocca*  No. Io... non gioco più.'],
+          {
+            c: {
+              q: 'Leo è in piedi a metà strada tra la porta e la scacchiera. Aldo aspetta, senza fretta.',
+              o: [
+                {
+                  t: '«Fagli vedere, Leo. Solo una mossa.»',
+                  f: 'leo2=mossa',
+                  r: [
+                    [0, '*si siede. Prende la regina. Le mani gli tremano*'],
+                    [0, 'Così. Vede? Adesso è lei che minaccia il re.'],
+                    [1, 'Accidenti. Chi ti ha insegnato?'],
+                    [0, '...Mio nonno.']
+                  ]
+                },
+                {
+                  t: '«Aldo, gli racconti chi aspettava, quando ordinava due caffè?»',
+                  f: 'leo2=lidia',
+                  r: [
+                    [1, 'Ah. Due caffè, sì. Per un anno ne ho ordinati due. Uno per mia moglie, Lidia. Che non c’era più.'],
+                    [0, 'E... adesso?'],
+                    [1, 'Adesso uno. Ma non perché l’ho dimenticata. Perché ho imparato a portarla con me invece di aspettarla.'],
+                    [0, '*si siede, piano, di fronte a lui*']
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'La rabbia',
+        r: 55,
+        who: ['leo'],
+        l: [
+          [0, '*sbatte lo zaino sulla sedia*'],
+          [0, 'A scuola la prof mi ha detto: «Dovresti averlo superato, ormai». Un mese. Un mese, e dovrei averlo superato.'],
+          [0, 'A casa nessuno nomina il nonno. Mia madre piange in bagno con l’acqua aperta, così non si sente. Ma si sente.'],
+          [0, '*poi, più piano*  Sa qual è la cosa peggiore? L’ultima volta che l’ho visto, ero al telefono.'],
+          [0, 'Lui mi parlava della scacchiera nuova che stava facendo. Io dicevo «sì, sì, nonno», senza alzare gli occhi.'],
+          [0, 'Non gli ho neanche detto ciao, per bene.'],
+          {
+            c: {
+              q: 'Leo ha gli occhi lucidi e la mascella stretta. Si vergogna di piangere qui.',
+              o: [
+                {
+                  t: '«Non è colpa tua. Lui lo sapeva, che gli volevi bene. Lo sanno sempre.»',
+                  f: 'leo3=colpa',
+                  r: [
+                    [0, 'Come fa a saperlo?'],
+                    [0, '...Mi aveva lasciato la scacchiera sul letto, con un biglietto. «Per Leo, quando vuoi.» Lo sapeva, vero?']
+                  ]
+                },
+                {
+                  t: '«Scrivigli quello che non gli hai detto. Anche adesso conta.»',
+                  f: 'leo3=lettera',
+                  r: [
+                    [0, 'Una lettera? A uno che non può leggerla?'],
+                    [0, '...Forse serve a me, non a lui. Va bene. Ci provo stasera.']
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'Il giovedì',
+        r: 65,
+        who: ['leo', 'aldo'],
+        l: [
+          [0, '*appoggia sul tavolo una scacchiera di legno chiaro, un po’ storta, con i pezzi intagliati a mano*'],
+          [1, 'Questa l’ha fatta lui?'],
+          [0, 'Sì. La regina ha il naso un po’ storto. Diceva che era uguale a mia nonna. Lei si arrabbiava tantissimo.'],
+          [1, '*ride*  Lidia mi diceva che giocavo a scacchi come guidavo: male e convinto.'],
+          [0, '*ride anche lui. Poi si ferma, sorpreso di aver riso*'],
+          [
+            0,
+            'Gli ho scritto la lettera. L’ho letta al cimitero, piano, così nessuno sentiva. Gli ho detto ciao. Per bene.',
+            'leo3=lettera'
+          ],
+          [0, 'Ho riletto il biglietto. «Per Leo, quando vuoi.» Credo che volesse dire: quando sei pronto.', 'leo3=colpa'],
+          [1, 'Scacco. ...No, aspetta. Scacco a me. Accidenti, ragazzo.'],
+          [0, 'Posso... posso tornare anche giovedì prossimo?'],
+          {
+            c: {
+              q: 'La scacchiera di nonno Nino è sul tavolo tra loro due. «E questa, dove la teniamo?»',
+              o: [
+                {
+                  t: '«Lasciatela qui, sul vostro tavolo. Ve la custodisco io.»',
+                  f: 'leo4=qui',
+                  r: [
+                    [1, 'Il tavolo del giovedì. Mi piace come suona.'],
+                    [0, 'Così ogni giovedì la ritrovo qui. Come se mi aspettasse.']
+                  ]
+                },
+                {
+                  t: '«Portala a casa. Insegna a giocare a tua madre.»',
+                  f: 'leo4=mamma',
+                  r: [
+                    [0, 'A mia madre? Lei non sa neanche come si muove il cavallo.'],
+                    [0, '...Però era suo padre. Forse le farebbe bene toccarla. Ci provo.']
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'Il nonno in prestito',
+        r: 75,
+        who: ['leo', 'aldo'],
+        l: [
+          [0, '*entra senza cuffie. Saluta il bancone con la mano*'],
+          [0, 'Il giovedì lo tengo sempre libero. I miei amici lo chiamano «il giorno del nonno».', 'leo4=qui'],
+          [1, 'E io ho preso dieci scacco matto di fila sulla scacchiera di Nino. Credo che lui se la rida, da qualche parte.', 'leo4=qui'],
+          [
+            0,
+            'Ho insegnato gli scacchi alla mamma. È negata. Ma la sera giochiamo, e parliamo del nonno. Prima non ci riuscivamo.',
+            'leo4=mamma'
+          ],
+          [0, 'L’altra sera ha riso così forte che è venuto il vicino a vedere. Era una risata da nonno Nino.', 'leo4=mamma'],
+          [0, 'Mi manca ancora. Tantissimo. Certi giorni di più.'],
+          [1, 'E così sarà sempre. Ma il posto vuoto, piano piano, diventa un posto che tieni per qualcuno.'],
+          [1, 'Senti, Leo. Io non sono tuo nonno. Nessuno può esserlo. Ma se vuoi, il giovedì, faccio il nonno in prestito.'],
+          [0, '*lo guarda a lungo*'],
+          [0, 'Nonno Nino diceva che le scacchiere servono a far parlare la gente che non sa come cominciare.'],
+          [0, 'Va bene. Nonno in prestito. Ma la regina col naso storto la muovo io.'],
+          [1, '*gli passa una mano tra i capelli, come si fa con i nipoti*']
+        ]
+      }
+    ],
+    rt: [
+      [
+        [1, 'Scacco!'],
+        [0, 'Nonno Aldo, quello è il mio re. Il tuo è quello lì, sotto la tazza.']
+      ],
+      [
+        [0, 'Oggi a scuola ho preso otto in storia. Ho pensato: devo dirlo al nonno.'],
+        [1, 'E l’hai detto. Sono qui.']
+      ]
+    ]
   }
 ];
 const CINE = [

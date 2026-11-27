@@ -1584,17 +1584,142 @@ async function playMini(page, kind, itemId) {
         end.key &&
         saraC4 &&
         /800 998877/.test(end.note),
-      `Alice: cinque capitoli (${seen.join(',')}), scelte ${end.flags}, Sara la accompagna ai risultati, finale e nota con i numeri di aiuto`
+      `Alice: cinque capitoli (${seen.join(',')}), scelte ${end.flags}, Sara la accompagna ai risultati (${saraC4}), premio ${end.perk}, resta ${end.key}, nota con i numeri di aiuto (${/800 998877/.test(end.note)})`
     );
     if (await page.isVisible('#modal .btns button')) await page.click('#modal .btns button >> nth=0');
     await page.evaluate(() => {
       const C = window.__cafe;
       C.speed = 1;
       C.people.forEach(p => (p.dead = true));
+      C.queue.length = 0;
       C.scenes.length = 0;
       C.regiaReset();
       C.ARCS.forEach(a => delete C.st.rt[a.id]);
       C.ARCS.find(a => a.id === 'alice').rand.from = 6;
+    });
+  }
+
+  console.log('Leo (un nonno in prestito)');
+  {
+    await page.evaluate(() => (window.__cafe.speed = 6));
+    const seen = [];
+    let aldoC4 = false;
+    for (let k = 0; k < 5; k++) {
+      await page.evaluate(k => {
+        const C = window.__cafe,
+          st = C.st;
+        C.people.forEach(p => (p.dead = true));
+        C.queue.length = 0;
+        C.scenes.length = 0;
+        C.regiaReset();
+        C.slots.forEach(sl => sl.seats.forEach(q => Object.assign(q, { occ: null, dirty: false, res: null })));
+        st.rolls = st.rolls || {};
+        st.rolls.leo = { d: st.day, v: true };
+        st.story.tazze = 4; // Leo arriva dopo la storia di Aldo
+        C.ARCS.find(a => a.id === 'leo').rand.from = 0; // nella partita vera comincia dal giorno 8
+        st.arcDay = st.arcDay || {};
+        if (st.ds) st.ds.chap = 0;
+        if (k) st.arcDay.leo = st.day - 5;
+        C.ARCS.forEach(a => {
+          if (a.id !== 'leo') ((a._r = a.ch.map(c => c.r)), a.ch.forEach(c => (c.r = 1e9)));
+        });
+      }, k);
+      let got = false;
+      for (let i = 0; i < 120 && !got; i++) {
+        await page.evaluate(() => {
+          const C = window.__cafe;
+          // se Aldo è già seduto nel locale come habitué, le storie con lui aspettano: lo facciamo uscire
+          C.people.forEach(p => {
+            if (!p.story && p.reg && ['aldo', 'leo', 'giada'].includes(p.reg.key)) {
+              p.dead = true;
+              if (p.seat) p.seat.occ = null;
+            }
+          });
+          C.tryStory();
+        });
+        got = await page.evaluate(() => window.__cafe.people.some(p => !p.dead && p.story === 'leo'));
+        if (!got) await sleep(50);
+      }
+      if (!got)
+        console.log(
+          '    (capitolo ' +
+            (k + 1) +
+            ' non partito: ' +
+            (await page.evaluate(() => {
+              const arc = ARCS.find(a => a.id === 'leo'),
+                k = st.story.leo || 0;
+              return JSON.stringify({
+                giorno: storyDayOk(arc, k),
+                atm: atm() + '/' + arc.ch[k].r,
+                occupati: chapterWho(arc, arc.ch[k]).filter(keyBusy),
+                tutti: arc.ch.map(c => chapterWho(arc, c).filter(keyBusy)).flat(),
+                attivo: activeArcs.has('leo'),
+                regia: regiaFree(),
+                turno: capTurno(),
+                tavolo: !!freeTable()
+              });
+            })) +
+            ')'
+        );
+      for (let i = 0; i < 400; i++) {
+        if (k === 3 && (await page.evaluate(() => window.__cafe.people.some(p => !p.dead && p.story === 'leo' && p.key === 'aldo'))))
+          aldoC4 = true;
+        if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
+        if (await page.evaluate(k => (window.__cafe.st.story.leo || 0) > k, k)) break;
+        await sleep(80);
+      }
+      seen.push(await page.evaluate(() => window.__cafe.st.story.leo || 0));
+      await page.evaluate(() => {
+        const C = window.__cafe;
+        C.people.forEach(p => {
+          if (p.story === 'leo') {
+            p.dead = true;
+            if (p.seat) p.seat.occ = null;
+          }
+        });
+        C.ARCS.forEach(a => {
+          if (a._r) {
+            a.ch.forEach((c, i) => (c.r = a._r[i]));
+            delete a._r;
+          }
+        });
+      });
+    }
+    for (let i = 0; i < 150; i++) {
+      if (
+        await page.evaluate(
+          () => /19696/.test((document.querySelector('#mbox') || {}).textContent || '') && !document.querySelector('#modal').hidden
+        )
+      )
+        break;
+      if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
+      else if (await page.isVisible('#nd')) await page.click('#nd');
+      await sleep(100);
+    }
+    const end = await page.evaluate(() => {
+      const C = window.__cafe,
+        st = C.st;
+      return {
+        flags: ['leo1', 'leo2', 'leo3', 'leo4'].map(k => st.flags[k]).join(','),
+        perk: !!st.perks.leo,
+        note: !document.querySelector('#modal').hidden ? document.querySelector('#mbox').textContent : '',
+        key: C.KEYS.leo.ok()
+      };
+    });
+    ok(
+      seen.join(',') === '1,2,3,4,5' && end.flags === 'resta,mossa,colpa,qui' && end.perk && end.key && aldoC4 && /19696/.test(end.note),
+      `Leo: cinque capitoli (${seen.join(',')}), scelte ${end.flags}, Aldo gioca con lui il giovedì (${aldoC4}), premio ${end.perk}, resta ${end.key}, nota con Telefono Azzurro (${/19696/.test(end.note)})`
+    );
+    if (await page.isVisible('#modal .btns button')) await page.click('#modal .btns button >> nth=0');
+    await page.evaluate(() => {
+      const C = window.__cafe;
+      C.speed = 1;
+      C.people.forEach(p => (p.dead = true));
+      C.queue.length = 0;
+      C.scenes.length = 0;
+      C.regiaReset();
+      C.ARCS.forEach(a => delete C.st.rt[a.id]);
+      C.ARCS.find(a => a.id === 'leo').rand.from = 8;
     });
   }
 

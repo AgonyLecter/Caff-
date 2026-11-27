@@ -187,6 +187,7 @@ function perkAtm() {
   if (st.perks.davide && !checkFlag('davide=crisi')) a += 3;
   if (st.perks.yusuf) a += 4;
   if (st.perks.alice) a += 4;
+  if (st.perks.leo) a += 3;
   return a;
 }
 function machAtm() {
