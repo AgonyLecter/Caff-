@@ -388,3 +388,90 @@ function calDraw() {
     }
   }
 }
+
+/* ----- le stagioni dentro il locale: una ghirlanda lungo i muri e qualcosa sul bancone ----- */
+// la ghirlanda: foglie d'autunno, lucine d'inverno, fiori in primavera, bandierine d'estate
+const decoY = x => 21 + Math.round(4 * Math.sin((Math.PI * (x % 40)) / 40));
+function calDecoStanza() {
+  const S = stagione().id;
+  g.fillStyle = '#2a1a2a';
+  for (let x = 0; x < W; x++) g.fillRect(x, decoY(x), 1, 1);
+  for (let k = 0, x = 4; x < W - 2; k++, x += 8) {
+    const y = decoY(x) + 1;
+    if (S === 'autunno') {
+      g.fillStyle = ['#e07a3a', '#c94f2a', '#e8b04a', '#a8562a'][k % 4];
+      g.fillRect(x - 1, y, 3, 2);
+      g.fillRect(x, y + 2, 1, 1);
+    } else if (S === 'inverno') {
+      const on = Math.floor(T * 1.6 + k * 0.7) % 3 !== 0;
+      g.fillStyle = on ? ['#ff4f6a', '#ffd166', '#4ff0ff', '#7bd389'][k % 4] : '#3a2a3a';
+      g.fillRect(x, y, 2, 2);
+    } else if (S === 'primavera') {
+      g.fillStyle = k % 2 ? '#ffc4dc' : '#fff0f5';
+      g.fillRect(x - 1, y + 1, 3, 1);
+      g.fillRect(x, y, 1, 3);
+      g.fillStyle = '#ffd166';
+      g.fillRect(x, y + 1, 1, 1);
+    } else {
+      g.fillStyle = ['#e63946', '#ffd166', '#4ff0ff', '#7bd389', '#ff4fa3'][k % 5];
+      g.fillRect(x - 1, y, 4, 1);
+      g.fillRect(x, y + 1, 2, 1);
+      g.fillRect(x, y + 2, 1, 1);
+    }
+  }
+}
+// d'inverno le lucine brillano davvero, anche di notte (dopo le luci della stanza)
+function calDecoLuci() {
+  if (stagione().id !== 'inverno') return;
+  for (let k = 0, x = 4; x < W - 2; k++, x += 8)
+    if (Math.floor(T * 1.6 + k * 0.7) % 3 !== 0)
+      glowAt(x + 1, decoY(x) + 2, 4, ['255,90,110', '255,210,100', '80,240,255', '120,220,140'][k % 4], 0.35);
+}
+// sul bancone: zucche, una candela, un vasetto di fiori, una ciotola di limoni
+function calDecoBancone() {
+  const S = stagione().id,
+    x = counterX + 34,
+    y = 96;
+  if (S === 'autunno') {
+    g.fillStyle = '#e07a3a';
+    g.fillRect(x, y - 3, 6, 4);
+    g.fillRect(x + 1, y - 4, 4, 1);
+    g.fillStyle = '#b8562a';
+    g.fillRect(x + 2, y - 3, 1, 4);
+    g.fillStyle = '#5a7a3a';
+    g.fillRect(x + 3, y - 5, 1, 1);
+    g.fillStyle = '#e8a040';
+    g.fillRect(x + 8, y - 2, 4, 3);
+    g.fillStyle = '#5a7a3a';
+    g.fillRect(x + 10, y - 3, 1, 1);
+  } else if (S === 'inverno') {
+    g.fillStyle = '#2e7d45';
+    g.fillRect(x, y - 1, 8, 2);
+    g.fillStyle = '#e63946';
+    g.fillRect(x + 1, y - 2, 1, 1);
+    g.fillRect(x + 6, y - 2, 1, 1);
+    g.fillStyle = '#fffaf2';
+    g.fillRect(x + 3, y - 5, 2, 4);
+    g.fillStyle = Math.sin(T * 9) > 0 ? '#ffd166' : '#ff9a3a';
+    g.fillRect(x + 3, y - 7, 2, 2);
+  } else if (S === 'primavera') {
+    g.fillStyle = '#7bd389';
+    g.fillRect(x + 2, y - 6, 1, 4);
+    g.fillRect(x + 4, y - 7, 1, 5);
+    g.fillStyle = '#ff9ec4';
+    g.fillRect(x + 1, y - 8, 3, 2);
+    g.fillStyle = '#fff0f5';
+    g.fillRect(x + 4, y - 9, 2, 2);
+    g.fillStyle = '#5b8fd8';
+    g.fillRect(x + 1, y - 2, 5, 3);
+  } else {
+    g.fillStyle = '#f4f1de';
+    g.fillRect(x, y - 1, 9, 2);
+    g.fillStyle = '#ffd84a';
+    g.fillRect(x + 1, y - 3, 3, 2);
+    g.fillRect(x + 4, y - 4, 3, 3);
+    g.fillRect(x + 6, y - 2, 2, 1);
+    g.fillStyle = '#7bd389';
+    g.fillRect(x + 5, y - 5, 1, 1);
+  }
+}

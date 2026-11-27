@@ -123,8 +123,10 @@ button .pxi {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #fff3b0, #ffd166 45%, #c9902a);
-  box-shadow: 0 0 6px #ffd16688;
+  background: var(--coin, radial-gradient(circle at 35% 35%, #fff3b0, #ffd166 45%, #c9902a)) center / contain no-repeat;
+  border-radius: 0;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 3px #ffd16688);
   flex: none;
 }
 .heart {
@@ -1672,4 +1674,12 @@ body.racconto #toast {
   height: 22px;
   margin-right: 8px;
   vertical-align: -5px;
+}
+
+/* l'iconcina degli avvisi */
+#toast .pxi.tico {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  vertical-align: -3px;
 }

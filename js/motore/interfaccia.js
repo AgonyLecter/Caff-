@@ -16,7 +16,7 @@ function nextToast() {
     return;
   }
   toastOn = true;
-  el.innerHTML = pxText(esc(t));
+  el.innerHTML = toastIco(t) + pxText(esc(t));
   el.classList.add('on');
   setTimeout(() => {
     el.classList.remove('on');
