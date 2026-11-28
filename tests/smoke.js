@@ -1861,6 +1861,31 @@ async function playMini(page, kind, itemId) {
         await sleep(80);
       }
       seen.push(await page.evaluate(() => window.__cafe.st.story.davide || 0));
+      if (!got)
+        console.log(
+          '    perché non parte:',
+          await page.evaluate(() => {
+            const C = window.__cafe,
+              st = C.st,
+              arc = C.ARCS.find(a => a.id === 'davide'),
+              k = st.story.davide || 0;
+            return JSON.stringify({
+              libera: regiaFree(),
+              turno: capTurno(),
+              capitoliOggi: st.ds && st.ds.chap,
+              giornoOk: C.storyDayOk(arc, k),
+              req: arcReq(arc),
+              attiva: activeArcs.has('davide'),
+              occupati: arc.ch.some(c => C.chapterWho(arc, c).some(keyBusy)),
+              atm: atm(),
+              serve: arc.ch[k] && arc.ch[k].r,
+              tavolo: !!freeTable(),
+              sedie: freeSeats().length,
+              sporche: allSeats().filter(s => s.dirty).length,
+              riservate: allSeats().filter(s => s.res).length
+            });
+          })
+        );
       await page.evaluate(() => {
         const C = window.__cafe;
         C.people.forEach(p => {
@@ -1888,7 +1913,11 @@ async function playMini(page, kind, itemId) {
       if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
       else if (await page.isVisible('#nd')) await page.click('#nd');
       // altre finestre (riepilogo dell'anno, un compleanno...) vanno chiuse, se no la nota aspetta
-      else if (await page.isVisible('#modal .btns button')) await page.click('#modal .btns button >> nth=-1');
+      else if (
+        (await page.isVisible('#modal .btns button')) &&
+        !/LILT|Telefono/.test((await page.textContent('#mbox')) || '') // mai chiudere per sbaglio la nota di aiuto che si aspetta
+      )
+        await page.click('#modal .btns button >> nth=-1');
       await sleep(100);
     }
     const end = await page.evaluate(() => ({
@@ -1984,7 +2013,11 @@ async function playMini(page, kind, itemId) {
       if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
       else if (await page.isVisible('#nd')) await page.click('#nd');
       // altre finestre (riepilogo dell'anno, un compleanno...) vanno chiuse, se no la nota aspetta
-      else if (await page.isVisible('#modal .btns button')) await page.click('#modal .btns button >> nth=-1');
+      else if (
+        (await page.isVisible('#modal .btns button')) &&
+        !/LILT|Telefono/.test((await page.textContent('#mbox')) || '') // mai chiudere per sbaglio la nota di aiuto che si aspetta
+      )
+        await page.click('#modal .btns button >> nth=-1');
       await sleep(100);
     }
     const end = await page.evaluate(() => {
@@ -2116,7 +2149,11 @@ async function playMini(page, kind, itemId) {
       if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
       else if (await page.isVisible('#nd')) await page.click('#nd');
       // altre finestre (riepilogo dell'anno, un compleanno...) vanno chiuse, se no la nota aspetta
-      else if (await page.isVisible('#modal .btns button')) await page.click('#modal .btns button >> nth=-1');
+      else if (
+        (await page.isVisible('#modal .btns button')) &&
+        !/LILT|Telefono/.test((await page.textContent('#mbox')) || '') // mai chiudere per sbaglio la nota di aiuto che si aspetta
+      )
+        await page.click('#modal .btns button >> nth=-1');
       await sleep(100);
     }
     const end = await page.evaluate(() => {
