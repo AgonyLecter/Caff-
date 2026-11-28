@@ -302,6 +302,83 @@ testiM.forEach(([t, dove]) =>
 // le scenette di litigio e chiarimento: battute di 0 o 1
 [...V.LITE, ...V.CHIARO].forEach((L, i) => L.forEach(l => [0, 1].includes(l[0]) || bad(`voci: LITE/CHIARO ${i}: chi parla?`)));
 
+// Il mondo che va avanti da solo (trame.js): progetti, quartiere, storie che nascono da sole
+const M = vm.runInContext('({ PROGETTI, QUARTIERE, TRAME, PJ_CHIEDI, PJ_TIFO, PARERE, PARERE_DOPO, QZ_R, CORTESIA, CORT_PENSA })', ctx);
+// gentilezze: tutti gli stili, e solo segnaposti conosciuti
+['offre', 'ricambia', 'si', 'no', 'posto', 'postoSi', 'postoNo'].forEach(k => perStile(M.CORTESIA[k], 'CORTESIA.' + k));
+const segC = (x, dove) =>
+  typeof x === 'string'
+    ? (x.match(/\{[^}]*\}/g) || []).forEach(
+        m => ['{X}', '{X:o}', '{o}', '{item}'].includes(m) || bad(`cortesie: ${dove}: segnaposto sconosciuto ${m}`)
+      )
+    : Object.entries(x).forEach(([k, y]) => segC(y, dove + '.' + k));
+segC(M.CORTESIA, 'CORTESIA');
+segC(M.CORT_PENSA, 'CORT_PENSA');
+const CASTS = ['giu', 'rivali', 'lontani', 'cotta', 'segreto', 'nuovo', 'gelosia', 'grande', 'mano', 'adozione', 'festa'];
+const segnaM = (t, ok, dove) =>
+  (t.match(/\{[^}]*\}/g) || []).forEach(m => ok.includes(m) || bad(`trame: ${dove}: segnaposto sconosciuto ${m} in «${t}»`));
+const SEG_PJ = ['{o}', '{P}'],
+  SEG_TR = ['{a}', '{b}', '{c}', '{a:o}', '{b:o}', '{c:o}', '{o}', '{P}', '{Q}', '{item}'];
+const pjIds = new Set();
+M.PROGETTI.forEach(P => {
+  if (pjIds.has(P.id)) bad(`trame: progetto ${P.id} doppio`);
+  pjIds.add(P.id);
+  if (!(P.passi >= 2)) bad(`trame: progetto ${P.id} con meno di 2 tappe`);
+  ['an', 'su', 'giu', 'si', 'no', 'dubbio'].forEach(k => (P[k] && P[k].length) || bad(`trame: progetto ${P.id} senza «${k}»`));
+  P.int.forEach(t => V.TEMI[t] || bad(`trame: progetto ${P.id}: argomento «${t}» non in TEMI`));
+  ['an', 'su', 'giu', 'si', 'no', 'dubbio'].forEach(k => (P[k] || []).forEach(t => segnaM(t, SEG_PJ, 'progetto ' + P.id)));
+});
+M.PJ_CHIEDI.forEach(t => segnaM(t, ['{P}'], 'PJ_CHIEDI'));
+perStile(M.PJ_TIFO, 'PJ_TIFO');
+perStile(M.QZ_R, 'QZ_R');
+['consola', 'sprona', 'scherza'].forEach(k => {
+  if (!M.PARERE.o[k] || !(M.PARERE.bene[k] || []).length || !(M.PARERE.male[k] || []).length) bad(`trame: PARERE incompleto per ${k}`);
+  if (!M.PARERE_DOPO.si[k] || !M.PARERE_DOPO.no[k]) bad(`trame: PARERE_DOPO incompleto per ${k}`);
+});
+const trIds = new Set(M.TRAME.map(T => T.id));
+const qIds = new Set(M.QUARTIERE.map(q => q.id));
+M.QUARTIERE.forEach(q => {
+  if (!q.l || !q.l.length || !q.n || !q.dur) bad(`trame: quartiere ${q.id} incompleto`);
+  if (q.trama && !trIds.has(q.trama)) bad(`trame: quartiere ${q.id}: la storia ${q.trama} non esiste`);
+  if (q.dopo && (!qIds.has(q.dopo) || !M.QUARTIERE.find(x => x.id === q.dopo).solo))
+    bad(`trame: quartiere ${q.id}: «dopo» deve essere un evento con solo: 1`);
+  q.l.forEach(t => segnaM(t, ['{o}'], 'quartiere ' + q.id));
+});
+M.TRAME.forEach(T => {
+  if (!CASTS.includes(T.cast)) bad(`trame: ${T.id}: cast «${T.cast}» sconosciuto (aggiungerlo anche a TRAME_CAST)`);
+  if (!T.t || !T.d || !T.passi.length) bad(`trame: ${T.id} incompleta`);
+  segnaM(T.d, SEG_TR, T.id + ' (diario)');
+  const scelte = new Set();
+  T.passi.forEach((P, i) => {
+    const dove = `${T.id}/${i}`;
+    if (!/^[abc]{1,2}$/.test(P.who)) bad(`trame: ${dove}: who «${P.who}» (lettere a, b, c; al massimo due)`);
+    const n = P.who.length,
+      qui = new Set(P.calc ? ['@si', '@no'] : []);
+    const riga = l => {
+      if (!(l[0] >= 0 && l[0] < n)) bad(`trame: ${dove}: chi parla (${l[0]}) non c'è`);
+      segnaM(l[1], SEG_TR, dove);
+      if (l[2] && !scelte.has(l[2]) && !qui.has(l[2]))
+        bad(`trame: ${dove}: la condizione ${l[2]} non viene da una scelta di un passo precedente o da calc`);
+    };
+    const nuove = [];
+    P.l.forEach(l => {
+      if (Array.isArray(l)) riga(l);
+      else if (l && l.c) {
+        segnaM(l.c.q, SEG_TR, dove);
+        if (l.c.o.length < 2) bad(`trame: ${dove}: una scelta vuole almeno due risposte`);
+        l.c.o.forEach(o => {
+          if (!/^@\w+$/.test(o.f)) bad(`trame: ${dove}: scelta «${o.f}» (deve essere @parola)`);
+          segnaM(o.t, SEG_TR, dove);
+          o.r.forEach(riga);
+          nuove.push(o.f);
+        });
+      } else bad(`trame: ${dove}: riga sconosciuta`);
+    });
+    nuove.forEach(f => scelte.add(f));
+    qui.forEach(f => scelte.add(f)); // gli esiti calcolati valgono anche per i passi dopo
+  });
+});
+
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 [...html.matchAll(/<script src="([^"]+)"/g)]
   .map(m => m[1])
@@ -324,7 +401,10 @@ console.log(
     n(D.FESTE.length, 'feste'),
     n(D.XS.length, 'incontri'),
     n(D.XEPI.length, 'epiloghi'),
-    n(testiM.length, 'frasi della mente')
+    n(testiM.length, 'frasi della mente'),
+    n(M.PROGETTI.length, 'progetti'),
+    n(M.QUARTIERE.length, 'eventi di quartiere'),
+    n(M.TRAME.length, 'storie che nascono da sole')
   ].join(' · ')
 );
 if (problems.length) {

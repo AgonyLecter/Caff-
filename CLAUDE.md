@@ -20,8 +20,8 @@ Preferenze dell'utente:
 Script classici (non moduli ES) che condividono lo scope globale: funziona da `file://` e su GitHub Pages. Ordine di caricamento in `index.html`:
 
 1. `js/motore/base.js` (e `js/motore/icone.js`, che però si carica dopo base e prima dei dati)
-2. `js/dati/`: personaggi, storie, mondo, frasi, animali, vite, vite-nuove, calendario, novita, intrecci, segreti, voci (solo contenuti)
-3. `js/motore/`: icone (subito dopo base.js), stato, citta, audio, simulazione, disegno-persone, disegno-locale, animali, vita, mente, regia, calendario, attivo, atmosfera, interfaccia, risultati, guida, ritorno, avvio, aggiorna
+2. `js/dati/`: personaggi, storie, mondo, frasi, animali, vite, vite-nuove, calendario, novita, intrecci, segreti, voci, trame, cortesie (solo contenuti)
+3. `js/motore/`: icone (subito dopo base.js), stato, citta, audio, simulazione, disegno-persone, disegno-locale, animali, vita, mente, trame, cortesie, regia, calendario, attivo, atmosfera, interfaccia, risultati, guida, ritorno, avvio, aggiorna
 
 Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `icone/`, `docs/come-aggiungere-contenuti.md` (guida per aggiungere personaggi/storie/vite/incroci/frasi), `README.md`, `tools/` (simulazione del ritmo).
 
@@ -66,6 +66,12 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
   - **Niente ripetizioni**: `scegli(pool, chiave, chi)` ricorda le frasi sentite nel locale (`st.vu`) e quelle dette da ognuno (`.ud`); `fresco()` fa preferire gli argomenti con frasi ancora nuove. Usare sempre `scegli` al posto di `pick` per le frasi.
   - Diario: carattere, umore e ricordo nella scheda Habitué (`carattereN`, `umoreN`, `ricordoN`); stato del legame in Legami (`relN`).
 
+- **Mondo che va avanti da solo** (`motore/trame.js` + `dati/trame.js`):
+  - Progetti (`PROGETTI`, `reg.pj = {id, s, d, ok, ult, cf, par, pronto}`, finiti in `reg.pjF` e `st.pjLog`): al massimo `1 + regs/6` (max 4) insieme, a chi ha `f>=3` e `v>=5`; una tappa per visita (`mondoArrivo`, chiamata da `menteArrivo`), traguardo con `pjFine` (dipende da umore, tifo degli amici, il tuo parere). Ciò che hanno da raccontare va in `c.pq` e `pensiero()` lo dice per primo (`daDire`).
+  - Parere: `parereScena(c)` (in `onSit`): ti chiedono un consiglio (consola/sprona/scherza, `PARERE`); se va bene per il carattere (`parereVa`) aiuta il progetto; al traguardo te lo ricordano (`PARERE_DOPO`).
+  - Quartiere: `st.qz` (evento in corso), `quartiereGiorno()` in `startDay`; se ne parla in `pensiero`/`conversa` (`mondoPensieri`, `mondoTemi`, che aggiunge anche i progetti degli amici).
+  - Storie nate da sole: `TRAME` + `TRAME_CAST` (chi può viverle), `st.tr` in corso (max 2, una nuova al giorno, `trameNuova`), `st.trF` finite (Diario › Vite, rileggibili), `st.trFatte` (mai la stessa per gli stessi). `trameTick` → `trConvoca` (già seduti insieme, uno raggiunge l'altro con `trRaggiungi`, o li fa arrivare: `newCust`/`spawnGroup` con `trU`) → `trAvvia` (scena `story: 'trama'`, passa dalla regia, `MOM_DAY.trama = 3`). Segnalini delle scelte: `st.flags['tr<u>_<valore>'] = '1'`. `updScene` chiama `onEnd(sc)`.
+- **Gentilezze** (`motore/cortesie.js` + `dati/cortesie.js`): `cortesiaOrdine` (quando un habitué arriva al bancone, un conoscente seduto offre; chi ha ricevuto ricambia; promesse `R.pr`), `cortesiaPosto` (in `serve`, tavoli pieni: un amico cede il posto, se no un amico stretto che non si alza = memoria `sgarbo`), `cortesiaUscita` (pioggia: ombrello prestato `R.omb`, poi `cortesieTick` lo fa restituire o chiedere). Conto dei favori `R.fav[id]`, `saldo`; chi offre sempre senza ricevere: memoria `sbilancio`. Nel Diario dei legami: `cortN`.
 - **Storie** (`js/dati/storie.js`, ARCS): capitoli con `req` (anche `'a|b'`), flag `end`, `rand:{from,p}` (inizio in un giorno casuale), `gap` (giorni tra capitoli), `calc:{flag,values,fn}` (finale calcolato da più scelte), `whoBy` (chi compare in base a un flag), `nota` (finestra di aiuto alla fine). Ricompensa con `reward(sec)` basata su `incomeRef()`.
 - **Personaggi chiave** (`intrecci.js`): KEYS/KSEED diventano clienti abituali speciali (`ensureKeyRegs`). Ci sono gli incroci XS (`tryCross`) e gli epiloghi XEPI. Le vite autonome sono FILI e FILI2 (coppie, `startDuo`), più `socialAI`, `ritual()` e gli amici reciproci.
 - **Regia** (`regia.js`): un momento importante alla volta (scene con `story`, cioè `big`). Chi aspetta mostra la stellina (`invite`, `drawInvite`); parte se lo tocchi (`regiaTap`), se il bancone è libero o dopo `REGIA_WAIT`. Testo grande in alto (`#regia`, tocca per avanzare: `regiaNext`), luce abbassata intorno (`regiaDraw`), respiro `REGIA_REST`, limiti al giorno `MOM_DAY` (vite 4 visite, incontri 2), capitoli e vite a turno (`capTurno`, `regiaVita`). Fine giornata: «Stasera ti hanno raccontato qualcosa: …» (`st.ds.mlog`).
@@ -94,11 +100,11 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 
 ## Contenuti attuali
 
-24 personaggi, 26 storie (89 capitoli), 58 vite, 19 vite di coppia, 13 feste, 22 compleanni, 26 incroci, 15 epiloghi, 12 ricette, 14 insegne al neon, 15 argomenti di conversazione e circa 670 frasi della mente.
+24 personaggi, 26 storie (89 capitoli), 58 vite, 19 vite di coppia, 13 feste, 22 compleanni, 26 incroci, 15 epiloghi, 12 ricette, 14 insegne al neon, 15 argomenti di conversazione e circa 670 frasi della mente, 18 progetti, 10 eventi di quartiere, 11 storie che nascono da sole, gentilezze (caffè, posto, ombrello).
 
 Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline): circa 2 capitoli al giorno, 40 capitoli verso i 160 minuti (prima a 57), le vite partono verso l'ora di gioco; i potenziamenti arrivano ancora fino a circa 3 ore. Le storie ora durano di più apposta, per gustarle; se sembra troppo lento, alzare `MOM_DAY` o abbassare `REGIA_REST`/`REGIA_WAIT`. Il gioco avanzato si regge su vite infinite e relazioni; il calendario (fase 2) serve a dargli più struttura.
 
-## Fatto finora (PR #6 → #32)
+## Fatto finora (PR #6 → #35)
 
 - Minigiochi solo dal pulsante.
 - Grafica più curata.
@@ -128,6 +134,7 @@ Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline)
 - Comodità e suoni: volumi separati, velocità del testo, racconti a tocco, testo grande, suoni nuovi (porta, tazzine, piatti, cocci, pioggia).
 - Calendario: stagioni, 13 feste, compleanni, anniversari, riepilogo di fine anno, foglie/petali/lucciole.
 - Mente dei personaggi: carattere, umore, memoria, legami con affetto/fiducia/attrazione/tensione, conversazioni costruite sul momento, notizie che girano, litigi e chiarimenti, saluti tra tavoli, reazioni, niente frasi ripetute.
+- Mondo che va avanti da solo: progetti personali, pareri chiesti a te, eventi di quartiere, storie che nascono da sole; gentilezze tra clienti con conto dei favori.
 - 25 vite nuove e 10 vite a due nuove (anche temi forti: un genitore che dimentica, solitudine, bullismo, mamma sola, separazione, coming out, lutto per un animale, panico, esaurimento).
 
 ## Prossimi passi (in ordine)

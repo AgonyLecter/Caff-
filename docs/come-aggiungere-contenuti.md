@@ -24,6 +24,8 @@ node tests/smoke.js    # qualche minuto: gioca davvero nel browser (serve Playwr
 | `js/dati/animali.js` | colori, nomi e frasi degli animali da compagnia |
 | `js/dati/mondo.js` | menu, stili, quartieri, meteo, eventi, richieste speciali, radio, minigiochi |
 | `js/dati/segreti.js` | `EGGS` segreti, `RARE` visitatori rari |
+| `js/dati/trame.js` | il mondo che va avanti da solo: `PROGETTI` (sogni personali), `QUARTIERE` (eventi in città), `TRAME` (storie che nascono da sole), `PARERE` (quando chiedono un consiglio a te) |
+| `js/dati/cortesie.js` | gentilezze tra clienti: caffè offerto e ricambiato, posto ceduto, ombrello prestato |
 | `js/dati/voci.js` | la «mente» dei personaggi: carattere, interessi, argomenti di conversazione, risposte per stile, notizie, litigi, pensieri, saluti, reazioni (il motore è `js/motore/mente.js`) |
 
 ## Le battute
@@ -210,3 +212,36 @@ Le conversazioni si costruiscono sul momento: un saluto (`APRI`, secondo da quan
 **Aggiungere frasi**: basta allungare le liste. Le liste per stile vanno scritte per tutti e cinque gli stili. Nessuno ripete una frase finché ne ha di nuove, quindi più frasi ci sono, più tutto sembra vivo.
 
 Segnaposti: `{B}` l'altra persona della conversazione (rispetto a chi parla in quella riga), `{X}` `{Y}` le persone di cui si parla, `{item}`, `{giorni}`, `{meteo}` («Pioveva»…), `{nome}` del locale, `{v}` visite, `{o}` per «o/a» di chi parla, `{X:o}` per «o/a» di `{X}`. Nelle frasi a due non usare lui/lei per l'altra persona. Il controllo `node tests/dati.js` segnala segnaposti sconosciuti, stili mancanti, argomenti inesistenti.
+
+## Il mondo che va avanti da solo (`js/dati/trame.js`)
+
+**Progetti** (`PROGETTI`): un sogno che un habitué insegue per qualche giorno, una tappa per visita, con alti e bassi.
+
+```js
+{ id: 'patente', t: 'la patente', int: ['viaggi'], passi: 4,
+  an: ['Mi sono iscritt{o} a scuola guida.'],        // lo annuncia
+  su: ['Oggi rotonda perfetta.'], giu: ['Ho spento la macchina sei volte.'],   // tappe
+  si: ['PATENTE!'], no: ['Bocciat{o}. Mi riscrivo.'], // il traguardo
+  dubbio: ['E se investo un piccione?'],              // quando chiede un parere a te
+  sens: 0.5,          // facoltativo: solo per chi è sensibile (temi delicati)
+  premio: 'cane' }    // facoltativo: poi viene con il suo cane
+```
+
+**Quartiere** (`QUARTIERE`): `{ id, t, n (l'avviso), dur (giorni), l: [frasi dei clienti], trama: 'id' (fa nascere una storia), dopo: 'id' (evento che segue, con solo: 1), fine: 'avviso alla fine' }`.
+
+**Storie che nascono da sole** (`TRAME`): `cast` dice chi può viverle (`giu`, `rivali`, `lontani`, `cotta`, `segreto`, `nuovo`, `gelosia`, `grande`, `mano`, `adozione`, `festa`: il motore le trova in `TRAME_CAST`, in `js/motore/trame.js`; per un tipo nuovo va aggiunta lì una funzione). Ogni passo:
+
+```js
+{ who: 'ab',            // chi c'è: lettere dei ruoli (a solo = parla con te)
+  gap: 1,               // giorni dopo il passo precedente
+  calc: W => (W.attrazione('b', 'a') >= 30 ? '@si' : '@no'),   // facoltativo: un esito deciso dal mondo
+  l: [ [0, 'battuta di a'], [1, 'battuta di b', '@si'],         // '@si': solo con quell'esito o scelta
+       { c: { q: 'Domanda per te', o: [{ t: 'Risposta', f: '@parla', r: [[0, 'reazione']] }] } } ],
+  fine: W => W.rel('a', 'b', { a: 10, fi: 10 }) }               // cosa cambia
+```
+
+Strumenti di `W`: `rel(x, y, {a, fi, at, te})`, `umore(x, v)`, `ricordo(x, tipo, y, peso)`, `affetto(x, n)` (verso di te), `attrazione(x, y)`, `scelta('valore')`, `notizia(tipo, x, y)`, `pace(x, y)`, `insieme(x, y)`, `presenta(x, y)`, `ritrovati(x, y)`, `progettoFine(x)`, `aiuto(x)`, `cane(x, nome)`. Segnaposti: `{a}` `{b}` `{c}`, `{a:o}` (o/a di a), `{o}` (di chi parla), `{P}` (il progetto di a), `{Q}`, `{item}`. `node tests/dati.js` controlla tutto.
+
+## Gentilezze (`js/dati/cortesie.js`)
+
+Frasi per stile per offrire il caffè (`offre`, `ricambia`), accettare o no (`si`, `no`), promettere e mantenere (`promette`, `mantiene`, `dimentica`), cedere il posto (`posto`, `postoSi`, `postoNo`), l'ombrello (`ombrello`, `rende`, `chiede`, `scusa`…), e i pensieri dopo (`CORT_PENSA`). Il motore (`js/motore/cortesie.js`) tiene il conto dei favori di ogni legame.

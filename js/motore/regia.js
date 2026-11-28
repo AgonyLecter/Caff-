@@ -8,7 +8,7 @@
 
 const REGIA_REST = 6; // secondi di respiro tra due momenti
 const REGIA_WAIT = 10; // dopo quanto chi ti ha fatto segno comincia da solo
-const MOM_DAY = { vita: 4, incontro: 2 }; // visite delle vite (anche a due) e incontri al giorno
+const MOM_DAY = { vita: 4, incontro: 2, trama: 3 }; // visite delle vite (anche a due), incontri, passi delle storie nate da sole al giorno
 // Mentre qualcuno racconta, anche l'orologio della giornata si ferma: ascoltare non toglie tempo al locale.
 const regia = { live: null, hold: 0, rest: 0, cap: '', off: false, vt: 3, last: '' }; // off: solo per i test che provano altro
 
