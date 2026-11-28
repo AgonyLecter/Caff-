@@ -75,6 +75,7 @@ const AFF_TR = {
 // Come parlano i personaggi chiave: tratti in più rispetto a KEYS, interessi propri e (facoltativo) le manopole.
 // OGNI personaggio chiave nuovo va aggiunto qui (il test lo controlla).
 const MENTI_K = {
+  corrado: { int: ['pettegolezzi', 'libri', 'ricordi'], p: { ape: 0.9, soc: 0.7, cal: 0.7 } },
   leo: { int: ['giochi', 'ricordi', 'studio'] },
   alice: { int: ['libri', 'studio', 'stelle'], p: { cal: 0.8 } },
   davide: { int: ['lavoro', 'libri'], p: { sens: 0.85 } },

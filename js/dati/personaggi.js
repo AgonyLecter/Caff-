@@ -96,6 +96,10 @@ const NAMES = [
   'Elia'
 ];
 const CH = {
+  corrado: {
+    n: 'Corrado',
+    l: { s: '#e8c0a0', h: '#b8b8c8', hs: 3, o: 1, c1: '#6a5a48', c2: '#3a3430', a: 'barba', act: 'news', sh: '#2a2018' }
+  },
   davide: {
     n: 'Davide',
     l: { s: '#eab88f', h: '#6a5a50', hs: 0, o: 2, c1: '#5a6070', c2: '#3a3a48', a: 'barba', act: 'sip', sh: '#2a2430' }

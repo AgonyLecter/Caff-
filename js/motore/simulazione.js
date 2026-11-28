@@ -1253,6 +1253,7 @@ function startDay() {
   st.evDone = 0;
   st.nwx = rollWx(st.day + 1);
   quartiereGiorno(); // nel quartiere succede qualcosa
+  giornaleGiorno(); // ogni tre giorni esce il giornale del caffè
   st.nev = rollEv();
   calStartDay(); // stagioni e feste
   st.ds = { served: 0, earned: 0, stars: [], couples: 0, cleaned: 0, items: {}, specials: 0, stories: 0 };

@@ -188,6 +188,7 @@ function perkAtm() {
   if (st.perks.yusuf) a += 4;
   if (st.perks.alice) a += 4;
   if (st.perks.leo) a += 3;
+  if (st.perks.corrado) a += 3;
   return a;
 }
 function machAtm() {

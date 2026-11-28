@@ -52,6 +52,53 @@ const donna = r => !!r && NOMI_F.includes(String(r.n || r.name || '').split(' ')
 
 FILI.push(
   {
+    id: 'k_corrado',
+    p: 1,
+    t: 'L’inchiesta del gatto',
+    ok: r => r.key === 'corrado',
+    b: [
+      [
+        [0, 'Ho un’inchiesta. Seria. Qualcuno, ogni notte, lascia una ciotola di latte davanti alla libreria.'],
+        [0, 'Il gatto della libreria è ingrassato di due chili. Il quartiere vuole sapere chi è.']
+      ],
+      [
+        [0, 'L’ho scoperto. È la signora del quarto piano. Novant’anni. Scende alle tre di notte, con la vestaglia.'],
+        [0, 'Mi ha pregato di non scriverlo. Dice che il gatto è l’unico che la aspetta sveglio.'],
+        {
+          c: {
+            q: 'Corrado ha lo scoop. Ma la signora gli ha chiesto di tacere.',
+            o: [
+              {
+                t: '«Certe storie si custodiscono, non si pubblicano.»',
+                f: '@a',
+                r: [[0, 'Hai ragione. Il primo dovere di un giornalista è non fare male a chi non se lo merita.']]
+              },
+              {
+                t: '«Scrivila con gentilezza. Il quartiere potrebbe farle compagnia.»',
+                f: '@b',
+                r: [[0, 'Con gentilezza... senza il nome. «Una vicina che non dorme». Sì. Si può fare.']]
+              }
+            ]
+          }
+        }
+      ],
+      [
+        [0, 'Non l’ho scritto. Ma sono passato da lei, una sera. Abbiamo dato il latte al gatto insieme.', '@a'],
+        [0, 'Adesso ogni giovedì le porto il giornale. Lo legge con la lente, dalla prima all’ultima riga.', '@a'],
+        [
+          0,
+          'L’ho scritto, senza nome. Il giorno dopo davanti alla libreria c’erano tre ciotole e un biglietto: «Buonanotte, vicina».',
+          '@b'
+        ],
+        [0, 'Adesso non scende più da sola. Ogni notte qualcuno passa a salutarla. Il gatto è ingrassato di altri due chili.', '@b']
+      ]
+    ],
+    e: {
+      a: 'ha custodito il segreto della vicina del gatto, e ora le porta il giornale ogni giovedì',
+      b: 'ha raccontato con gentilezza la vicina del gatto, e il quartiere le ha fatto compagnia'
+    }
+  },
+  {
     id: 'k_leo',
     p: 1,
     t: 'Il primo torneo',

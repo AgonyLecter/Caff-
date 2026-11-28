@@ -314,6 +314,23 @@ const segC = (x, dove) =>
     : Object.entries(x).forEach(([k, y]) => segC(y, dove + '.' + k));
 segC(M.CORTESIA, 'CORTESIA');
 segC(M.CORT_PENSA, 'CORT_PENSA');
+// il giornale del caffè: segnaposti conosciuti, un titolo per ogni tipo di notizia
+const GZ = vm.runInContext(
+  '({ GZ_PEZZI, GZ_PESO, GZ_DICERIE, GZ_SMENTITA, GZ_LETTORI, GZ_CURIOSITA, GZ_ANNUNCI, GZ_RISPOSTA, GZ_METEO, GZ_CORSIVO, WXN, TEMI })',
+  ctx
+);
+const segG = (x, dove) =>
+  typeof x === 'string'
+    ? (x.match(/\{[^}]*\}/g) || []).forEach(
+        m =>
+          ['{X}', '{Y}', '{P}', '{T}', '{Q}', '{n}', '{g}', '{v}', '{o}', '{X:o}'].includes(m) ||
+          bad(`giornale: ${dove}: segnaposto sconosciuto ${m}`)
+      )
+    : Object.entries(x).forEach(([k, y]) => segG(y, dove + '.' + k));
+Object.entries(GZ).forEach(([k, x]) => !['GZ_PESO', 'WXN', 'TEMI'].includes(k) && segG(x, k));
+Object.keys(GZ.GZ_PEZZI).forEach(k => (GZ.GZ_PEZZI[k].t.length && GZ.GZ_PESO[k]) || bad(`giornale: ${k} senza titoli o senza peso`));
+Object.keys(GZ.WXN).forEach(w => GZ.GZ_METEO[w] || bad(`giornale: manca il meteo per ${w}`));
+Object.keys(GZ.GZ_ANNUNCI).forEach(i => GZ.TEMI[i] || bad(`giornale: annuncio per «${i}», che non è in TEMI`));
 const CASTS = ['giu', 'rivali', 'lontani', 'cotta', 'segreto', 'nuovo', 'gelosia', 'grande', 'mano', 'adozione', 'festa'];
 const segnaM = (t, ok, dove) =>
   (t.match(/\{[^}]*\}/g) || []).forEach(m => ok.includes(m) || bad(`trame: ${dove}: segnaposto sconosciuto ${m} in «${t}»`));
