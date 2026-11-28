@@ -2421,6 +2421,196 @@ const ARCS = [
         [1, 'E l’hai detto. Sono qui.']
       ]
     ]
+  },
+  {
+    id: 'corrado',
+    t: 'L’ultima edizione',
+    d: 'Un signore con la barba grigia scrive su un taccuino a ogni tavolo dove si siede. Non lo rilegge mai.',
+    who: ['corrado'],
+    req: ['davide'],
+    rand: { from: 10, p: 0.4 },
+    gap: 1,
+    perk: 'corrado',
+    pt: 'Il giornale del caffè (+3 Atmosfera)',
+    end: {
+      'corrado4=pioggia': {
+        n: 'La Gazzetta della Pioggia',
+        perk: 'corrado',
+        pt: 'Il giornale del caffè: «La Gazzetta della Pioggia» (+3 Atmosfera)'
+      },
+      'corrado4=bancone': { n: 'Il Bancone', perk: 'corrado', pt: 'Il giornale del caffè: «Il Bancone» (+3 Atmosfera)' },
+      'corrado4=tazzina': { n: 'La Tazzina', perk: 'corrado', pt: 'Il giornale del caffè: «La Tazzina» (+3 Atmosfera)' }
+    },
+    ch: [
+      {
+        t: 'Il taccuino',
+        r: 30,
+        l: [
+          [0, '*si siede, apre un taccuino consumato e comincia a scrivere senza ordinare*'],
+          [0, 'Un caffè lungo, grazie. Lungo come questa giornata.'],
+          [0, '*scrive ancora: «ore 18, la pioggia batte di traverso, al tavolo due una ragazza ride da sola al telefono»*'],
+          [0, 'Scusi. È un vizio. Ho fatto il giornalista per trentacinque anni. Le mani continuano anche se il giornale non c’è più.'],
+          {
+            c: {
+              q: 'Corrado chiude il taccuino, come se si vergognasse.',
+              o: [
+                {
+                  t: '«Cosa scrive, se posso chiedere?»',
+                  f: 'corrado1=leggi',
+                  r: [
+                    [0, 'Quello che vedo. Le persone, il tempo, chi entra e chi esce. Una volta lo chiamavano «cronaca».'],
+                    [0, 'Adesso lo chiamano «quello strano col taccuino».']
+                  ]
+                },
+                {
+                  t: '«Scriva pure. Qui nessuno la disturba.»',
+                  f: 'corrado1=lascia',
+                  r: [[0, 'Grazie. *riapre il taccuino* Non sa quanto è raro un posto dove si può guardare senza dare fastidio.']]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'La Gazzetta del Quartiere',
+        r: 34,
+        l: [
+          [0, '*tira fuori dal cappotto una pagina di giornale piegata in quattro, ingiallita*'],
+          [0, '«La Gazzetta del Quartiere». Ultimo numero. Quarant’anni di storia, chiusa in una mattina con una mail.'],
+          [0, 'Ho scritto io la prima pagina, quel giorno. Il titolo era «Grazie a tutti». Non sapevo cos’altro dire.'],
+          [0, 'Sa qual è la cosa peggiore? Non è il lavoro. È che le cose succedono lo stesso, e nessuno le racconta più.'],
+          {
+            c: {
+              q: 'Corrado liscia la pagina sul tavolo con il palmo, piano.',
+              o: [
+                {
+                  t: '«Le cose belle che succedono qui meriterebbero qualcuno che le racconti.»',
+                  f: 'corrado2=meritano',
+                  r: [
+                    [0, '*alza gli occhi, sorpreso* ...Lo pensa davvero? Qui? In un bar?'],
+                    [0, 'Scusi. In un caffè. È diverso, lo so.']
+                  ]
+                },
+                {
+                  t: '«Le manca molto, vero?»',
+                  f: 'corrado2=manca',
+                  r: [
+                    [0, 'Come una mano. Ogni mattina mi alzo e la cerco. Poi mi ricordo.'],
+                    [0, 'Ma grazie di averlo chiesto. Mia moglie dice che ne parlo troppo. Lei è la prima che non ha sbuffato.']
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'Nonna Rosa',
+        r: 38,
+        who: ['corrado', 'rosa'],
+        l: [
+          [1, 'Corrado! Corrado della Gazzetta! Sei proprio tu?'],
+          [0, 'Rosa... non ci posso credere. Sei rimasta uguale.'],
+          [
+            1,
+            'Bugiardo, come tutti i giornalisti. Nel settantanove mi hai fatto un’intervista per la festa della via. Avevi i capelli fino alle spalle.'
+          ],
+          [0, 'E tu mi hai fatto assaggiare otto torte prima di rispondere a una domanda.'],
+          [1, 'Mi hanno detto che la Gazzetta ha chiuso. E tu che fai, adesso?'],
+          [0, 'Niente. Guardo. Scrivo su un taccuino che non legge nessuno.'],
+          {
+            c: {
+              q: 'Nonna Rosa ti lancia un’occhiata complice. Vuole il tuo aiuto per convincerlo a qualcosa.',
+              o: [
+                {
+                  t: '«E se scrivesse del caffè? Delle persone che vengono qui?»',
+                  f: 'corrado3=caffe',
+                  r: [
+                    [1, 'Ecco. L’ha detto meglio di me.'],
+                    [0, 'Un giornale... di un caffè? Ma chi lo leggerebbe?'],
+                    [1, 'Tutti, Corrado. Qui dentro succede più che in tutta la città.']
+                  ]
+                },
+                {
+                  t: '«Il quartiere ha ancora bisogno di qualcuno che lo racconti.»',
+                  f: 'corrado3=quartiere',
+                  r: [
+                    [1, 'Senti cosa dice? Il quartiere, Corrado. Non sei tu che hai chiuso.'],
+                    [0, '*resta in silenzio a lungo, girando il cucchiaino*']
+                  ]
+                }
+              ]
+            }
+          },
+          [1, 'Pensaci. Io intanto ti porto una fetta di torta. Una sola, stavolta.']
+        ]
+      },
+      {
+        t: 'La prima copia',
+        r: 42,
+        who: ['corrado', 'davide'],
+        l: [
+          [0, '*entra con una cartellina sotto il braccio e un sorriso nuovo*'],
+          [0, 'Ho scritto. Tre pagine. Le notizie del caffè, quello che sento al bancone, una curiosità, il meteo.'],
+          [1, 'Scusate se mi intrometto. Facevo l’impaginatore, prima. Posso vedere?'],
+          [0, 'Prego. È un disastro, lo so. Senza un grafico le pagine sembrano lettere della banca.'],
+          [
+            1,
+            '*sposta i fogli, li allinea, prende una penna* Il titolo qui. La notizia grossa sopra. Le dicerie in un riquadro. Così respira.'
+          ],
+          [0, 'Così... è un giornale. Un giornale vero.'],
+          [1, 'Manca solo il nome.'],
+          {
+            c: {
+              q: 'Corrado e Davide ti guardano: il nome del giornale lo devi scegliere tu.',
+              o: [
+                {
+                  t: '«La Gazzetta della Pioggia»',
+                  f: 'corrado4=pioggia',
+                  r: [[0, 'La Gazzetta della Pioggia. Un po’ come la vecchia, un po’ come questo posto. Mi piace.']]
+                },
+                { t: '«Il Bancone»', f: 'corrado4=bancone', r: [[1, 'Il Bancone. Corto, si ricorda. Da impaginatore approvo.']] },
+                { t: '«La Tazzina»', f: 'corrado4=tazzina', r: [[0, 'La Tazzina. Piccolo, caldo, si legge in un sorso. Perfetto.']] }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        t: 'Il primo numero',
+        r: 46,
+        who: ['corrado', 'davide'],
+        l: [
+          [0, '*appende al bancone un foglio stampato, con il titolo grande in cima*'],
+          [0, 'Numero uno. Venti copie. Le ho lasciate qui sul bancone: chi vuole le prende.'],
+          [1, '«La Gazzetta della Pioggia». Il titolo l’ho disegnato io, con le gocce che scendono dalle lettere.', 'corrado4=pioggia'],
+          [1, '«Il Bancone». Titolo grosso, nero, in alto. Come i giornali di una volta.', 'corrado4=bancone'],
+          [1, '«La Tazzina». Ci ho messo una tazzina al posto della i. Non dirmi niente, lo so che è bellissima.', 'corrado4=tazzina'],
+          [1, 'Ne sono rimaste tre. In un’ora. Un signore ne ha prese due: una per la sorella.'],
+          [
+            0,
+            'Una ragazza mi ha fermato: «È vero che i due del tavolo vicino alla finestra stanno insieme?». Le ho detto: «Leggi il prossimo numero».'
+          ],
+          [0, 'Quarant’anni di Gazzetta e non mi ero mai divertito così.', 'corrado2=meritano'],
+          [0, 'Sai, avevi ragione tu. Le cose succedono anche qui. Forse soprattutto qui.', 'corrado2=meritano'],
+          [0, 'Mi mancava come una mano, ricordi? Ecco, l’ho ritrovata. Era in un caffè.', 'corrado2=manca'],
+          [1, 'Ogni quanto esce?'],
+          [0, 'Ogni tre giorni. Notizie, curiosità, dicerie, annunci. Chi vuole mi lascia un biglietto nel barattolo delle mance.'],
+          [0, 'E il primo annuncio lo pubblico gratis: «Cercasi lettori. Nessuna esperienza richiesta».']
+        ]
+      }
+    ],
+    rt: [
+      [
+        [0, 'Hai letto il pezzo sulla nebbia di martedì? Davide dice che è il migliore che ho scritto.'],
+        [1, 'Ho detto che era il meglio impaginato. È diverso.']
+      ],
+      [
+        [1, 'Il prossimo numero lo facciamo a due colonne. Fidati.'],
+        [0, 'Mi fido. Ma le dicerie restano in fondo. Sono il dolce.']
+      ]
+    ]
   }
 ];
 const CINE = [

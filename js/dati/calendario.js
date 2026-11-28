@@ -166,6 +166,7 @@ const COMPLEANNI = {
   irene: [2, 4],
   dario: [2, 5],
   davide: [2, 7],
+  corrado: [2, 9],
   pietro: [2, 8],
   aldo: [3, 2],
   elio: [3, 3],
@@ -177,6 +178,8 @@ const COMPLEANNI = {
 
 // una frase tutta loro, il giorno del compleanno
 const COMPL_L = {
+  corrado:
+    'Sessant’anni. Ho scritto il mio necrologio per scherzo, a venticinque. Lo rileggo ogni compleanno: per ora non ci ho azzeccato niente.',
   leo: 'Nonno Nino mi regalava sempre qualcosa di legno, fatto da lui. Quest’anno nonno Aldo mi ha regalato una torre. Intagliata da lui. Storta. Bellissima.',
   alice: 'L’anno scorso il compleanno l’ho passato in ospedale. Quest’anno voglio una torta enorme. E la mangio tutta.',
   mia: 'Mi sono regalata un pennello nuovo. Costava troppo. Non me ne pento.',

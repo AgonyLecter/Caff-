@@ -26,6 +26,7 @@ node tests/smoke.js    # qualche minuto: gioca davvero nel browser (serve Playwr
 | `js/dati/segreti.js` | `EGGS` segreti, `RARE` visitatori rari |
 | `js/dati/trame.js` | il mondo che va avanti da solo: `PROGETTI` (sogni personali), `QUARTIERE` (eventi in città), `TRAME` (storie che nascono da sole), `PARERE` (quando chiedono un consiglio a te) |
 | `js/dati/cortesie.js` | gentilezze tra clienti: caffè offerto e ricambiato, posto ceduto, ombrello prestato |
+| `js/dati/giornale.js` | il giornale del caffè di Corrado: titoli per tipo di notizia, dicerie e smentite, curiosità, annunci, meteo, corsivo, reazioni di chi legge |
 | `js/dati/voci.js` | la «mente» dei personaggi: carattere, interessi, argomenti di conversazione, risposte per stile, notizie, litigi, pensieri, saluti, reazioni (il motore è `js/motore/mente.js`) |
 
 ## Le battute
@@ -245,3 +246,7 @@ Strumenti di `W`: `rel(x, y, {a, fi, at, te})`, `umore(x, v)`, `ricordo(x, tipo,
 ## Gentilezze (`js/dati/cortesie.js`)
 
 Frasi per stile per offrire il caffè (`offre`, `ricambia`), accettare o no (`si`, `no`), promettere e mantenere (`promette`, `mantiene`, `dimentica`), cedere il posto (`posto`, `postoSi`, `postoNo`), l'ombrello (`ombrello`, `rende`, `chiede`, `scusa`…), e i pensieri dopo (`CORT_PENSA`). Il motore (`js/motore/cortesie.js`) tiene il conto dei favori di ogni legame.
+
+## Il giornale del caffè (`js/dati/giornale.js`)
+
+Finita la storia di Corrado («L’ultima edizione»), ogni tre giorni esce un numero (`js/motore/giornale.js`, `gzEsci`), con il nome scelto dal giocatore (`GZ_NOMI`). Si scrive da solo guardando il mondo: notizie (`st.news`), sogni arrivati (`st.pjLog`), storie nate da sole (`st.trF`), storie concluse e nuovi habitué (dal registro), il quartiere; poi dicerie (vere dai legami, a volte false: il numero dopo arriva la smentita), sogni in corso, curiosità coi numeri, un annuncio (al numero dopo qualcuno con la stessa passione risponde, e si conoscono), meteo e corsivo. Per aggiungere: titoli in `GZ_PEZZI[tipo].t` (con il suo peso in `GZ_PESO` per la prima pagina), frasi in `GZ_DICERIE`, `GZ_CURIOSITA`, `GZ_ANNUNCI` (una per argomento di `TEMI`), `GZ_METEO` (uno per ogni tempo), `GZ_CORSIVO`, reazioni in `GZ_LETTORI`.

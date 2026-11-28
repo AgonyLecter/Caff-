@@ -991,7 +991,7 @@ async function playMini(page, kind, itemId) {
       await page.evaluate(`(() => { const C = window.__cafe; const ra = C.st.regs.find(r => r.id === 'ra'), rb = C.st.regs.find(r => r.id === 'rb');
       const [a] = (${seatPair})(C, ra, ra, 0); C.people.filter(p => p.reg === ra && p !== a).forEach(p => { p.dead = true; if (p.seat) p.seat.occ = null; });
       const [b] = (${seatPair})(C, rb, rb, 4); C.people.filter(p => p.reg === rb && p !== b).forEach(p => { p.dead = true; if (p.seat) p.seat.occ = null; });
-      a.sitT = b.sitT = 60; let n = 0; for (let i = 0; i < 60 && !n; i++) { C.socialAI(10); n = C.people.filter(p => !p.dead && p.join).length; } return n; })()`);
+      a.sitT = b.sitT = 60; const R0 = C.st.rel['ra|rb']; if (R0) R0.lit = 0; /* un litigio a caso li terrebbe lontani */ let n = 0; for (let i = 0; i < 60 && !n; i++) { C.socialAI(10); n = C.people.filter(p => !p.dead && p.join).length; } return n; })()`);
     ok(moved > 0, 'vita autonoma: un habitué si alza e va a sedersi vicino al suo amore');
     await clear();
     // rituale settimanale: il loro giorno arrivano insieme
@@ -1365,7 +1365,11 @@ async function playMini(page, kind, itemId) {
         else if (await gp.evaluate(() => tab !== 'Staff')) await gp.click('#tabs button[data-tab="Staff"]');
         else await gp.click('button[data-u="barista"]');
       }
-      if (s2 === 'diario' && (await gp.evaluate(() => panel !== 'cli'))) await gp.click('#bCli');
+      if (s2 === 'diario' && (await gp.evaluate(() => panel !== 'cli'))) {
+        await gp.click('#bCli');
+        await gp.waitForTimeout(80);
+        continue; // il passo dopo (diario2) si registra al giro successivo, prima di andare avanti
+      }
       if (s2 !== 'fine-tutorial' && s2 !== 'ascolta' && s2 !== 'cuore' && (await gp.isVisible('#tnext'))) await gp.click('#tnext');
       if (s2 === 'cuore' && (await gp.isVisible('#tnext'))) {
         if ((await gp.evaluate(() => st.tod)) !== tod0) clockOk = false;
@@ -1573,6 +1577,22 @@ async function playMini(page, kind, itemId) {
 
   console.log('Macchina del caffè e schermata di caricamento');
   {
+    // durante la lunga prova degli aggiornamenti la giornata può finire: si torna a metà giornata e si chiude la finestra
+    await page.evaluate(() => (window.__cafe.st.tod = 0.3));
+    await sleep(300);
+    // una scelta rimasta aperta (una vita partita nel frattempo): si risponde come un giocatore
+    for (let i = 0; i < 3 && (await page.isVisible('.choice button')); i++) {
+      await page.click('.choice button >> nth=0');
+      await sleep(300);
+    }
+    const fin = await page.evaluate(() => {
+      const m = document.querySelector('#modal');
+      if (m.hidden) return '';
+      const t = (document.querySelector('#mbox').textContent || '').slice(0, 80);
+      hideModal();
+      return t;
+    });
+    if (fin) console.log('    (chiusa una finestra rimasta aperta: «' + fin + '»)');
     await page.evaluate(() => (window.__cafe.st.coins += 1e5));
     await page.click('#hud button[data-p="up"]');
     await sleep(150);
@@ -2180,6 +2200,139 @@ async function playMini(page, kind, itemId) {
       C.regiaReset();
       C.ARCS.forEach(a => delete C.st.rt[a.id]);
       C.ARCS.find(a => a.id === 'leo').rand.from = 8;
+    });
+  }
+
+  console.log('Corrado (l’ultima edizione) e il giornale del caffè');
+  {
+    await page.evaluate(() => (window.__cafe.speed = 6));
+    const seen = [];
+    for (let k = 0; k < 5; k++) {
+      await page.evaluate(k => {
+        const C = window.__cafe,
+          st = C.st;
+        C.people.forEach(p => (p.dead = true));
+        C.queue.length = 0;
+        C.scenes.length = 0;
+        C.regiaReset();
+        C.slots.forEach(sl => sl.seats.forEach(q => Object.assign(q, { occ: null, dirty: false, res: null })));
+        st.rolls = st.rolls || {};
+        st.rolls.corrado = { d: st.day, v: true };
+        st.story.davide = Math.max(st.story.davide || 0, 4); // Corrado arriva dopo la storia di Davide
+        C.ARCS.find(a => a.id === 'corrado').rand.from = 0;
+        st.arcDay = st.arcDay || {};
+        if (st.ds) st.ds.chap = 0;
+        if (k) st.arcDay.corrado = st.day - 5;
+        C.ARCS.forEach(a => {
+          if (a.id !== 'corrado') ((a._r = a.ch.map(c => c.r)), a.ch.forEach(c => (c.r = 1e9)));
+        });
+      }, k);
+      let got = false;
+      for (let i = 0; i < 120 && !got; i++) {
+        await page.evaluate(() => {
+          const C = window.__cafe;
+          // se Rosa, Davide o Corrado sono già seduti come habitué, la storia aspetta: li facciamo uscire
+          C.people.forEach(p => {
+            if (!p.story && p.reg && ['rosa', 'davide', 'corrado'].includes(p.reg.key)) {
+              p.dead = true;
+              if (p.seat) p.seat.occ = null;
+            }
+          });
+          C.tryStory();
+        });
+        got = await page.evaluate(() => window.__cafe.people.some(p => !p.dead && p.story === 'corrado'));
+        if (!got) await sleep(50);
+      }
+      for (let i = 0; i < 700; i++) {
+        if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
+        if (await page.evaluate(k => (window.__cafe.st.story.corrado || 0) > k, k)) break;
+        if (i % 5 === 4) await page.evaluate(() => window.__cafe.regiaNext());
+        await sleep(80);
+      }
+      seen.push(await page.evaluate(() => window.__cafe.st.story.corrado || 0));
+      await page.evaluate(() => {
+        const C = window.__cafe;
+        C.people.forEach(p => {
+          if (p.story === 'corrado') {
+            p.dead = true;
+            if (p.seat) p.seat.occ = null;
+          }
+        });
+        C.ARCS.forEach(a => {
+          if (a._r) {
+            a.ch.forEach((c, i) => (c.r = a._r[i]));
+            delete a._r;
+          }
+        });
+      });
+    }
+    // finita la storia, esce il primo numero del giornale, con il nome scelto
+    const gz = await page.evaluate(() => {
+      const C = window.__cafe,
+        st = C.st;
+      mondoOff = false;
+      C.ensureKeyRegs();
+      const A = { id: 'gza', n: 'Ines', look: C.CH.irene.l, type: 'normale', fav: 'caffe', v: 9, f: 5, tr: ['romantico'] },
+        B = { id: 'gzb', n: 'Bruno G.', look: C.CH.gio.l, type: 'normale', fav: 'caffe', v: 9, f: 5, tr: ['artista'] };
+      st.regs.push(A, B);
+      st.news = [];
+      st.pjLog = [];
+      st.trF = [];
+      st.log = []; // solo la notizia di questa prova
+      notizia('coppia', A, B);
+      delete st.gz;
+      giornaleGiorno();
+      const ed = st.gz && st.gz.ed[0];
+      // chi c'è sopra lo legge, e reagisce
+      const c = C.newCust({ look: A.look, name: A.n, reg: A, type: 'normale' });
+      let letto = '';
+      for (let i = 0; i < 30 && !letto; i++) {
+        A.gzL = 0;
+        c.pq = null;
+        gzLegge(c, A);
+        letto = c.pq || '';
+      }
+      c.dead = true;
+      C.queue.splice(C.queue.indexOf(c), 1);
+      return {
+        flags: ['corrado1', 'corrado2', 'corrado3', 'corrado4'].map(k => st.flags[k]).join(','),
+        perk: !!st.perks.corrado,
+        key: C.KEYS.corrado.ok(),
+        nome: ed && ed.nome,
+        n: ed && ed.n,
+        prima: ed && ed.pezzi[0] && ed.pezzi[0].t,
+        ines: !!ed && ed.pezzi.some(p => /Ines/.test(p.t)), // la notizia della coppia c'è (in prima pagina può esserci la storia di Corrado)
+        sezioni: ed ? [...new Set(ed.pezzi.map(p => p.s))].join(', ') : '',
+        letto
+      };
+    });
+    ok(
+      seen.join(',') === '1,2,3,4,5' && gz.flags === 'leggi,meritano,caffe,pioggia' && gz.perk && gz.key,
+      `Corrado: cinque capitoli (${seen.join(',')}), scelte ${gz.flags}, premio ${gz.perk}, resta ${gz.key}`
+    );
+    ok(
+      gz.nome === 'La Gazzetta della Pioggia' && gz.n === 1 && gz.ines,
+      `esce il giornale «${gz.nome}» (in prima pagina: «${gz.prima}»): ${gz.sezioni}`
+    );
+    ok(!!gz.letto, `chi finisce sul giornale lo legge e reagisce: «${gz.letto}»`);
+    await page.click('#hud button[data-p="cli"]');
+    await sleep(150);
+    await page.click('#tabs button:has-text("Giornale")');
+    await sleep(150);
+    ok(/La Gazzetta della Pioggia/.test(await page.textContent('#pbody')), 'il giornale si legge nel Diario');
+    await page.evaluate(() => {
+      closePanel();
+      const C = window.__cafe,
+        st = C.st;
+      mondoOff = true;
+      st.regs = st.regs.filter(r => !['gza', 'gzb'].includes(r.id));
+      C.speed = 1;
+      C.people.forEach(p => (p.dead = true));
+      C.queue.length = 0;
+      C.scenes.length = 0;
+      C.regiaReset();
+      C.ARCS.forEach(a => delete C.st.rt[a.id]);
+      C.ARCS.find(a => a.id === 'corrado').rand.from = 10;
     });
   }
 

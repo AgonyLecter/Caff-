@@ -49,6 +49,10 @@ const NOVITA = [
   {
     id: 'cortesie',
     t: 'E hanno imparato la gentilezza: si offrono il caffè, si cedono il posto, si prestano l’ombrello. Chi riceve, di solito ricambia. Chi non ricambia mai... beh, se lo ricordano.'
+  },
+  {
+    id: 'corrado',
+    t: 'Ti ricordi della vecchia Gazzetta del Quartiere? Ha chiuso. Il suo giornalista, Corrado, gira con un taccuino e non sa più a chi raccontare le cose. Se passa, fallo sedere. E chiedigli cosa scrive.'
   }
 ];
 

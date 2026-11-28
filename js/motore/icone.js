@@ -121,6 +121,10 @@ const PXT = {
     p: { y: '#ffd166', o: '#e0a040' },
     r: ['....y.....', '....y.....', '...yyy....', 'yyyyyyyyy.', '.yyyyyyy..', '..yyyyy...', '..yy.yy...', '.yo...oy..']
   },
+  Giornale: {
+    p: { w: '#f4f1de', k: '#2b2d42', g: '#9a9aa8' },
+    r: ['wwwwwwwww.', 'wkkkkkkkw.', 'wwwwwwwwwg', 'wkkkw.ggwg', 'wkkkw.ggwg', 'wwwww.ggwg', 'wgggggggwg', 'wwwwwwwww.']
+  },
   Segreti: {
     p: { y: '#ffd166', o: '#c9922a' },
     r: ['..yyy.....', '.y...y....', '.y...y....', '..yyy.....', '...y......', '...yyy....', '...y......', '...yy.....']

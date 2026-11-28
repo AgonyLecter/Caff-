@@ -186,6 +186,7 @@ function menteArrivo(c, o) {
   M.u *= 0.9 * Math.pow(0.85, r.gap); // l'umore dei giorni scorsi sbiadisce piano
   c.mood = clamp(c.mood + M.u * 15, 10, 100);
   mondoArrivo(c, r); // progetti personali
+  gzLegge(c, r); // e magari legge il giornale del caffè
 }
 // all'uscita: la visita diventa un ricordo (un caffè perfetto, un'attesa lunga) e sposta l'umore
 function menteCongedo(c, stelle) {

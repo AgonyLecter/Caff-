@@ -4,6 +4,22 @@
 // hanno abitudini, frasi proprie, animali, legami già nati nelle storie, vite nuove e incontri tra storie diverse.
 const fl = f => checkFlag(f);
 const KEYS = {
+  corrado: {
+    type: 'lettore',
+    fav: 'caffe',
+    tr: ['chiacchierone', 'sognatore'],
+    ok: () => arcDone('corrado'),
+    l: [
+      '*prende appunti su un tovagliolo, perché il taccuino è finito*',
+      'Il segreto di un buon pezzo? Ascoltare il doppio di quanto scrivi.',
+      'Al tavolo tre si parla di un trasloco. Lo sento dal tono: è una storia da prima pagina.',
+      'Mia moglie legge il giornale del caffè prima di me. Poi mi corregge le virgole.',
+      'Una diceria è una notizia che non si è ancora vestita.',
+      ['La Gazzetta della Pioggia: il numero di martedì è finito in mezz’ora.', 'corrado4=pioggia'],
+      ['«Il Bancone» va forte. Il fornaio lo appende in vetrina.', 'corrado4=bancone'],
+      ['«La Tazzina» ha un lettore anche a Torino. Una nipote, ma conta.', 'corrado4=tazzina']
+    ]
+  },
   leo: {
     type: 'studente',
     fav: 'choc',
@@ -341,6 +357,8 @@ const KEYS = {
 };
 // legami che esistono già dalle storie
 const KSEED = [
+  ['corrado', 'rosa', () => arcDone('corrado'), () => 'amici'],
+  ['corrado', 'davide', () => arcDone('corrado'), () => 'amici'],
   ['leo', 'aldo', () => arcDone('leo'), () => 'famiglia'],
   ['leo', 'giada', () => arcDone('leo'), () => 'amici'],
   ['alice', 'sara', () => arcDone('alice'), () => (fl('alice3=sara') ? 'migliori' : 'amici')],
@@ -366,6 +384,21 @@ const KSEED = [
 ];
 /* ----- incroci tra storie diverse (una volta sola) e epiloghi ----- */
 const XS = [
+  {
+    id: 'x_corrado_davide',
+    w: ['corrado', 'davide'],
+    req: () => arcDone('corrado') && arcDone('davide'),
+    l: [
+      [1, 'Ho portato le prove di stampa del numero nuovo. Ho cambiato il carattere dei titoli.'],
+      [0, 'Davide, sono le dieci di sera. Domani è domenica.'],
+      [1, 'Lo so. È che quando impagino non penso ad altro. Prima pensavo sempre ad altro.'],
+      [0, '*lo guarda un momento, poi chiude il taccuino*'],
+      [0, 'Sai che il mio direttore diceva che un giornale lo fanno due persone: chi scrive e chi lo rende leggibile?'],
+      [1, 'E chi lo legge.'],
+      [0, 'E chi lo legge. Tre persone. Più il barista, che ce lo lascia appendere.'],
+      [1, '*ride* Il barista fa da redazione. Mettilo nel colophon.']
+    ]
+  },
   {
     id: 'x_leo_giada',
     w: ['leo', 'giada'],
@@ -742,6 +775,18 @@ const XS = [
   }
 ];
 const XEPI = [
+  {
+    id: 'e_corrado',
+    w: ['corrado'],
+    req: () => arcDone('corrado') && st.day >= ((st.arcDay || {}).corrado || 0) + 6,
+    l: [
+      [0, 'Mi hanno chiamato dalla vecchia Gazzetta. Cioè, da chi è rimasto. Vogliono ristampare i miei pezzi del caffè in un libretto.'],
+      [0, 'Il primo giorno mi ha chiesto cosa scrivevo. Nessuno me lo chiedeva più da un anno.', 'corrado1=leggi'],
+      [0, 'Il primo giorno mi ha lasciato scrivere in pace. Sembra poco. Era tutto.', 'corrado1=lascia'],
+      [0, '*appoggia sul bancone il taccuino consumato, quello dei primi giorni*'],
+      [0, 'Questo lo lascio a lei. Dentro c’è il caffè visto da un vecchio che pensava di aver finito le storie. Non le aveva finite.']
+    ]
+  },
   {
     id: 'e_leo',
     w: ['leo'],
