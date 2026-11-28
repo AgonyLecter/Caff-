@@ -55,6 +55,53 @@ function scegli(pool, key, own) {
   return pool[i];
 }
 
+/* ---------- 1b. Frasi costruite a pezzi (GRAM, in js/dati/grammatica.js) ---------- */
+// '{ora}, {scena}.': ogni {nome} minuscolo che esiste in GRAM viene sostituito da un suo pezzo (che può contenerne altri);
+// {nome_cap} fa lo stesso con la maiuscola. I pezzi ruotano come le frasi (scegli), quindi le combinazioni non si ripetono.
+const maiusc = t => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
+// i pezzi di un nome, più quelli delle circostanze vere in questo momento (che contano il doppio)
+const gramPool = (k, tags) =>
+  (GRAM[k] || []).concat(...(tags || []).map(g => (GRAM[k + '@' + g] ? GRAM[k + '@' + g].concat(GRAM[k + '@' + g]) : [])));
+function gramEspandi(t, own, d, tags) {
+  return t.replace(/\{([a-z_]+)\}/g, (m, k) => {
+    const cap = k.endsWith('_cap');
+    if (cap) k = k.slice(0, -4);
+    if (!GRAM[k] || d > 6) return m;
+    const x = gramEspandi(scegli(gramPool(k, tags), 'g:' + k, own), own, d + 1, tags);
+    return cap ? maiusc(x) : x;
+  });
+}
+function gram(k, own, sty, tags) {
+  let key = sty && GRAM[k + '_' + sty] ? k + '_' + sty : k;
+  // con un umore forte, a volte il pensiero intero cambia tono
+  const mood = (tags || []).find(g => GRAM[k + '@' + g] && (g === 'giu' || g === 'felice'));
+  if (mood && Math.random() < 0.5) return maiusc(gramEspandi(scegli(GRAM[k + '@' + mood], 'g:' + k + '@' + mood, own), own, 0, tags));
+  if (!GRAM[key]) return null;
+  return maiusc(gramEspandi(scegli(GRAM[key], 'g:' + key, own), own, 0, tags));
+}
+// le circostanze di adesso: il tempo, l'ora, la stagione, l'umore di chi parla, il locale, le feste
+function circostanze(c) {
+  const t = [],
+    w = typeof curWx === 'function' ? curWx() : '',
+    h = typeof hour === 'function' ? hour() % 24 : 20;
+  if (w === 'temporale') t.push('temporale', 'pioggia');
+  else if (w) t.push(w);
+  t.push(h < 5 ? 'notte' : h < 11 ? 'mattina' : h < 17 ? 'pomeriggio' : h < 22 ? 'sera' : 'notte');
+  if (typeof stagione === 'function' && st.day) t.push(stagione(st.day).id);
+  if (c) {
+    const u = umoreOra(c);
+    if (u > 0.4) t.push('felice');
+    else if (u < -0.3) t.push('giu');
+  }
+  if (typeof people !== 'undefined') {
+    const sed = people.filter(p => !p.dead && p.state === 'sit').length;
+    if (sed >= 4 && sed >= st.tables * 2 - 1) t.push('pieno');
+    else if (sed <= 2) t.push('vuoto');
+  }
+  if (typeof giornoEv === 'function' && giornoEv(st.day, st.ev)) t.push('festa');
+  return t;
+}
+
 /* ---------- 2. Carattere ---------- */
 const P0 = { soc: 0.5, cal: 0.55, iro: 0.4, sens: 0.5, ape: 0.5, rom: 0.3, bro: 0.2, ene: 0.5 };
 const PCACHE = new WeakMap();
@@ -493,6 +540,19 @@ function conversa(a, b, R) {
       });
   });
   [0, 1].forEach(x => mondoTemi(C, x, own(x), own(1 - x), di, es, dopo, sty)); // progetti e quartiere
+  // due chiacchiere costruite a pezzi: una domanda, un aneddoto, e la risposta secondo il carattere
+  [0, 1].forEach(x =>
+    C.push({
+      k: 'chiacchiera',
+      w: 1.2,
+      run: () => {
+        const tg = circostanze(cs[x]);
+        di(x, gram('domanda', own(x), null, tg));
+        di(1 - x, gram('risposta', own(1 - x), sty[1 - x], tg));
+        es.a += 3;
+      }
+    })
+  );
   const n = pa.soc + pb.soc > 1.1 && Math.random() < 0.6 ? 2 : 1;
   for (let i = 0; i < n && C.length; i++) {
     const o = wpick(C, x => x.w);
@@ -565,6 +625,7 @@ function pensiero(c) {
         });
       });
   }
+  add(1.5, () => riempi(gram('pensiero', own, sty, circostanze(c)), { sp: c })); // un pensiero costruito a pezzi, legato al momento
   interessi(own).forEach(t => TEMI[t] && addP(0.7, TEMI[t].solo, 'tso:' + t));
   trattiDi(own).forEach(t => PENSA_TR[t] && addP(1.1, PENSA_TR[t], 'ptr:' + t));
   // chi c'è nel locale

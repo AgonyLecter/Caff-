@@ -20,7 +20,7 @@ Preferenze dell'utente:
 Script classici (non moduli ES) che condividono lo scope globale: funziona da `file://` e su GitHub Pages. Ordine di caricamento in `index.html`:
 
 1. `js/motore/base.js` (e `js/motore/icone.js`, che però si carica dopo base e prima dei dati)
-2. `js/dati/`: personaggi, storie, mondo, frasi, animali, vite, vite-nuove, calendario, novita, intrecci, segreti, voci, trame, cortesie, giornale (solo contenuti)
+2. `js/dati/`: personaggi, storie, mondo, frasi, animali, vite, vite-nuove, calendario, novita, intrecci, segreti, voci, trame, cortesie, giornale, grammatica (solo contenuti)
 3. `js/motore/`: icone (subito dopo base.js), stato, citta, audio, simulazione, disegno-persone, disegno-locale, animali, vita, mente, trame, cortesie, giornale, regia, calendario, attivo, atmosfera, interfaccia, risultati, guida, ritorno, avvio, aggiorna
 
 Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `icone/`, `docs/come-aggiungere-contenuti.md` (guida per aggiungere personaggi/storie/vite/incroci/frasi), `README.md`, `tools/` (simulazione del ritmo).
@@ -63,6 +63,7 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
   - Conversazioni: `relScene` → a volte una scenetta di `REL` (con `scegli` per coppia), di solito `conversa(a, b, R)` (saluto `APRI`/`APRI_R`, argomenti scelti per voglia: interessi, ricordi, notizie, chi è giù si confida, futuro; `CHIUDI`). Prima volta: `REL.intro` o `primaConv`. Litigi `LITE` e chiarimenti `CHIARO`.
   - Notizie: `st.news` (max 40), `notizia(k, A, B)`, chi sa cosa in `mn.k`; si raccontano in conversazione (`notiziaPer`) se chi ascolta conosce uno dei due.
   - Pensieri: `pensiero(c)` (attesa, tavolo sporco, caffè perfetto, ritorno dopo giorni, traguardi, umore, ricordi, interessi, tratti, chi c'è nel locale, ora e tempo, frasi dei personaggi chiave). Saluti tra tavoli `salutaTavoli`. Reazioni dei presenti `evento(k, A, B)` (fidanzati, coppia, pace, litigio, cocci). Tocco `tocco(c)` per affetto e stile.
+  - **Frasi costruite a pezzi** (`dati/grammatica.js`, `GRAM`): modelli con `{pezzo}` (anche `{pezzo_cap}`), varianti per stile `nome_stile`, e per circostanza `nome@circostanza` (tempo, ora, stagione, umore felice/giu, locale pieno/vuoto, festa: `circostanze(c)`), che si aggiungono e pesano il doppio. `gram(k, own, sty, tags)` in `mente.js`. Usate da `pensiero` (pensieri), `conversa` (chiacchiere `domanda`/`risposta`) e dal giornale (`breve`, `diceria`). Circa 188.000 frasi possibili (il test le conta).
   - **Niente ripetizioni**: `scegli(pool, chiave, chi)` ricorda le frasi sentite nel locale (`st.vu`) e quelle dette da ognuno (`.ud`); `fresco()` fa preferire gli argomenti con frasi ancora nuove. Usare sempre `scegli` al posto di `pick` per le frasi.
   - Diario: carattere, umore e ricordo nella scheda Habitué (`carattereN`, `umoreN`, `ricordoN`); stato del legame in Legami (`relN`).
 
@@ -105,7 +106,7 @@ Altri file: `css/stile.css`, `sw.js` (service worker), `manifest.webmanifest`, `
 
 Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline): circa 2 capitoli al giorno, 40 capitoli verso i 160 minuti (prima a 57), le vite partono verso l'ora di gioco; i potenziamenti arrivano ancora fino a circa 3 ore. Le storie ora durano di più apposta, per gustarle; se sembra troppo lento, alzare `MOM_DAY` o abbassare `REGIA_REST`/`REGIA_WAIT`. Il gioco avanzato si regge su vite infinite e relazioni; il calendario (fase 2) serve a dargli più struttura.
 
-## Fatto finora (PR #6 → #37)
+## Fatto finora (PR #6 → #38)
 
 - Minigiochi solo dal pulsante.
 - Grafica più curata.
@@ -137,6 +138,7 @@ Ritmo con la regia (simulazione «attivo», 3 ore, il bot non tocca le stelline)
 - Mente dei personaggi: carattere, umore, memoria, legami con affetto/fiducia/attrazione/tensione, conversazioni costruite sul momento, notizie che girano, litigi e chiarimenti, saluti tra tavoli, reazioni, niente frasi ripetute.
 - Mondo che va avanti da solo: progetti personali, pareri chiesti a te, eventi di quartiere, storie che nascono da sole; gentilezze tra clienti con conto dei favori.
 - Storia di Corrado («L’ultima edizione», giornalista rimasto senza giornale; dopo Davide, con Nonna Rosa e Davide impaginatore): poi fonda il giornale del caffè.
+- Frasi costruite a pezzi e legate alle circostanze (tempo, ora, stagione, umore, locale, feste): circa 188.000 combinazioni.
 - 25 vite nuove e 10 vite a due nuove (anche temi forti: un genitore che dimentica, solitudine, bullismo, mamma sola, separazione, coming out, lutto per un animale, panico, esaurimento).
 
 ## Prossimi passi (in ordine)
