@@ -185,6 +185,7 @@ function menteArrivo(c, o) {
   r.vd = st.day;
   M.u *= 0.9 * Math.pow(0.85, r.gap); // l'umore dei giorni scorsi sbiadisce piano
   c.mood = clamp(c.mood + M.u * 15, 10, 100);
+  mondoArrivo(c, r); // progetti personali
 }
 // all'uscita: la visita diventa un ricordo (un caffè perfetto, un'attesa lunga) e sposta l'umore
 function menteCongedo(c, stelle) {
@@ -490,6 +491,7 @@ function conversa(a, b, R) {
         }
       });
   });
+  [0, 1].forEach(x => mondoTemi(C, x, own(x), own(1 - x), di, es, dopo, sty)); // progetti e quartiere
   const n = pa.soc + pb.soc > 1.1 && Math.random() < 0.6 ? 2 : 1;
   for (let i = 0; i < n && C.length; i++) {
     const o = wpick(C, x => x.w);
@@ -517,6 +519,12 @@ const scenaDue = (L, a, b, R) => L.map(l => [l[0], riempi(l[1], { sp: l[0] ? b :
 
 /* ---------- 8. Pensieri ad alta voce ---------- */
 function pensiero(c) {
+  // una cosa che ha appena da raccontare (una tappa del suo progetto) viene prima di tutto
+  if (c.pq) {
+    const t = c.pq;
+    c.pq = null;
+    return t;
+  }
   const r = c.reg,
     own = r || c,
     sty = stileDi(own),
@@ -615,6 +623,7 @@ function pensiero(c) {
         'Quella frase sulla lavagna è proprio vera.'
       ])
     );
+  if (r) mondoPensieri(c, add, addP);
   const o = C.length ? wpick(C, x => x.w) : null;
   return o ? o.f() : null;
 }
@@ -689,6 +698,12 @@ function tocco(c) {
     s = stileDi(own),
     vis = c.vis || (c.vis = {});
   let pool, key;
+  const P = pjDi(c.reg);
+  if (P && !vis.tp && Math.random() < 0.4) {
+    // ti racconta del suo progetto
+    vis.tp = 1;
+    return gO(scegli(P[c.reg.pj.ult === 'giu' ? 'dubbio' : 'su'], 'pjtc:' + P.id, own), own);
+  }
   if (c.why === 'attesa' && !vis.ta) {
     vis.ta = 1;
     [pool, key] = [TOCCO.attesa, 'tca'];

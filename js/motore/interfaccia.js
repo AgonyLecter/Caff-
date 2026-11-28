@@ -1006,10 +1006,37 @@ function cliHTML() {
   }
   if (tab === 'Vite') {
     const act = st.regs.filter(r => r.fl && r.fl.log && r.fl.log.length),
+      // il mondo che va avanti da solo: quartiere, storie nate da sole, sogni inseguiti
+      mondo = (() => {
+        const Q = qzDi(),
+          TA = (st.tr || []).filter(T => T.log.length),
+          TF = st.trF || [],
+          PJ = st.pjLog || [];
+        const tn = T => (TRAME.find(x => x.id === T.id) || {}).t || '';
+        return (
+          (Q ? `<p class="note">Nel quartiere: <b>${esc(Q.t)}</b>. ${esc(Q.n)}</p>` : '') +
+          (TA.length || TF.length
+            ? `<div class="card2"><h3>Storie nate da sole<small>${TF.length}</small></h3>${TA.map(
+                T =>
+                  `<button class="chap" data-tra="${T.u}"><span class="who">${T.log[0].who.map(w => `<img alt="" src="${portrait(w.look)}">`).join('')}${esc(tn(T))}</span><small>continua… ›</small></button>`
+              ).join('')}${TF.map(
+                (T, i) =>
+                  `<button class="chap" data-trf="${i}"><span class="who">${(T.log[0] ? T.log[0].who : []).map(w => `<img alt="" src="${portrait(w.look)}">`).join('')}${esc(T.t)}</span><small>giorno ${T.d} ›</small></button>`
+              ).join('')}</div>`
+            : '') +
+          (PJ.length
+            ? `<div class="card2"><h3>Sogni inseguiti<small>${PJ.length}</small></h3>${PJ.map(
+                p =>
+                  `<div class="rev">${esc(p.n)} · ${esc(p.t)} <small>· ${p.ok ? 'ce l’ha fatta ♥' : 'non è andata, per ora'} · giorno ${p.d}</small></div>`
+              ).join('')}</div>`
+            : '')
+        );
+      })(),
       done = st.fdone || [],
       ready = st.regs.filter(r => !r.fl && r.f >= 3).length;
     return (
       `<p class="note">Le vite dei tuoi habitué. Quando un cliente si affeziona (affetto 3), ti racconta qualcosa di sé in tre visite, e a metà ti chiede un consiglio. Anche le coppie, gli amici e i rivali vivono storie a due. E quando i personaggi delle storie si incontrano, succedono cose. Ogni vita è unica: la vive una persona sola.</p>` +
+      mondo +
       (act.length
         ? `<div class="card2"><h3>In corso<small>${act.length}</small></h3>${act
             .map(r => {
@@ -1070,7 +1097,7 @@ function cliHTML() {
           ]
             .filter(Boolean)
             .join(' · ');
-          return `<div class="card2"><h3><span class="who"><img alt="" src="${portrait(r.look)}">${esc(r.n)}${r.key ? ' <span class="tag">storia</span>' : ''}</span><small>${r.v} visite</small></h3>${rout ? `<p class="ad">${rout}</p>` : ''}<p class="ad">${TYPES[r.type] ? TYPES[r.type].n : 'Cliente'} · ordina ${fav ? fav.n : 'caffè'}${r.pet ? ' · con ' + PETA[r.pet.k] + ' ' + esc(r.pet.n) : ''} · ${rels} legami</p>${r.tr.map(t => `<span class="tag">${t}</span>`).join('')}<p class="ad">${esc(carattereN(r))} · umore ${esc(umoreN(r))}${(m => (m ? ' · ricorda ' + esc(m) : ''))(ricordoN(r))}</p><div class="bar"><i style="width:${r.f * 10}%"></i></div></div>`;
+          return `<div class="card2"><h3><span class="who"><img alt="" src="${portrait(r.look)}">${esc(r.n)}${r.key ? ' <span class="tag">storia</span>' : ''}</span><small>${r.v} visite</small></h3>${rout ? `<p class="ad">${rout}</p>` : ''}<p class="ad">${TYPES[r.type] ? TYPES[r.type].n : 'Cliente'} · ordina ${fav ? fav.n : 'caffè'}${r.pet ? ' · con ' + PETA[r.pet.k] + ' ' + esc(r.pet.n) : ''} · ${rels} legami</p>${r.tr.map(t => `<span class="tag">${t}</span>`).join('')}<p class="ad">${esc(carattereN(r))} · umore ${esc(umoreN(r))}${(m => (m ? ' · ricorda ' + esc(m) : ''))(ricordoN(r))}${(P => (P ? `<br>insegue ${esc(P.t)} (${r.pj.s}/${P.passi})` : ''))(pjDi(r))}${(r.pjF || []).length ? ` · ${r.pjF.length} sogni inseguiti` : ''}</p><div class="bar"><i style="width:${r.f * 10}%"></i></div></div>`;
         })
         .join('')
     );
@@ -1097,7 +1124,7 @@ function cliHTML() {
       (L.length
         ? L.map(([k, v]) => {
             const [a, b] = k.split('|');
-            return `<div class="row"><b>${nm(a)} e ${nm(b)}</b><span>${IC[v.k] || v.k} · ${relN(v)} · dal giorno ${v.d}</span></div>`;
+            return `<div class="row"><b>${nm(a)} e ${nm(b)}</b><span>${IC[v.k] || v.k} · ${relN(v)}${cortN(k, v)} · dal giorno ${v.d}</span></div>`;
           }).join('')
         : '<p class="note">Nessun legame per ora.</p>') +
       (() => {
@@ -1294,6 +1321,24 @@ $('#pbody').addEventListener('click', e => {
     if (r && r.fl) {
       const F = FILI.find(f => f.id === r.fl.id);
       openReader(r.n, 'continua…', filoPages({ n: r.n, t: F ? F.t : '', log: r.fl.log, look: r.look, e: '' }), r.fl.log.length - 1);
+    }
+    return;
+  }
+  if (bt.dataset.tra || bt.dataset.trf) {
+    const T = bt.dataset.tra ? (st.tr || []).find(x => String(x.u) === bt.dataset.tra) : (st.trF || [])[+bt.dataset.trf];
+    if (T) {
+      const t = T.t || (TRAME.find(x => x.id === T.id) || {}).t || '';
+      openReader(
+        t,
+        T.e ? 'storia nata da sola' : 'continua…',
+        T.log.map((b, i) => ({
+          t: t + (T.log.length > 1 ? ' · ' + (i + 1) : ''),
+          who: b.who,
+          lines: b.lines,
+          end: i === T.log.length - 1 && T.e ? T.e : ''
+        })),
+        T.log.length - 1
+      );
     }
     return;
   }

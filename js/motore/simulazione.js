@@ -308,7 +308,10 @@ function serve(c, quality) {
   let seat = null;
   const tp = TYPES[c.type] || {};
   if (c.res) seat = allSeats().find(s => s.res === c.res) || null;
-  else if (c.rare || c.tut || Math.random() > (tp.take || 0.18)) seat = findSeat(c);
+  else if (c.rare || c.tut || Math.random() > (tp.take || 0.18)) {
+    seat = findSeat(c);
+    if (!seat && c.reg && !c.story) seat = cortesiaPosto(c); // tavoli pieni: un amico magari cede il posto
+  }
   if (seat) {
     seat.occ = c;
     seat.res = null;
@@ -418,6 +421,7 @@ function leaveSeat(c) {
   }
   finishVisit(c);
   if (Math.random() < 0.15 && !c.story) say(c, pick(['Grazie, a domani!', 'Buonanotte!', 'Torno presto.', 'Ciao ciao!']), 2);
+  cortesiaUscita(c); // piove e ha dimenticato l'ombrello?
   exitC(c);
 }
 function cleanSeat(s, byPlayer) {
@@ -627,7 +631,8 @@ function onSit(c) {
     const G = groups[c.group];
     const mem = people.filter(p => p.group === c.group && !p.dead).sort((a, b) => a.gi - b.gi);
     if (G && mem.length >= G.n && mem.every(p => p.state === 'sit')) {
-      if (G.rel) relScene(mem[0], mem[1]);
+      if (G.trU) tramaOnSit(null, mem) || startScene(mem, [[0, 'Eccoci.']], {});
+      else if (G.rel) relScene(mem[0], mem[1]);
       else startScene(mem, G.lines, { onEnd: G.onEnd, story: G.story, mood: G.mood });
       if (G.n === 2 && !G.story && st.ds) {
         st.ds.couples++;
@@ -641,6 +646,8 @@ function onSit(c) {
     c.reg.tb = c.reg.tb || {};
     c.reg.tb[ti] = (c.reg.tb[ti] || 0) + 1;
   }
+  if (c.reg && tramaOnSit(c)) return; // chiamato da una storia nata da sola
+  if (c.reg && c.reg.pj && Math.random() < 0.5 && parereScena(c)) return; // ti chiede un parere sul suo progetto
   if (calOnSit(c)) return; // compleanni e pensierini
   if (c.join) {
     const o = c.join;
@@ -897,6 +904,7 @@ function updCust(c, dt) {
               ? pick([`Il solito: ${o.n}!`, `Ciao! Il mio ${o.n}, grazie.`])
               : pick([`${o.a} ${o.n}, per favore.`, `Per me ${o.a.toLowerCase()} ${o.n}.`, `${o.a} ${o.n}, grazie!`]);
           say(c, c.req ? line + ' ' + c.reqLine : line, c.req ? 3.6 : 2.4, c.story || c.reg ? c.name : '');
+          cortesiaOrdine(c); // un conoscente seduto magari offre lui
         }
       }
       break;
@@ -1027,7 +1035,7 @@ function updScene(sc, dt) {
       m.scene = null;
       m.sitT = rnd(2.5, 5);
     });
-    if (sc.onEnd) sc.onEnd();
+    if (sc.onEnd) sc.onEnd(sc);
   }
 }
 function syncStaff() {
@@ -1244,6 +1252,7 @@ function startDay() {
   st.evT = rnd(0.2, 0.65);
   st.evDone = 0;
   st.nwx = rollWx(st.day + 1);
+  quartiereGiorno(); // nel quartiere succede qualcosa
   st.nev = rollEv();
   calStartDay(); // stagioni e feste
   st.ds = { served: 0, earned: 0, stars: [], couples: 0, cleaned: 0, items: {}, specials: 0, stories: 0 };
@@ -1450,6 +1459,8 @@ function update(dt) {
   scenes.forEach(s => updScene(s, dt));
   regiaTick(dt);
   calTick(dt);
+  trameTick(dt);
+  cortesieTick(dt);
   scenes = scenes.filter(s => !s.done);
   for (const k in groups) if (!people.some(p => p.group === k) && !timers.length) delete groups[k];
   syncStaff();

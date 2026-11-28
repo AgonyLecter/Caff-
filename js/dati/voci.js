@@ -588,6 +588,22 @@ const NOTIZIE = {
     io: ['Ho litigato con {Y}. Per una stupidaggine. Ma mi pesa.']
   }
 };
+// notizie che nascono dal mondo: progetti riusciti o no, cotte segrete (vedi js/motore/trame.js)
+NOTIZIE.successo = {
+  a: ['Hai saputo di {X}? Ce l’ha fatta! Quella cosa che inseguiva da settimane.', '{X} ce l’ha fatta. Sono così content{o}.'],
+  io: ['Ho una bella notizia: ce l’ho fatta! Sono ancora emozionat{o}.', 'Te lo devo dire: ci sono riuscit{o}!']
+};
+NOTIZIE.delusione = {
+  a: [
+    'A {X} non è andata bene, con quel progetto. Diamogli un po’ di affetto.',
+    'Hai sentito di {X}? Non è andata. Ma non molla, lo conosco.'
+  ],
+  io: ['Non è andata, quella cosa che inseguivo. Ma ci riprovo.']
+};
+NOTIZIE.cotta = {
+  a: ['Lo sapevi che {X} ha un debole per {Y}? Non dirlo a nessuno.', 'Dicono che {X} arrossisca ogni volta che passa {Y}.'],
+  io: ['Posso dirti un segreto? Mi piace {Y}. Tanto.']
+};
 const NOTIZIE_R = {
   caldo: ['Che bello. Sono content{o} per loro.', 'Davvero? Mi fa piacere.', 'Ah... speriamo bene.'],
   ironico: [

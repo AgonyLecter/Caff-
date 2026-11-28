@@ -57,6 +57,8 @@ async function startGame(page, save) {
     machTilt = 0;
     // la regia (un racconto alla volta) ha i suoi test: negli altri non deve mettere in pausa ciò che si sta provando
     window.__cafe.regia.off = true;
+    // anche il mondo che va avanti da solo (progetti, storie nate da sole, gentilezze) ha i suoi test
+    mondoOff = true;
   });
 }
 
@@ -478,6 +480,7 @@ async function playMini(page, kind, itemId) {
     await page.evaluate(() => {
       const C = window.__cafe;
       C.speed = 8;
+      C.st.tod = 0.2; // a metà giornata: a velocità 8 la fine del giorno non deve arrivare durante la prova
       C.st.regs.push({ id: 'rtest', n: 'Tester', look: C.CH.mia.l, type: 'studente', fav: 'caffe', v: 5, f: 5, tr: ['nerd'] });
     });
     let ok3 = true;
@@ -540,6 +543,7 @@ async function playMini(page, kind, itemId) {
       `una vita completa in 3 visite con una scelta: «${res.done && res.done.t}» → ${res.done && res.done.e}`
     );
     await page.evaluate(() => (window.__cafe.speed = 1));
+    if (await page.isVisible('#modal .btns button')) await page.click('#modal .btns button >> nth=-1'); // una finestra rimasta aperta
     await page.click('#hud button[data-p="cli"]');
     await sleep(150);
     await page.click('#tabs button:has-text("Vite")');
@@ -1090,6 +1094,187 @@ async function playMini(page, kind, itemId) {
     ok(mente.attesa === 'ok', `pensieri legati alla situazione (chi aspetta lo dice a modo suo): ${mente.attesa}`);
     ok(mente.saluto, 'chi conosce qualcuno a un altro tavolo lo saluta');
     ok(/·.+·.+·/.test(mente.diario) && !/undefined|\{/.test(mente.diario), `nel Diario: ${mente.diario}`);
+    console.log('Il mondo che va avanti da solo');
+    await page.evaluate(() => {
+      mondoOff = false;
+      trT = 1e9; // le storie nate da sole: qui le muove la prova, non il gioco
+      window.__giorno0 = [window.__cafe.st.day, window.__cafe.st.wx, window.__cafe.st.wx2, window.__cafe.st.tod]; // poi si rimette tutto com'era
+      window.__cafe.speed = 4;
+    });
+    // progetti personali: tappe con alti e bassi, poi il traguardo; chi ha qualcosa da raccontare lo dice per primo
+    const pj = await page.evaluate(`(() => {
+      const C = window.__cafe, st = C.st;
+      const r = { id: 'wp', n: 'Marta P.', look: C.CH.irene.l, type: 'studente', fav: 'caffe', v: 8, f: 6, tr: ['sportivo'] };
+      st.regs.push(r);
+      const P = pjNuovo(r);
+      if (!P) return { err: 'nessun progetto' };
+      r.pj.ok = 0.4;
+      const [c] = (${seatPair})(C, r, r, 0);
+      let detto = '', giorni = 0;
+      for (let i = 0; i < 40 && r.pj && r.pj.s < P.passi; i++) { st.day++; giorni++; c.pq = null; mondoArrivo(c, r); if (c.pq && !detto) detto = pensiero(c); }
+      st.day += 3; mondoArrivo(c, r);
+      const fine = (st.pjLog || [])[0];
+      return { P: P.t, detto, giorni, fine: fine && fine.t === P.t, pq: !!c.pq };
+    })()`);
+    ok(pj.fine && pj.detto && pj.pq, `progetti: «${pj.P}» in ${pj.giorni} giorni, tappa raccontata («${pj.detto}») e traguardo`);
+    await clear();
+    // ti chiede un parere: tre risposte, e quella giusta per il suo carattere lo aiuta
+    await page.evaluate(`(() => {
+      const C = window.__cafe, st = C.st, r = st.regs.find(x => x.id === 'wp');
+      r.pjD = 0; r.pjF = []; pjNuovo(r); r.pj.ult = 'giu';
+      const [c] = (${seatPair})(C, r, r, 0);
+      C.scenes.length = 0; window.__par = parereScena(c);
+    })()`);
+    let par = false;
+    for (let i = 0; i < 300 && !par; i++) {
+      if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=1');
+      par = await page.evaluate(() => {
+        const r = window.__cafe.st.regs.find(x => x.id === 'wp');
+        return !!(r.pj && r.pj.par) && !window.__cafe.scenes.length;
+      });
+      if (!par) await sleep(80);
+    }
+    ok(par && (await page.evaluate(() => window.__par)), 'ti chiede un parere sul suo progetto, e la tua risposta resta (anche per dopo)');
+    await clear();
+    // il quartiere: un evento di cui tutti parlano
+    const qz = await page.evaluate(`(() => {
+      const C = window.__cafe, st = C.st, r = st.regs.find(x => x.id === 'wp');
+      quartiereAvvia(QUARTIERE.find(q => q.id === 'cane'));
+      const [c] = (${seatPair})(C, r, r, 0);
+      r.pj = null;
+      const Q = QUARTIERE.find(q => q.id === 'cane');
+      let sentito = false;
+      for (let i = 0; i < 80 && !sentito; i++) { c.vis = {}; const t = pensiero(c); sentito = Q.l.some(l => riempi(l, { sp: c }) === t); }
+      return { qz: st.qz && st.qz.id, sentito };
+    })()`);
+    ok(qz.qz === 'cane' && qz.sentito, 'nel quartiere succede qualcosa, e i clienti ne parlano');
+    await clear();
+    // una storia nata da sola, dall'inizio alla fine: un amico in pensiero
+    await page.evaluate(() => {
+      const st = window.__cafe.st,
+        C = window.__cafe;
+      st.qz = null;
+      st.regs.push(
+        {
+          id: 'wa',
+          n: 'Giulia',
+          look: C.CH.irene.l,
+          type: 'normale',
+          fav: 'caffe',
+          v: 9,
+          f: 5,
+          tr: ['romantico'],
+          mn: { u: -0.7, mem: [], k: [] }
+        },
+        { id: 'wb', n: 'Nadia', look: C.CH.mia.l, type: 'normale', fav: 'caffe', v: 9, f: 5, tr: ['artista'] }
+      );
+      st.rel['wa|wb'] = { k: 'amici', lv: 1, d: 1 };
+      st.tr = [{ u: 99, id: 'pensiero', cast: { a: 'wa', b: 'wb' }, s: 0, d: st.day, log: [] }];
+      window.__u0 = st.regs.find(r => r.id === 'wa').mn.u;
+    });
+    for (const [chi, gg] of [
+      ['b', 0],
+      ['ab', 1],
+      ['a', 2]
+    ]) {
+      await page.evaluate(
+        `(() => { const C = window.__cafe, st = C.st, T = st.tr.find(x => x.u === 99); st.day += ${gg};
+        const A = st.regs.find(r => r.id === 'wa'), B = st.regs.find(r => r.id === 'wb');
+        const who = '${chi}'.split('').map(k => (k === 'a' ? A : B));
+        (${seatPair})(C, who[0], who[1] || who[0], 2); if (who.length === 1) C.slots[2].seats[1].occ && (C.slots[2].seats[1].occ.dead = true, C.slots[2].seats[1].occ = null);
+        C.scenes.length = 0; T.on = 0; trConvoca(T); })()`
+      );
+      for (let i = 0; i < 400; i++) {
+        if (await page.isVisible('.choice button')) await page.click('.choice button >> nth=0');
+        if (!(await page.evaluate(() => window.__cafe.scenes.length))) break;
+        await sleep(80);
+      }
+      await clear();
+    }
+    const tr = await page.evaluate(() => {
+      const st = window.__cafe.st,
+        F = (st.trF || [])[0],
+        R = st.rel['wa|wb'];
+      return {
+        id: F && F.id,
+        log: F && F.log.length,
+        e: F && F.e,
+        u: st.regs.find(r => r.id === 'wa').mn.u,
+        u0: window.__u0,
+        fi: R.fi,
+        aperte: st.tr.length
+      };
+    });
+    ok(
+      tr.id === 'pensiero' && tr.log === 3 && tr.u > tr.u0 && !tr.aperte,
+      `una storia nata da sola, giocata fino in fondo: «${tr.e}» (umore di Giulia ${tr.u0} → ${tr.u && tr.u.toFixed(2)})`
+    );
+    await page.click('#hud button[data-p="cli"]');
+    await sleep(150);
+    await page.click('#tabs button:has-text("Vite")');
+    await sleep(150);
+    ok(await page.isVisible('button[data-trf="0"]'), 'nel Diario le storie nate da sole si possono rileggere');
+    await page.click('button[data-trf="0"]');
+    await sleep(200);
+    ok(await page.isVisible('#reader'), 'il libro della storia si apre');
+    await page.evaluate(() => {
+      closeReader(); // chiusura vera: riprende anche il gioco
+      window.__cafe.st.tr = [];
+    });
+    await page.keyboard.press('Escape');
+    await sleep(100);
+    if (await page.isVisible('#panel')) await page.evaluate(() => closePanel());
+    // gentilezze: il caffè offerto (e ricambiato), il posto ceduto, l'ombrello prestato e restituito
+    const gz = await page.evaluate(`(() => {
+      const C = window.__cafe, st = C.st, out = {};
+      const A = st.regs.find(r => r.id === 'wa'), B = st.regs.find(r => r.id === 'wb'), R = st.rel['wa|wb'];
+      C.rv(R); R.a = 80; R.lit = 0; R.fav = {}; R.pr = 0;
+      const sit = (r, si) => { const q = C.slots[si].seats[0]; q.occ = null; q.dirty = false; q.res = null; const c = C.newCust({ look: r.look, name: r.n, reg: r, type: r.type }); C.queue.splice(C.queue.indexOf(c), 1); Object.assign(c, { state: 'sit', seat: q, x: q.x, y: q.y, sitT: 999, thinkT: 999, order: C.MENU[0], mood: 80 }); q.occ = c; return c; };
+      const ordina = r => { const c = C.newCust({ look: r.look, name: r.n, reg: r, type: r.type }); c.state = 'order'; c.order = C.MENU[0]; return c; };
+      const a = sit(A, 0);
+      for (let i = 0; i < 60 && !(R.fav.wa > 0); i++) { const b = ordina(B); cortesiaOrdine(b); timers.forEach(t => t.fn()); timers.length = 0; b.dead = true; C.queue.splice(C.queue.indexOf(b), 1); }
+      out.offerto = R.fav.wa > 0 && B.mn.mem.some(m => m.k === 'offerto');
+      a.dead = true; a.seat.occ = null;
+      const b = sit(B, 0); R.pr = 0; R.fav = { wa: 2, wb: 0 }; /* Giulia ha offerto due volte: Nadia le deve un caffè */
+      let ric = ''; for (let i = 0; i < 60 && !ric; i++) { const c = ordina(A); b.bub = null; cortesiaOrdine(c); timers.forEach(t => t.fn()); timers.length = 0; if (b.bub) ric = b.bub.txt; c.dead = true; C.queue.splice(C.queue.indexOf(c), 1); }
+      out.ricambia = Object.values(CORTESIA.ricambia).flat().concat(CORTESIA.mantiene).some(t => cTxt(t, b, { name: 'Giulia', order: C.MENU[0] }) === ric);
+      out.ric = ric;
+      // tavoli pieni: chi è seduto magari cede il posto (o, se è un amico stretto e non si alza, l'altro se lo ricorda)
+      let posto = null, sgarbo = false;
+      for (let i = 0; i < 40 && !posto && !sgarbo; i++) {
+        const c = ordina(A); b.bub = null; b.dead = false; b.seat = b.seat || C.slots[0].seats[0]; b.seat.occ = b; b.state = 'sit';
+        posto = cortesiaPosto(c); sgarbo = A.mn.mem.some(m => m.k === 'sgarbo');
+        timers.forEach(t => t.fn()); timers.length = 0; c.dead = true; C.queue.splice(C.queue.indexOf(c), 1);
+      }
+      out.posto = !!posto || sgarbo; out.comeposto = posto ? 'ceduto' : sgarbo ? 'non si è alzato' : '-';
+      // l'ombrello sotto la pioggia
+      st.wx = 'pioggia'; st.wx2 = null;
+      const a2 = sit(A, 2), b2 = sit(B, 4);
+      for (let i = 0; i < 80 && !R.omb; i++) { b2.noUmb = 0; cortesiaUscita(b2); timers.forEach(t => t.fn()); timers.length = 0; }
+      out.prestato = !!R.omb;
+      st.day++;
+      for (let i = 0; i < 20 && R.omb; i++) { R.omb.t = 0; [a2, b2].forEach(p => (p.dead = false, p.state = 'sit', p.scene = null)); cortT = 0; cortesieTick(1); timers.forEach(t => t.fn()); timers.length = 0; }
+      out.reso = !R.omb;
+      R.fav = { wa: 3, wb: 3 }; out.legami = cortN('wa|wb', R);
+      return out;
+    })()`);
+    ok(gz.offerto, 'gentilezze: un amico seduto offre il caffè a chi è al bancone');
+    ok(gz.ricambia, `gentilezze: chi ha ricevuto ricambia («${gz.ric}»)`);
+    ok(gz.posto, `gentilezze: tavoli pieni, un amico seduto cede il posto (${gz.comeposto})`);
+    ok(gz.prestato && gz.reso, 'gentilezze: l’ombrello prestato sotto la pioggia, e poi restituito');
+    ok(/turno|quasi sempre/.test(gz.legami), `nel Diario dei legami: ${gz.legami}`);
+    await clear();
+    await page.evaluate(() => {
+      const st = window.__cafe.st;
+      st.regs = st.regs.filter(r => !['wp', 'wa', 'wb'].includes(r.id));
+      delete st.rel['wa|wb'];
+      st.qz = null;
+      st.tr = [];
+      trT = 4;
+      mondoOff = true;
+      [st.day, st.wx, st.wx2, st.tod] = window.__giorno0;
+      window.__cafe.speed = 1;
+    });
     await page.evaluate(() => {
       const st = window.__cafe.st;
       st.regs = st.regs.filter(r => !['mt', 'mc', 'mb', 'ma', 'mb2'].includes(r.id));
@@ -2049,6 +2234,7 @@ async function playMini(page, kind, itemId) {
     st.music = 4;
     window.__cafe.speed = 6;
     window.__cafe.regia.off = false; // qui si gioca davvero, con la regia accesa
+    mondoOff = false; // e con il mondo che va avanti da solo
   });
   const t0 = Date.now();
   let choices = 0,

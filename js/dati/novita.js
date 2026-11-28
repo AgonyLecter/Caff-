@@ -41,6 +41,14 @@ const NOVITA = [
   {
     id: 'aggiornamenti',
     t: 'Da oggi, quando sistemo qualcosa, lo trovi subito: il caffè si rinfresca da solo, in un momento tranquillo, senza perdere niente. Io poi ti racconto cosa è cambiato.'
+  },
+  {
+    id: 'mondo',
+    t: 'Sai, cara, il quartiere ormai vive da solo. Ognuno insegue un suo sogno, a volte ti chiederanno un parere, e succedono storie che nessuno ha scritto: amici in pensiero, cotte da confessare, vecchi rivali allo stesso tavolo. Le trovi nel Diario, alla voce Vite.'
+  },
+  {
+    id: 'cortesie',
+    t: 'E hanno imparato la gentilezza: si offrono il caffè, si cedono il posto, si prestano l’ombrello. Chi riceve, di solito ricambia. Chi non ricambia mai... beh, se lo ricordano.'
   }
 ];
 
