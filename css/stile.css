@@ -1694,3 +1694,33 @@ body.racconto #toast {
 .notte li {
   margin-bottom: 6px;
 }
+
+/* Gocce, il social del quartiere */
+.sofoto {
+  display: block;
+  width: 100%;
+  max-width: 256px;
+  margin: 6px auto;
+  image-rendering: pixelated;
+  border: 4px solid #f4f1de;
+  border-bottom-width: 14px;
+  border-radius: 2px;
+  background: #2b2d42;
+}
+.sofinta {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 0;
+  aspect-ratio: 4 / 3;
+  align-items: flex-end;
+}
+.sofinta img {
+  height: 66%;
+  image-rendering: pixelated;
+}
+.sopost button.small {
+  padding: 4px 10px;
+  font-size: 0.85em;
+  min-height: 0;
+}

@@ -685,7 +685,10 @@ function pensiero(c) {
         'Quella frase sulla lavagna è proprio vera.'
       ])
     );
-  if (r) mondoPensieri(c, add, addP);
+  if (r) {
+    mondoPensieri(c, add, addP);
+    soPensieri(c, add); // la sua foto su Gocce, o quella di un amico
+  }
   const o = C.length ? wpick(C, x => x.w) : null;
   return o ? o.f() : null;
 }

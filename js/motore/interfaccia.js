@@ -759,7 +759,7 @@ const UP = [
 ];
 const TABS = {
   up: ['Locale', 'Arredo', 'Staff', 'Menu', 'Stili', 'Franchising'],
-  cli: ['Storie', 'Vite', 'Habitué', 'Legami', 'Giornale', 'Recensioni', 'Segreti']
+  cli: ['Storie', 'Vite', 'Habitué', 'Legami', 'Giornale', 'Gocce', 'Recensioni', 'Segreti']
 };
 let panel = null,
   tab = null;
@@ -1157,6 +1157,7 @@ function cliHTML() {
     );
   }
   if (tab === 'Giornale') return giornaleHTML();
+  if (tab === 'Gocce') return socialHTML();
   if (tab === 'Recensioni') {
     const r = st.reviews.slice().reverse();
     return (
@@ -1323,6 +1324,13 @@ $('#pbody').addEventListener('click', e => {
       const F = FILI.find(f => f.id === r.fl.id);
       openReader(r.n, 'continua…', filoPages({ n: r.n, t: F ? F.t : '', log: r.fl.log, look: r.look, e: '' }), r.fl.log.length - 1);
     }
+    return;
+  }
+  if (bt.dataset.sol || bt.dataset.soc) {
+    if (bt.dataset.sol) soMioCuore(bt.dataset.sol);
+    else soMioCommento(bt.dataset.soc);
+    sfx('cup');
+    renderPanel();
     return;
   }
   if (bt.dataset.gz) {

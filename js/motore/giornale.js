@@ -155,6 +155,8 @@ function gzEsci() {
     ann = { a: A.id, int: i };
     pezzi.push({ s: 'Annunci', t: gzF(GZ_ANNUNCI[i], { X: A.n }), x: '' });
   }
+  const foto = typeof soFotoSettimana === 'function' ? soFotoSettimana() : null;
+  if (foto) pezzi.push({ s: 'La foto della settimana', t: foto, x: '' });
   pezzi.push({ s: 'Il meteo di Corrado', t: GZ_METEO[st.nwx] || GZ_METEO.pioggia, x: '' });
   pezzi.push({ s: 'Il corsivo', t: scegli(GZ_CORSIVO, 'gzcors'), x: '' });
   G.n++;
