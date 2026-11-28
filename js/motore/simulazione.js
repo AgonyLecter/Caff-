@@ -771,9 +771,13 @@ function storyNote(arc) {
   if (!$('#modal').hidden || choiceOpen || mini || !$('#reader').hidden) return setTimeout(() => storyNote(arc), 1000);
   showModal(`<h2>${esc(arc.t)}</h2><p>${esc(arc.nota)}</p>`, [{ t: 'Ho capito', big: 1, fn: hideModal }]);
 }
+const arcVia = {};
 function tryStory() {
   if (intro || tut) return; // il locale resta vuoto mentre parla Nonna Rosa
   if (!regiaFree() || !capTurno()) return; // un momento alla volta, e a turno con le vite
+  // una storia «in corso» senza più nessuno dei suoi personaggi nel locale (sono andati via prima della fine) si libera
+  for (const id of [...activeArcs])
+    if (Date.now() - (arcVia[id] || 0) > 8000 && !people.some(p => !p.dead && p.story === id)) activeArcs.delete(id);
   const a = atm(),
     c = [];
   for (const arc of ARCS) {
@@ -805,6 +809,7 @@ function tryStory() {
   }
   const gid = 's' + ++uid;
   activeArcs.add(arc.id);
+  arcVia[arc.id] = Date.now(); // quando è partita (per liberarla se i personaggi spariscono)
   regiaTake();
   groups[gid] = {
     n: who.length,
@@ -1462,6 +1467,7 @@ function update(dt) {
   calTick(dt);
   trameTick(dt);
   cortesieTick(dt);
+  socialeTick(dt);
   scenes = scenes.filter(s => !s.done);
   for (const k in groups) if (!people.some(p => p.group === k) && !timers.length) delete groups[k];
   syncStaff();

@@ -396,6 +396,21 @@ M.TRAME.forEach(T => {
   });
 });
 
+// Gocce, il social del quartiere: tutti gli stili, ogni tipo di foto ha le sue didascalie
+const SO = vm.runInContext('({ SO_TIPI, SO_SI, SO_NO, SO_COMMENTI, SO_RISPOSTA, SO_PENSA, SO_GIORNALE, SO_MIEI, SO_INVITO })', ctx);
+['SO_SI', 'SO_NO', 'SO_COMMENTI', 'SO_RISPOSTA'].forEach(k => perStile(SO[k], k));
+Object.keys(SO.SO_TIPI).forEach(k => {
+  if (!vm.runInContext('GRAM', ctx)['didascalia_' + k]) bad(`social: il tipo di foto ${k} non ha didascalie (GRAM.didascalia_${k})`);
+  if (!SO.SO_TIPI[k].g.length || !SO.SO_TIPI[k].h.length) bad(`social: il tipo di foto ${k} senza gesti o hashtag`);
+});
+const segS = (x, dove) =>
+  typeof x === 'string'
+    ? (x.match(/\{[^}]*\}/g) || []).forEach(
+        m => ['{X}', '{X:o}', '{o}', '{item}', '{n}', '{C}'].includes(m) || bad(`social: ${dove}: segnaposto sconosciuto ${m}`)
+      )
+    : Object.entries(x).forEach(([k, y]) => segS(y, dove + '.' + k));
+Object.entries(SO).forEach(([k, x]) => segS(x, k));
+
 // frasi costruite a pezzi (grammatica.js): ogni {pezzo} esiste, e si contano le combinazioni possibili
 const GRAM = vm.runInContext('GRAM', ctx);
 const contaG = {};

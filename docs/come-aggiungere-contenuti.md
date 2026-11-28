@@ -28,6 +28,7 @@ node tests/smoke.js    # qualche minuto: gioca davvero nel browser (serve Playwr
 | `js/dati/cortesie.js` | gentilezze tra clienti: caffè offerto e ricambiato, posto ceduto, ombrello prestato |
 | `js/dati/giornale.js` | il giornale del caffè di Corrado: titoli per tipo di notizia, dicerie e smentite, curiosità, annunci, meteo, corsivo, reazioni di chi legge |
 | `js/dati/grammatica.js` | frasi costruite a pezzi (`GRAM`): pensieri, chiacchiere, brevi e dicerie del giornale, con varianti per carattere e per circostanza |
+| `js/dati/social.js` | Gocce, il social del quartiere: tipi di foto (`SO_TIPI`, con le didascalie in `GRAM.didascalia_<tipo>`), risposte agli inviti, commenti per stile, pensieri, foto della settimana |
 | `js/dati/voci.js` | la «mente» dei personaggi: carattere, interessi, argomenti di conversazione, risposte per stile, notizie, litigi, pensieri, saluti, reazioni (il motore è `js/motore/mente.js`) |
 
 ## Le battute

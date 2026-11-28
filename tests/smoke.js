@@ -2355,6 +2355,90 @@ async function playMini(page, kind, itemId) {
     });
   }
 
+  console.log('Gocce, il social del quartiere');
+  {
+    const so = await page.evaluate(() => {
+      const C = window.__cafe,
+        st = C.st;
+      mondoOff = false;
+      C.people.forEach(p => (p.dead = true));
+      C.slots.forEach(sl => sl.seats.forEach(q => Object.assign(q, { occ: null, dirty: false, res: null })));
+      const mk = (id, n, tr) => {
+        const r = { id, n, look: C.CH.irene.l, type: 'normale', fav: 'caffe', v: 9, f: 5, tr };
+        st.regs.push(r);
+        return r;
+      };
+      const A = mk('soa', 'Livia', ['chiacchierone']),
+        B = mk('sob', 'Teo', ['timido']),
+        D = mk('sod', 'Rita', ['brontolone']);
+      st.rel['soa|sob'] = { k: 'migliori', lv: 1, d: 1 };
+      C.rv(st.rel['soa|sob']);
+      const sit = (r, si, k) => {
+        const q = C.slots[si].seats[k];
+        const c = C.newCust({ look: r.look, name: r.n, reg: r, type: r.type });
+        C.queue.splice(C.queue.indexOf(c), 1);
+        Object.assign(c, { state: 'sit', seat: q, x: q.x, y: q.y, sitT: 999, thinkT: 999, order: C.MENU[0], mood: 80 });
+        q.occ = c;
+        return c;
+      };
+      const a = sit(A, 0, 0),
+        b = sit(B, 0, 1);
+      st.so = { n: 0, posts: [] };
+      const p1 = soPosta(a, 'insieme', b);
+      a.q = 2;
+      const p2 = soPosta(a, 'tazza');
+      // gli altri reagiscono: cuori, commenti, condivisioni
+      for (let i = 0; i < 40; i++) soReagisce(pick([B, D]), pick(st.so.posts));
+      // una foto amata viene rifatta da qualcun altro
+      p1.like = ['sob', 'sod', 'x1'];
+      const d = sit(D, 2, 0);
+      const p3 = soPosta(d, 'rifatta', null, p1);
+      const tot = st.so.posts.reduce((s, p) => s + p.like.length + p.com.length, 0);
+      return {
+        n: st.so.posts.length,
+        cap: p1.cap,
+        conChi: p1.w.join(','),
+        img: !!p1.img || !!p2.img,
+        rotte: st.so.posts.some(p => /[{}]/.test(p.cap)),
+        rifatta: p3.da === p1.id && /Livia/.test(p3.cap),
+        reazioni: tot,
+        foto: soFotoSettimana()
+      };
+    });
+    ok(so.n === 3 && so.conChi === 'sob' && so.img && !so.rotte, `foto postate da sole, anche con un amico: «${so.cap}»`);
+    ok(so.reazioni >= 5, `gli altri mettono cuori e commentano (${so.reazioni} reazioni)`);
+    ok(so.rifatta, 'una foto amata viene rifatta da qualcun altro');
+    ok(!!so.foto, `la foto della settimana per il giornale: ${so.foto}`);
+    await page.click('#hud button[data-p="cli"]');
+    await sleep(150);
+    await page.click('#tabs button:has-text("Gocce")');
+    await sleep(150);
+    const f0 = await page.evaluate(() => window.__cafe.st.regs.find(r => r.id === 'soa').f);
+    await page.click('button[data-sol="1"]');
+    await sleep(120);
+    await page.click('button[data-soc="1"]');
+    await sleep(120);
+    const mio = await page.evaluate(() => {
+      const st = window.__cafe.st,
+        p = st.so.posts.find(x => x.id === 1);
+      return { pl: p.pl, mio: p.com.some(c => c.a === 'tu'), risp: p.com.some(c => c.a === 'soa'), f: st.regs.find(r => r.id === 'soa').f };
+    });
+    ok(
+      mio.pl && mio.mio && mio.risp && mio.f > f0,
+      `il tuo cuore e il tuo commento: l’autrice risponde e si affeziona (affetto ${f0} → ${mio.f})`
+    );
+    await page.evaluate(() => {
+      closePanel();
+      const C = window.__cafe,
+        st = C.st;
+      mondoOff = true;
+      st.regs = st.regs.filter(r => !['soa', 'sob', 'sod'].includes(r.id));
+      delete st.rel['soa|sob'];
+      C.people.forEach(p => (p.dead = true));
+      C.slots.forEach(sl => sl.seats.forEach(q => Object.assign(q, { occ: null, dirty: false, res: null })));
+    });
+  }
+
   console.log('Segreti e interazioni');
   await page.evaluate(() => {
     window.__cafe.speed = 1;

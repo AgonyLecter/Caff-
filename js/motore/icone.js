@@ -121,6 +121,10 @@ const PXT = {
     p: { y: '#ffd166', o: '#e0a040' },
     r: ['....y.....', '....y.....', '...yyy....', 'yyyyyyyyy.', '.yyyyyyy..', '..yyyyy...', '..yy.yy...', '.yo...oy..']
   },
+  Gocce: {
+    p: { b: '#7ec8ff', w: '#f4f1de', d: '#3a86ff' },
+    r: ['....b.....', '...bbb....', '..bbbbb...', '.bbwbbbb..', '.bwbbbbb..', '.bbbbbbd..', '..bbbbd...', '...ddd....']
+  },
   Giornale: {
     p: { w: '#f4f1de', k: '#2b2d42', g: '#9a9aa8' },
     r: ['wwwwwwwww.', 'wkkkkkkkw.', 'wwwwwwwwwg', 'wkkkw.ggwg', 'wkkkw.ggwg', 'wwwww.ggwg', 'wgggggggwg', 'wwwwwwwww.']

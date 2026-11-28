@@ -57,6 +57,10 @@ const NOVITA = [
   {
     id: 'parole',
     t: 'Ho l’impressione che i tuoi clienti abbiano sempre qualcosa di nuovo da dire. Pensieri, chiacchiere, perfino le dicerie sul giornale: non ne senti mai due uguali. Come al mercato, cara.'
+  },
+  {
+    id: 'gocce',
+    t: 'I ragazzi mi hanno insegnato una cosa: si chiama Gocce. Fanno le foto al caffè, alla pioggia, a loro stessi, e se le mettono a vicenda il cuoricino. Le trovi nel Diario. Mettine uno anche tu, ogni tanto: ci tengono più di quanto dicono.'
   }
 ];
 
