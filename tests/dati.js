@@ -396,6 +396,69 @@ M.TRAME.forEach(T => {
   });
 });
 
+// frasi costruite a pezzi (grammatica.js): ogni {pezzo} esiste, e si contano le combinazioni possibili
+const GRAM = vm.runInContext('GRAM', ctx);
+const contaG = {};
+const quante = (k, d) => {
+  if (d > 6) return 1;
+  if (contaG[k] != null) return contaG[k];
+  // tutti i pezzi possibili di un nome: i suoi più quelli delle circostanze (nome@...)
+  const tutti = Object.keys(GRAM)
+    .filter(x => x === k || x.startsWith(k + '@'))
+    .flatMap(x => GRAM[x]);
+  const n = tutti.reduce(
+    (s, t) =>
+      s +
+      (t.match(/\{([a-z_]+)\}/g) || []).reduce((p, m) => {
+        let x = m.slice(1, -1);
+        if (x.endsWith('_cap')) x = x.slice(0, -4);
+        return GRAM[x] ? p * quante(x, d + 1) : p;
+      }, 1),
+    0
+  );
+  return (contaG[k] = n);
+};
+Object.entries(GRAM).forEach(([k, L]) => {
+  if (!Array.isArray(L) || !L.length) bad(`grammatica: ${k} vuoto`);
+  L.forEach(t =>
+    (t.match(/\{[^}]*\}/g) || []).forEach(m => {
+      let x = m.slice(1, -1);
+      if (/^[A-Z]$/.test(x) || ['item', 'o', 'X:o'].includes(x)) return;
+      if (x.endsWith('_cap')) x = x.slice(0, -4);
+      if (!GRAM[x]) bad(`grammatica: ${k}: il pezzo ${m} non esiste`);
+    })
+  );
+  if (k.includes('@') && !GRAM[k.split('@')[0]]) bad(`grammatica: ${k}: manca il pezzo base ${k.split('@')[0]}`);
+  if (
+    k.includes('@') &&
+    ![
+      'pioggia',
+      'temporale',
+      'sereno',
+      'nuvoloso',
+      'nebbia',
+      'neve',
+      'mattina',
+      'pomeriggio',
+      'sera',
+      'notte',
+      'primavera',
+      'estate',
+      'autunno',
+      'inverno',
+      'felice',
+      'giu',
+      'pieno',
+      'vuoto',
+      'festa'
+    ].includes(k.split('@')[1])
+  )
+    bad(`grammatica: ${k}: circostanza sconosciuta`);
+});
+const combG = Object.keys(GRAM)
+  .filter(k => /^(pensiero|domanda|risposta|breve|diceria)/.test(k) && !k.includes('@'))
+  .reduce((s, k) => s + (GRAM[k] ? quante(k, 0) : 0), 0);
+
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 [...html.matchAll(/<script src="([^"]+)"/g)]
   .map(m => m[1])
@@ -421,7 +484,8 @@ console.log(
     n(testiM.length, 'frasi della mente'),
     n(M.PROGETTI.length, 'progetti'),
     n(M.QUARTIERE.length, 'eventi di quartiere'),
-    n(M.TRAME.length, 'storie che nascono da sole')
+    n(M.TRAME.length, 'storie che nascono da sole'),
+    n(combG.toLocaleString('it-IT'), 'frasi possibili costruite a pezzi')
   ].join(' · ')
 );
 if (problems.length) {

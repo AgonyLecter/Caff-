@@ -2,7 +2,7 @@
 // Prima prova la rete (così gli aggiornamenti arrivano subito), se non c'è usa la copia salvata.
 // A OGNI AGGIORNAMENTO PUBBLICATO va aumentata VERSIONE: la vecchia copia viene buttata, e chi sta giocando
 // in quel momento riceve la versione nuova da solo (js/motore/aggiorna.js legge questa riga).
-const VERSIONE = 'caffe-v11';
+const VERSIONE = 'caffe-v12';
 const FILE = [
   './',
   'index.html',
@@ -25,6 +25,7 @@ const FILE = [
   'js/dati/trame.js',
   'js/dati/cortesie.js',
   'js/dati/giornale.js',
+  'js/dati/grammatica.js',
   'js/motore/stato.js',
   'js/motore/citta.js',
   'js/motore/audio.js',

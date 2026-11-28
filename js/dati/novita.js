@@ -53,6 +53,10 @@ const NOVITA = [
   {
     id: 'corrado',
     t: 'Ti ricordi della vecchia Gazzetta del Quartiere? Ha chiuso. Il suo giornalista, Corrado, gira con un taccuino e non sa più a chi raccontare le cose. Se passa, fallo sedere. E chiedigli cosa scrive.'
+  },
+  {
+    id: 'parole',
+    t: 'Ho l’impressione che i tuoi clienti abbiano sempre qualcosa di nuovo da dire. Pensieri, chiacchiere, perfino le dicerie sul giornale: non ne senti mai due uguali. Come al mercato, cara.'
   }
 ];
 

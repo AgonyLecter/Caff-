@@ -27,6 +27,7 @@ node tests/smoke.js    # qualche minuto: gioca davvero nel browser (serve Playwr
 | `js/dati/trame.js` | il mondo che va avanti da solo: `PROGETTI` (sogni personali), `QUARTIERE` (eventi in città), `TRAME` (storie che nascono da sole), `PARERE` (quando chiedono un consiglio a te) |
 | `js/dati/cortesie.js` | gentilezze tra clienti: caffè offerto e ricambiato, posto ceduto, ombrello prestato |
 | `js/dati/giornale.js` | il giornale del caffè di Corrado: titoli per tipo di notizia, dicerie e smentite, curiosità, annunci, meteo, corsivo, reazioni di chi legge |
+| `js/dati/grammatica.js` | frasi costruite a pezzi (`GRAM`): pensieri, chiacchiere, brevi e dicerie del giornale, con varianti per carattere e per circostanza |
 | `js/dati/voci.js` | la «mente» dei personaggi: carattere, interessi, argomenti di conversazione, risposte per stile, notizie, litigi, pensieri, saluti, reazioni (il motore è `js/motore/mente.js`) |
 
 ## Le battute
@@ -250,3 +251,12 @@ Frasi per stile per offrire il caffè (`offre`, `ricambia`), accettare o no (`si
 ## Il giornale del caffè (`js/dati/giornale.js`)
 
 Finita la storia di Corrado («L’ultima edizione»), ogni tre giorni esce un numero (`js/motore/giornale.js`, `gzEsci`), con il nome scelto dal giocatore (`GZ_NOMI`). Si scrive da solo guardando il mondo: notizie (`st.news`), sogni arrivati (`st.pjLog`), storie nate da sole (`st.trF`), storie concluse e nuovi habitué (dal registro), il quartiere; poi dicerie (vere dai legami, a volte false: il numero dopo arriva la smentita), sogni in corso, curiosità coi numeri, un annuncio (al numero dopo qualcuno con la stessa passione risponde, e si conoscono), meteo e corsivo. Per aggiungere: titoli in `GZ_PEZZI[tipo].t` (con il suo peso in `GZ_PESO` per la prima pagina), frasi in `GZ_DICERIE`, `GZ_CURIOSITA`, `GZ_ANNUNCI` (una per argomento di `TEMI`), `GZ_METEO` (uno per ogni tempo), `GZ_CORSIVO`, reazioni in `GZ_LETTORI`.
+
+## Frasi costruite a pezzi (`js/dati/grammatica.js`)
+
+Un modello come `'{ora}, {scena}. {sensazione}.'` sceglie un pezzo per ogni `{nome}` dalla lista `GRAM.nome` (i pezzi possono contenere altri `{nome}`; `{nome_cap}` mette la maiuscola). Varianti:
+
+- **per carattere**: `pensiero_brontolone`, `risposta_timido`… (se esiste, si usa al posto di quella base per chi ha quello stile);
+- **per circostanza**: `scena@neve`, `ora@notte`, `sensazione@giu`, `fatto_buffo@festa`… si aggiungono alla lista base quando quella circostanza è vera (e pesano il doppio). Circostanze: `pioggia temporale sereno nuvoloso nebbia neve`, `mattina pomeriggio sera notte`, `primavera estate autunno inverno`, `felice giu` (umore di chi parla), `pieno vuoto` (il locale), `festa`. `pensiero@giu` e `pensiero@felice` cambiano tutto il tono.
+
+Regola d'oro: ogni pezzo deve stare bene con tutti gli altri della stessa lista. Niente lui/lei per gli altri; `{o}` per chi parla. `node tests/dati.js` controlla che ogni pezzo esista e conta le frasi possibili.

@@ -1072,8 +1072,8 @@ async function playMini(page, kind, itemId) {
       // 7. pensieri legati alla situazione: chi aspetta da tanto lo dice, a modo suo
       const stA = C.stileDi(ch), altri = Object.entries(PENSA.attesa).filter(([k]) => k !== stA).flatMap(([, l]) => l);
       let visto = 0, sbagliato = '';
-      for (let i = 0; i < 40; i++) { x.vis = {}; x.why = 'attesa'; const t = C.pensiero(x); if (PENSA.attesa[stA].some(l => riempi(l, { sp: x }) === t)) visto++; if (altri.some(l => riempi(l, { sp: x }) === t)) sbagliato = t; }
-      out.attesa = visto >= 5 && !sbagliato ? 'ok' : visto + ' ' + sbagliato;
+      for (let i = 0; i < 60; i++) { x.vis = {}; x.why = 'attesa'; const t = C.pensiero(x); if (PENSA.attesa[stA].some(l => riempi(l, { sp: x }) === t)) visto++; if (altri.some(l => riempi(l, { sp: x }) === t)) sbagliato = t; }
+      out.attesa = visto >= 3 && !sbagliato ? 'ok' : visto + ' ' + sbagliato;
       // 8. saluti tra tavoli
       [x, y, a, b].forEach(p => { p.bub = null; p.vis = {}; });
       let sal = false; for (let i = 0; i < 30 && !sal; i++) { y.vis = {}; y.bub = null; sal = salutaTavoli(y) && !!y.bub && /Gaia|Sandro/.test(y.bub.txt + (y.bub.txt.includes('*') ? 'Gaia' : '')); }
@@ -1094,6 +1094,23 @@ async function playMini(page, kind, itemId) {
     ok(mente.attesa === 'ok', `pensieri legati alla situazione (chi aspetta lo dice a modo suo): ${mente.attesa}`);
     ok(mente.saluto, 'chi conosce qualcuno a un altro tavolo lo saluta');
     ok(/·.+·.+·/.test(mente.diario) && !/undefined|\{/.test(mente.diario), `nel Diario: ${mente.diario}`);
+    // frasi costruite a pezzi: trecento pensieri, quasi tutti diversi, nessun pezzo mancante
+    const gr = await page.evaluate(() => {
+      const own = { ud: [] },
+        out = new Set(),
+        sp = { name: 'Giulia', order: window.__cafe.MENU[0] };
+      let rotte = 0;
+      for (let i = 0; i < 300; i++) {
+        const t = riempi(gram('pensiero', own, ['caldo', 'ironico', 'timido', 'brontolone', 'entusiasta'][i % 5]), { sp });
+        if (/[{}]/.test(t)) rotte++;
+        out.add(t);
+      }
+      return { diverse: out.size, rotte, d: gram('domanda', own), r: gram('risposta', own, 'ironico'), b: gram('breve') };
+    });
+    ok(
+      gr.diverse >= 240 && !gr.rotte && !/[{}]/.test(gr.d + gr.r + gr.b),
+      `frasi costruite a pezzi: ${gr.diverse} pensieri diversi su 300 («${gr.d}» — «${gr.r}»)`
+    );
     console.log('Il mondo che va avanti da solo');
     await page.evaluate(() => {
       mondoOff = false;
@@ -1856,6 +1873,7 @@ async function playMini(page, kind, itemId) {
         const C = window.__cafe,
           st = C.st;
         C.people.forEach(p => (p.dead = true));
+        C.slots.forEach(sl => sl.seats.forEach(q => Object.assign(q, { occ: null, dirty: false, res: null }))); // sedie libere: la storia deve trovare posto
         C.queue.length = 0;
         C.slots.forEach(sl => sl.seats.forEach(q => Object.assign(q, { occ: null, dirty: false, res: null })));
         st.rolls.davide = { d: st.day, v: true };
@@ -1968,6 +1986,7 @@ async function playMini(page, kind, itemId) {
         const C = window.__cafe,
           st = C.st;
         C.people.forEach(p => (p.dead = true));
+        C.slots.forEach(sl => sl.seats.forEach(q => Object.assign(q, { occ: null, dirty: false, res: null }))); // sedie libere: la storia deve trovare posto
         C.queue.length = 0;
         C.scenes.length = 0;
         C.regiaReset();

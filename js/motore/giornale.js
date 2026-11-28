@@ -110,8 +110,16 @@ function gzEsci() {
     if (!R || (R.k === 'conoscenti' && (R.at || 0) < 20)) dic.push({ a: A.id, b: B.id, vero: 0, k: 'falsa' });
   }
   dic.forEach(d =>
-    pezzi.push({ s: 'Dicerie dal bancone', t: gzF(scegli(GZ_DICERIE[d.k], 'gzd:' + d.k), { X: nm(d.a), Y: nm(d.b) }), x: '' })
+    pezzi.push({
+      s: 'Dicerie dal bancone',
+      // le dicerie inventate si costruiscono a pezzi: ogni volta diverse
+      t: gzF(d.k === 'falsa' && Math.random() < 0.6 ? gram('diceria') : scegli(GZ_DICERIE[d.k], 'gzd:' + d.k), { X: nm(d.a), Y: nm(d.b) }),
+      x: ''
+    })
   );
+  // brevi dal bancone: piccole cose successe, costruite a pezzi
+  const tg = circostanze(null);
+  for (let i = 0; i < 2; i++) pezzi.push({ s: 'Brevi dal bancone', t: gram('breve', null, null, tg), x: '' });
   // sogni in corso
   st.regs
     .filter(r => r.pj && pjDi(r))
